@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLOOP·SPRINT 광고 네이밍 워크스페이스</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+:root{
+  --bg:#0f1117; --surface:#171a23; --surface2:#1e2230; --surface3:#2a3046;
+  --border:#2c324c; --accent:#5b6af0; --accent2:#8b97ff; --accentbg:#1c2150;
+  --green:#22c55e; --greenbg:#0f2417; --yellow:#f59e0b; --red:#ef4444; --redbg:#2a1414;
+  --purple:#a855f7; --cyan:#22d3ee;
+  --text:#e8eaf6; --text2:#9aa2c8; --text3:#6b7299; --radius:9px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Apple SD Gothic Neo',-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;min-height:100vh}
+code,.mono{font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace}
+
+/* layout */
+.app{display:grid;grid-template-columns:212px 1fr;min-height:100vh}
+.side{background:var(--surface);border-right:1px solid var(--border);padding:18px 14px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:4px}
+.brand{font-size:15px;font-weight:800;letter-spacing:-.02em;margin-bottom:2px}
+.brand small{display:block;font-size:10px;font-weight:500;color:var(--text3);margin-top:3px;letter-spacing:.02em}
+.nav{margin-top:18px;display:flex;flex-direction:column;gap:3px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);cursor:pointer;color:var(--text2);font-weight:600;font-size:13px;transition:.15s;user-select:none}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--accentbg);color:var(--accent2)}
+.nav-item .n{font-size:11px;width:18px;height:18px;border-radius:5px;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+.nav-item.active .n{background:var(--accent);color:#fff}
+.side-foot{margin-top:auto;font-size:10px;color:var(--text3);line-height:1.6;border-top:1px solid var(--border);padding-top:12px}
+.side-stat{display:flex;justify-content:space-between;font-size:11px;color:var(--text2);padding:3px 0}
+.side-stat b{color:var(--accent2)}
+.sync-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--text3);margin-right:5px;vertical-align:middle}
+.sync-dot.on{background:var(--green)}.sync-dot.off{background:var(--yellow)}
+
+.main{padding:26px 30px;max-width:1280px}
+.page{display:none}.page.active{display:block}
+.page-head{margin-bottom:20px}
+.page-head h2{font-size:19px;font-weight:800;letter-spacing:-.02em}
+.page-head p{font-size:12.5px;color:var(--text2);margin-top:5px;line-height:1.5}
+
+/* buttons */
+.btn{padding:9px 16px;border-radius:var(--radius);border:none;cursor:pointer;font-size:13px;font-weight:600;transition:.15s;font-family:inherit}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent2)}
+.btn-ghost{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}.btn-ghost:hover{border-color:var(--accent);color:var(--accent2)}
+.btn-sm{padding:6px 11px;font-size:12px}
+.btn-xs{padding:4px 9px;font-size:11px;border-radius:6px}
+.btn-danger{background:var(--redbg);color:#ff8b8b;border:1px solid #5a2a2a}.btn-danger:hover{border-color:var(--red)}
+
+/* form */
+label{display:block;font-size:11.5px;font-weight:600;color:var(--text2);margin-bottom:5px}
+input,select,textarea{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 11px;font-size:13px;width:100%;outline:none;transition:border-color .15s;font-family:inherit}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+input::placeholder{color:var(--text3)}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239aa2c8' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+.field{margin-bottom:13px}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}.g4{grid-template-columns:repeat(4,1fr)}
+.req{color:var(--red)}.opt{color:var(--text3);font-weight:400}
+
+/* panel */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px}
+.panel-h{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:15px;display:flex;align-items:center;gap:9px}
+.panel-h .step{background:var(--accent);color:#fff;font-size:11px;width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center}
+.panel-h .hint{margin-left:auto;font-size:11px;font-weight:500;color:var(--text3);text-transform:none;letter-spacing:0}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{padding:7px 13px;border-radius:18px;border:1.5px solid var(--border);background:var(--surface2);cursor:pointer;font-size:12px;font-weight:600;color:var(--text2);transition:.12s;user-select:none;display:flex;align-items:center;gap:6px}
+.chip:hover{border-color:var(--accent);color:var(--text)}
+.chip.on{border-color:var(--accent);background:var(--accentbg);color:var(--accent2)}
+.chip .x{opacity:.45;font-size:13px}.chip .x:hover{opacity:1;color:var(--red)}
+.chip.add{border-style:dashed;color:var(--text3)}
+
+/* preview box */
+.preview{background:var(--surface2);border:1px dashed var(--border);border-radius:10px;padding:13px 15px;font-size:12.5px;word-break:break-all;line-height:1.7;min-height:46px}
+.preview .tok{color:var(--text);background:#262c44;padding:1px 5px;border-radius:4px;margin:1px}
+.preview .ph{color:var(--text3)}
+
+/* table */
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:var(--surface2);color:var(--text2);font-weight:700;padding:10px 11px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0}
+td{padding:8px 11px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:#ffffff05}
+td input,td select{padding:6px 8px;font-size:12px}
+.t-mono{font-family:'SF Mono',monospace;font-size:11.5px;color:var(--accent2);word-break:break-all}
+
+/* badges */
+.bdg{display:inline-block;padding:2px 8px;border-radius:5px;font-size:10.5px;font-weight:700;letter-spacing:.02em}
+.bdg-dcm{background:#15263f;color:#5fa8ff}.bdg-reg{background:#10241a;color:#34d399}
+.bdg-pmo{background:#2a2410;color:#fbbf24}.bdg-org{background:#241f33;color:#c084fc}
+.bdg-ok{background:var(--greenbg);color:#4ade80}.bdg-warn{background:#2a2410;color:#fbbf24}.bdg-err{background:var(--redbg);color:#ff8b8b}
+
+/* result rows */
+.res{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:13px 15px;margin-bottom:9px}
+.res .set{font-size:11px;color:var(--text2);margin-bottom:7px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.res .nm{font-family:'SF Mono',monospace;font-size:12px;color:var(--accent2);word-break:break-all;line-height:1.55}
+.res .ut{font-family:'SF Mono',monospace;font-size:10.5px;color:var(--text3);word-break:break-all;margin-top:5px;line-height:1.5}
+.res .acts{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+.cbtn{background:var(--surface);border:1px solid var(--border);color:var(--text2);padding:4px 11px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600}
+.cbtn:hover{border-color:var(--accent);color:var(--accent2)}.cbtn.ok{border-color:var(--green);color:var(--green)}
+
+.empty{text-align:center;color:var(--text3);padding:48px 20px}
+.empty .ic{font-size:34px;margin-bottom:10px;opacity:.6}
+.notice{background:#141a2c;border:1px solid #243152;border-radius:10px;padding:12px 14px;font-size:12px;color:var(--text2);line-height:1.6}
+.notice b{color:var(--accent2)}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px 17px}
+.kpi .v{font-size:24px;font-weight:800;letter-spacing:-.02em}
+.kpi .l{font-size:11px;color:var(--text2);margin-top:3px}
+.row-flex{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.spacer{flex:1}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.4);opacity:0;transition:.25s;pointer-events:none;z-index:999}
+.toast.show{opacity:1;bottom:30px}
+.sub-h{font-size:12px;font-weight:700;color:var(--text2);margin:6px 0 9px;text-transform:uppercase;letter-spacing:.05em}
+.mapgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:1100px){.mapgrid{grid-template-columns:1fr}.two-col{grid-template-columns:1fr!important}}
+.two-col{display:grid;grid-template-columns:1fr 400px;gap:18px;align-items:start}
+.set-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:8px;cursor:pointer;transition:.12s}
+.set-card:hover{border-color:var(--accent)}
+.set-card.on{border-color:var(--accent);background:var(--accentbg)}
+.set-card .cn{font-family:'SF Mono',monospace;font-size:11.5px;color:var(--accent2);word-break:break-all}
+.set-card .meta{font-size:11px;color:var(--text2);margin-top:5px;display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.tag{font-size:10px;background:var(--surface3);color:var(--text2);padding:1px 7px;border-radius:4px}
+.cnt{font-size:11px;color:var(--text3);font-weight:500}
+.creative-row{display:grid;grid-template-columns:80px 1fr 1fr 1fr 1.1fr 70px 28px;gap:7px;margin-bottom:7px;align-items:center}
+.creative-row.head{font-size:10.5px;color:var(--text3);font-weight:600;margin-bottom:4px}
+.iconbtn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;padding:2px}.iconbtn:hover{color:var(--red)}
+.seg-toggle{display:inline-flex;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px;gap:2px}
+.seg-toggle button{background:none;border:none;color:var(--text2);padding:5px 13px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit}
+.seg-toggle button.on{background:var(--accent);color:#fff}
+details.acc{background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden}
+details.acc>summary{padding:11px 14px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:9px;list-style:none}
+details.acc>summary::-webkit-details-marker{display:none}
+details.acc>summary .ch{transition:.2s;color:var(--text3)}
+details.acc[open]>summary .ch{transform:rotate(90deg)}
+.acc-body{border-top:1px solid var(--border)}
+.arc-item{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.arc-item:last-child{border-bottom:none}
+.arc-item.done{opacity:.45}.arc-item.done .nm{text-decoration:line-through}
+.arc-ts{font-size:10px;color:var(--text3);min-width:74px;margin-top:2px}
+.arc-main{flex:1;min-width:0}
+.arc-main .nm{font-family:'SF Mono',monospace;font-size:11.5px;color:var(--accent2);word-break:break-all;line-height:1.5}
+.arc-main .ut{font-family:'SF Mono',monospace;font-size:10px;color:var(--text3);word-break:break-all;margin-top:3px;line-height:1.45}
+.check{width:18px;height:18px;border:2px solid var(--border);border-radius:5px;cursor:pointer;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff}
+.check.on{background:var(--green);border-color:var(--green)}
+.helpkey{display:inline-block;font-size:10px;background:var(--surface3);color:var(--text2);border-radius:4px;padding:1px 6px;margin:0 2px;font-family:monospace}
+.warnbox{background:var(--redbg);border:1px solid #5a2a2a;color:#ffb4b4;border-radius:8px;padding:9px 12px;font-size:11.5px;margin-top:8px;display:none}
+.warnbox.show{display:block}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="side">
+    <div>
+      <div class="brand">🧊 광고 워크스페이스<small>CLOOP · SPRINT D2C</small></div>
+    </div>
+    <nav class="nav">
+      <div class="nav-item active" data-tab="build" onclick="go('build')"><span class="n">1</span>캠페인·세트 빌더</div>
+      <div class="nav-item" data-tab="creative" onclick="go('creative')"><span class="n">2</span>소재명·UTM 생성</div>
+      <div class="nav-item" data-tab="archive" onclick="go('archive')"><span class="n">3</span>생성 아카이브</div>
+      <div class="nav-item" data-tab="map" onclick="go('map')"><span class="n">⚙</span>매핑키 관리</div>
+    </nav>
+    <div class="side-foot">
+      <div class="side-stat"><span>광고세트</span><b id="stSets">0</b></div>
+      <div class="side-stat"><span>생성 소재</span><b id="stArc">0</b></div>
+      <div class="side-stat"><span>제품</span><b id="stProd">0</b></div>
+      <div style="margin-top:8px"><span class="sync-dot off" id="syncDot"></span><span id="syncLabel">연결 중…</span></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- ══════════ TAB 1: BUILDER ══════════ -->
+    <section class="page active" id="page-build">
+      <div class="page-head">
+        <h2>캠페인 · 광고세트 빌더</h2>
+        <p>제품·목표·입찰·스킴·타게팅·TAM을 조합하면 <b>광고세트명(=utm_campaign)</b>·합성코드·한글 캠페인명이 시트 규칙대로 자동 생성됩니다. 타게팅·TAM을 여러 개 선택하면 조합만큼 세트가 한 번에 만들어집니다.</p>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <div class="panel">
+            <div class="panel-h"><span class="step">A</span>캠페인 기본 정보</div>
+            <div class="grid g3">
+              <div class="field"><label>제품 <span class="req">*</span></label><select id="b_product" onchange="buildPreview()"></select></div>
+              <div class="field"><label>매체 <span class="req">*</span></label><select id="b_media" onchange="buildPreview()"></select></div>
+              <div class="field"><label>날짜 <span class="req">*</span></label><input type="date" id="b_date" onchange="buildPreview()"></div>
+            </div>
+            <div class="grid g3">
+              <div class="field"><label>캠페인 목표 <span class="req">*</span></label><select id="b_goal" onchange="buildPreview()"></select></div>
+              <div class="field"><label>입찰 유형 <span class="req">*</span></label><select id="b_bid" onchange="onBidChange()"></select></div>
+              <div class="field"><label>스킴 (2차) <span class="req">*</span></label><select id="b_scheme" onchange="buildPreview()"></select></div>
+            </div>
+            <div class="grid g2">
+              <div class="field"><label>1차 구분 <span class="req">*</span></label><select id="b_firstcat" onchange="buildPreview()"></select></div>
+              <div class="field" id="b_optWrap"><label>입찰 최적화 토큰 <span class="opt">(VMX 전용, 예: TROAS)</span></label><input id="b_bidopt" placeholder="TROAS" oninput="buildPreview()"></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-h"><span class="step">B</span>타게팅 <span class="hint">여러 개 선택 가능 · 조합 생성</span></div>
+            <div class="chips" id="b_targetingChips" style="margin-bottom:9px"></div>
+            <div class="row-flex">
+              <input id="b_newTarget" placeholder="신규 타게팅 추가 (예: VRE-PDE)" style="max-width:220px" onkeydown="if(event.key==='Enter')addTargeting()">
+              <button class="btn btn-ghost btn-sm" onclick="addTargeting()">+ 추가</button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-h"><span class="step">C</span>TAM (타겟 메시지) <span class="hint">콘텐츠마케터 영역 · 여러 개 선택 가능</span></div>
+            <div class="chips" id="b_tamChips" style="margin-bottom:9px"></div>
+            <div class="row-flex">
+              <input id="b_newTam" placeholder="신규 TAM 추가 (예: BENEFIT)" style="max-width:220px" onkeydown="if(event.key==='Enter')addTam()">
+              <button class="btn btn-ghost btn-sm" onclick="addTam()">+ 추가</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- right: preview + generate -->
+        <div>
+          <div class="panel" style="position:sticky;top:20px">
+            <div class="panel-h">미리보기 & 생성</div>
+            <div style="font-size:11px;color:var(--text2);margin-bottom:5px">광고세트명 (utm_campaign)</div>
+            <div class="preview" id="b_preview"><span class="ph">기본 정보를 채워주세요…</span></div>
+            <div style="font-size:11px;color:var(--text2);margin:13px 0 5px">한글 캠페인명 (참조용)</div>
+            <div class="preview" id="b_previewKr" style="min-height:auto;padding:10px 13px"><span class="ph">—</span></div>
+            <div style="display:flex;gap:14px;margin:14px 0 4px;font-size:11.5px;color:var(--text2)">
+              <div>합성코드 <b id="b_composite" style="color:var(--cyan)">—</b></div>
+              <div>생성 예정 <b id="b_genCount" style="color:var(--accent2)">0</b>개</div>
+            </div>
+            <div class="warnbox" id="b_warn"></div>
+            <button class="btn btn-primary" style="width:100%;margin-top:12px;padding:12px" onclick="generateSets()">+ 광고세트 생성</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h">광고세트 라이브러리 <span class="hint" id="setLibCount"></span></div>
+        <div class="row-flex" style="margin-bottom:12px">
+          <input id="setSearch" placeholder="🔍 세트명 검색" style="max-width:260px" oninput="renderSetLib()">
+          <div class="spacer"></div>
+          <button class="btn btn-ghost btn-sm" onclick="exportSets()">📥 세트 CSV</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>제품</th><th>광고세트명 (utm_campaign)</th><th>합성</th><th>타게팅</th><th>1차</th><th>랜딩</th><th>생성일</th><th></th></tr></thead>
+            <tbody id="setLibBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ TAB 2: CREATIVE ══════════ -->
+    <section class="page" id="page-creative">
+      <div class="page-head">
+        <h2>소재명 · UTM 생성</h2>
+        <p>광고 캠페인을 먼저 고르고 → 그 안의 광고세트를 선택한 뒤 소재 정보를 입력하면 <b>자동 소재명</b>과 <b>UTM 완성 URL</b>이 생성됩니다. 소재 행을 여러 개 추가하면 세트 × 소재 조합만큼 한 번에 만들어집니다.</p>
+      </div>
+      <div class="two-col">
+        <div>
+          <div class="panel">
+            <div class="panel-h"><span class="step">A</span>광고 캠페인 선택 <span class="hint">캠페인 → 세트 순서</span></div>
+            <div class="row-flex" style="margin-bottom:10px">
+              <input id="cCampSearch" placeholder="🔍 캠페인 검색" style="max-width:240px" oninput="renderCreativeCampaigns()">
+              <span class="cnt" id="cCampCount"></span>
+            </div>
+            <div id="cCampList" style="max-height:230px;overflow-y:auto"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-h"><span class="step">B</span>광고세트 선택 <span class="hint" id="cSetHint">캠페인을 먼저 선택하세요</span></div>
+            <div class="row-flex" style="margin-bottom:10px">
+              <input id="cSetSearch" placeholder="🔍 세트 검색" style="max-width:220px" oninput="renderCreativeSets()">
+              <button class="btn btn-ghost btn-xs" onclick="selectAllSets()">전체 선택</button>
+              <button class="btn btn-ghost btn-xs" onclick="clearSetSel()">해제</button>
+              <span class="cnt" id="cSelCount"></span>
+            </div>
+            <div id="cSetList" style="max-height:260px;overflow-y:auto"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-h"><span class="step">C</span>공통 정보</div>
+            <div class="grid g2">
+              <div class="field"><label>날짜 <span class="req">*</span></label><input type="date" id="c_date" onchange="creativePreview()"></div>
+              <div class="field"><label>담당자 <span class="req">*</span> <span class="opt">(3글자 권장)</span></label><input id="c_manager" placeholder="cmj" oninput="creativePreview()"></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-h"><span class="step">D</span>소재 행 <span class="hint">행마다 1개 소재 · 행 추가로 대량 생성</span></div>
+            <div class="creative-row head">
+              <div>포맷*</div><div>메시지1*</div><div>메시지2</div><div>메시지3</div><div>소재명*</div><div></div><div></div>
+            </div>
+            <div id="creativeRows"></div>
+            <button class="btn btn-ghost btn-sm" style="margin-top:6px" onclick="addCreativeRow()">+ 소재 행 추가</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="panel" style="position:sticky;top:20px">
+            <div class="panel-h">생성</div>
+            <div class="preview" id="c_preview" style="font-size:11.5px"><span class="ph">세트 선택 + 소재 정보 입력 시 표시…</span></div>
+            <div style="font-size:11.5px;color:var(--text2);margin:13px 0 4px">생성 예정 <b id="c_genCount" style="color:var(--accent2)">0</b>개 <span class="opt">(세트 × 소재)</span></div>
+            <div class="warnbox" id="c_warn"></div>
+            <button class="btn btn-primary" style="width:100%;margin-top:10px;padding:12px" onclick="generateCreatives()">✨ 소재명 생성</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="cResultsPanel" style="display:none">
+        <div class="panel-h">생성 결과 <span class="hint" id="cResCount"></span></div>
+        <div id="cResults"></div>
+        <div class="row-flex" style="margin-top:10px">
+          <button class="btn btn-ghost btn-sm" onclick="copyAllNames()">📋 소재명 전체 복사</button>
+          <button class="btn btn-ghost btn-sm" onclick="copyAllUtms()">🔗 UTM 전체 복사</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportCreatives()">📥 CSV 내보내기</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ TAB 3: ARCHIVE ══════════ -->
+    <section class="page" id="page-archive">
+      <div class="page-head"><h2>생성 아카이브</h2><p>생성된 모든 소재명·UTM 이력입니다. 직접 수정·완료체크·검색·내보내기가 가능합니다.</p></div>
+      <div class="kpi-row">
+        <div class="kpi"><div class="v" id="kTotal">0</div><div class="l">총 생성 소재</div></div>
+        <div class="kpi"><div class="v" id="kDone">0</div><div class="l">세팅 완료</div></div>
+        <div class="kpi"><div class="v" id="kSets">0</div><div class="l">광고세트 수</div></div>
+        <div class="kpi"><div class="v" id="kErr" style="color:#ff8b8b">0</div><div class="l">검증 경고</div></div>
+      </div>
+      <div class="row-flex" style="margin-bottom:14px">
+        <div class="seg-toggle">
+          <button id="avBrand" class="on" onclick="setArcView('brand')">제품별</button>
+          <button id="avMgr" onclick="setArcView('manager')">담당자별</button>
+        </div>
+        <div class="spacer"></div>
+        <input id="arcSearch" placeholder="🔍 소재명 검색" style="max-width:240px" oninput="renderArchive()">
+        <button class="btn btn-ghost btn-sm" onclick="exportArchive()">📥 CSV</button>
+        <button class="btn btn-danger btn-sm" onclick="clearArchive()">전체 초기화</button>
+      </div>
+      <div id="arcLabelFilter" class="chips" style="margin-bottom:14px"></div>
+      <div id="archiveBody"></div>
+    </section>
+
+    <!-- ══════════ TAB 4: MAP ══════════ -->
+    <section class="page" id="page-map">
+      <div class="page-head"><h2>매핑키 관리</h2><p>모든 자동 생성의 단일 기준 데이터입니다. <b>TAM은 콘텐츠마케터 파트장</b>, 그 외(매체·합성·제품·스킴 등)는 <b>퍼포먼스마케터</b>가 관리합니다. 변경 시 전 탭·전 팀원에게 즉시 반영됩니다.</p></div>
+
+      <div class="notice" style="margin-bottom:18px">
+        <b>자동 소재명 토큰 구조</b> &nbsp;:&nbsp; <code>날짜_매체_제품코드_포맷_메시지(1-2-3)_소재명-TAM_합성코드_타게팅_1차_2차스킴_담당자</code><br>
+        <b>광고세트명 구조</b> &nbsp;:&nbsp; <code>매체_제품코드_캠페인목표_입찰_[최적화]_타게팅_스킴_TAM_날짜</code>
+      </div>
+
+      <div class="mapgrid">
+        <div class="panel">
+          <div class="panel-h">🏷 제품 (코드 · 브랜드)</div>
+          <div class="tbl-wrap"><table><thead><tr><th>코드</th><th>브랜드</th><th></th></tr></thead><tbody id="m_products"></tbody></table></div>
+          <div class="row-flex" style="margin-top:10px">
+            <input id="mp_code" placeholder="CLXX" style="max-width:90px" class="mono">
+            <input id="mp_brand" placeholder="브랜드명" style="max-width:140px">
+            <button class="btn btn-ghost btn-sm" onclick="addProduct()">+ 추가</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-h">📡 매체 (utm_source / medium)</div>
+          <div class="tbl-wrap"><table><thead><tr><th>코드</th><th>source</th><th>medium</th><th></th></tr></thead><tbody id="m_media"></tbody></table></div>
+          <div class="row-flex" style="margin-top:10px">
+            <input id="mm_code" placeholder="코드" style="max-width:90px" class="mono">
+            <input id="mm_src" placeholder="source" style="max-width:90px" class="mono">
+            <input id="mm_med" placeholder="medium" style="max-width:90px" class="mono">
+            <button class="btn btn-ghost btn-sm" onclick="addMedia()">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mapgrid">
+        <div class="panel">
+          <div class="panel-h">🔗 랜딩 URL 매핑 <span class="hint">제품코드 + 스킴 → URL</span></div>
+          <div class="tbl-wrap"><table><thead><tr><th>제품</th><th>스킴</th><th>랜딩 URL</th><th></th></tr></thead><tbody id="m_landing"></tbody></table></div>
+          <div class="row-flex" style="margin-top:10px">
+            <input id="ml_prod" placeholder="CLCL" style="max-width:80px" class="mono">
+            <input id="ml_scheme" placeholder="100DEAL" style="max-width:90px" class="mono">
+            <input id="ml_url" placeholder="https://cloop.kr/..." style="flex:1">
+            <button class="btn btn-ghost btn-sm" onclick="addLanding()">+</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-h">🧮 합성코드 <span class="hint">캠페인목표 + 입찰</span></div>
+          <div class="tbl-wrap" style="max-height:280px;overflow-y:auto"><table><thead><tr><th>목표</th><th>입찰</th><th>→ 코드</th></tr></thead><tbody id="m_composite"></tbody></table></div>
+          <div class="sub-h" style="margin-top:14px">1차 구분 압축</div>
+          <div class="tbl-wrap"><table><thead><tr><th>원본</th><th>의미</th><th>→ 압축</th></tr></thead><tbody id="m_firstcat"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="mapgrid">
+        <div class="panel">
+          <div class="panel-h">🎯 TAM 풀 <span class="hint">콘텐츠마케터 관리</span></div>
+          <div class="chips" id="m_tams" style="margin-bottom:10px"></div>
+          <div class="row-flex"><input id="mt_new" placeholder="신규 TAM" style="max-width:160px" class="mono"><button class="btn btn-ghost btn-sm" onclick="addMapTam()">+</button></div>
+        </div>
+        <div class="panel">
+          <div class="panel-h">📐 스킴 · 포맷 · 타게팅</div>
+          <div class="sub-h">스킴 (2차)</div>
+          <div class="chips" id="m_schemes" style="margin-bottom:8px"></div>
+          <div class="row-flex" style="margin-bottom:12px"><input id="ms_new" placeholder="스킴" style="max-width:130px" class="mono"><button class="btn btn-ghost btn-xs" onclick="addScheme()">+</button></div>
+          <div class="sub-h">소재 포맷</div>
+          <div class="chips" id="m_formats" style="margin-bottom:8px"></div>
+          <div class="row-flex"><input id="mf_new" placeholder="포맷(I/V/G)" style="max-width:130px" class="mono"><button class="btn btn-ghost btn-xs" onclick="addFormat()">+</button></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h">💬 메시지 뎁스 풀 <span class="hint">소재명 자동완성용</span></div>
+        <div class="chips" id="m_msgpool" style="margin-bottom:10px;max-height:180px;overflow-y:auto"></div>
+        <div class="row-flex"><input id="mmsg_new" placeholder="신규 메시지 코드" style="max-width:180px" class="mono"><button class="btn btn-ghost btn-sm" onclick="addMsg()">+</button></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h">🛠 데이터 관리 <span class="hint" id="syncState"></span></div>
+        <div class="row-flex">
+          <button class="btn btn-ghost btn-sm" onclick="exportAll()">📦 전체 백업(JSON)</button>
+          <label class="btn btn-ghost btn-sm" style="width:auto;display:inline-block">📂 백업 복원<input type="file" accept=".json" style="display:none" onchange="importAll(event)"></label>
+          <button class="btn btn-danger btn-sm" onclick="resetSeed()">🔄 기본 매핑키로 초기화</button>
+        </div>
+        <div class="notice" style="margin-top:12px">팀 공용 데이터는 <b>Firebase</b>에 실시간 저장됩니다(<code>/v2</code> 경로). 백업 복원을 하면 <b>전체 팀 데이터가 교체</b>되니 주의하세요. 본인 소유 DB로 바꾸려면 코드 상단 <code>firebaseConfig</code>만 교체하면 됩니다.</div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ════════════════════════ SEED DATA (시트 기반) ════════════════════════ */
+const SEED = {
+  products:[
+    {code:'CLCL',brand:'콜사비'},{code:'CLAC',brand:'애사비즈'},{code:'CLAP',brand:'패사비'},
+    {code:'CLOH',brand:'오프아워'},{code:'CLWP',brand:'원더팝'},{code:'CLSO',brand:'소요일'},
+    {code:'CLAF',brand:'화이바'},{code:'CLTC',brand:'티카이브'},{code:'CLZS',brand:'제로소다'},
+    {code:'CLALL',brand:'공통'}
+  ],
+  media:[
+    {code:'FB',channel:'메타',source:'facebook',medium:'social'},
+    {code:'GDA_DGEN',channel:'구글 Demand Gen',source:'google',medium:'display'},
+    {code:'GDA_PMAX',channel:'구글 PMax',source:'google',medium:'display'},
+    {code:'GSA',channel:'구글 키워드',source:'google',medium:'cpc'},
+    {code:'KK_BIZ',channel:'카카오 비즈보드',source:'kakao',medium:'biz'},
+    {code:'NSA_브랜드_MO',channel:'네이버 브랜드검색 MO',source:'naver',medium:'nbrand_mo'},
+    {code:'NSA_브랜드_PC',channel:'네이버 브랜드검색 PC',source:'naver',medium:'nbrand_pc'},
+    {code:'NSA_파워링크',channel:'네이버 파워링크',source:'naver',medium:'cpc'},
+    {code:'NSA_쇼핑검색',channel:'네이버 쇼핑검색',source:'naver',medium:'shopping'},
+    {code:'GFA',channel:'네이버 GFA',source:'naver',medium:'display'},
+    {code:'TT',channel:'틱톡',source:'tiktok',medium:'social'},
+    {code:'TOSS',channel:'토스페이',source:'tosspay',medium:'cps'},
+    {code:'PAYCO',channel:'페이코',source:'payco',medium:'cps'}
+  ],
+  goals:[
+    {code:'PUR',kr:'구매'},{code:'PAY',kr:'결제'},{code:'AWR',kr:'인지'},{code:'TRF',kr:'트래픽'},
+    {code:'ING',kr:'참여'},{code:'CRG',kr:'회원가입'},{code:'ATC',kr:'장바구니'},{code:'CVW',kr:'콘텐츠조회'}
+  ],
+  bids:[{code:'CMX',kr:'conv'},{code:'VMX',kr:'value'}],
+  composite:[
+    {goal:'PUR',bid:'VMX',code:'PRV'},{goal:'PUR',bid:'CMX',code:'PRC'},
+    {goal:'PAY',bid:'VMX',code:'PAV'},{goal:'PAY',bid:'CMX',code:'PAC'},
+    {goal:'AWR',bid:'VMX',code:'AWV'},{goal:'AWR',bid:'CMX',code:'AWC'},
+    {goal:'TRF',bid:'VMX',code:'TRV'},{goal:'TRF',bid:'CMX',code:'TRC'},
+    {goal:'ING',bid:'VMX',code:'INV'},{goal:'ING',bid:'CMX',code:'INC'},
+    {goal:'CRG',bid:'VMX',code:'CGV'},{goal:'CRG',bid:'CMX',code:'CGC'},
+    {goal:'ATC',bid:'VMX',code:'ATV'},{goal:'ATC',bid:'CMX',code:'ACC'},
+    {goal:'CVW',bid:'CMX',code:'CVC'}
+  ],
+  firstcat:[
+    {src:'promo',kr:'프로모션(이벤트·시즌)',code:'PMO'},
+    {src:'regular',kr:'상시(일반 운영)',code:'REG'},
+    {src:'dcommerce',kr:'딜커머스(특가·딜)',code:'DCM'},
+    {src:'organic',kr:'오가닉(자연 유입)',code:'ORG'}
+  ],
+  schemes:[
+    {code:'100DEAL',kr:'100원딜'},{code:'BASIC',kr:'기본딜'},{code:'LAUNCH',kr:'출시특가'},
+    {code:'NGK',kr:'네고왕'},{code:'OYSALE',kr:'오야세일'},{code:'BKU',kr:'벌크업'}
+  ],
+  targetings:['ALL','PRE','PDE','SRE','VDE','VRE-PDE','PLAL-PDE','VRE-PLAL-PDE','VDE-PLAL','PDE-2135','PDE-3649','TROAS'],
+  tams:['BENEFIT','LOWEST','WORKOUT','DIETER','INGREDIENT','REPLACE','WINNING','BULK','NONTAM',
+        'GROGGY','MANAGE','FAMILY','MEAL','CONSTIPATION','MODERNSODA','FLAVOR','BLOODSUGAR',
+        'CONDITION','CATALOG','PAIRING','SEASONAL','SECRET','TEST'],
+  formats:[{code:'I',label:'Image'},{code:'V',label:'Video'},{code:'G',label:'GIF'},{code:'PTA',label:'파트너십'},{code:'CAT',label:'카탈로그'}],
+  landing:{
+    'CLCL+100DEAL':'https://cloop.kr/product/detail.html?product_no=445',
+    'CLAC+100DEAL':'https://cloop.kr/product/detail.html?product_no=401',
+    'CLAC+BASIC':'https://cloop.kr/product/detail.html?product_no=138',
+    'CLAC+NGK':'https://cloop.kr/product/detail.html?product_no=449',
+    'CLAP+100DEAL':'https://cloop.kr/product/detail.html?product_no=423',
+    'CLOH+100DEAL':'https://cloop.kr/product/detail.html?product_no=443',
+    'CLOH+NGK':'https://cloop.kr/product/detail.html?product_no=455',
+    'CLWP+100DEAL':'https://cloop.kr/product/detail.html?product_no=467',
+    'CLWP+LAUNCH':'https://cloop.kr/product/detail.html?product_no=390',
+    'CLSO+BASIC':'https://cloop.kr/product/detail.html?product_no=414',
+    'CLAF+BASIC':'https://cloop.kr/product/detail.html?product_no=415'
+  },
+  msgpool:['mat','season','EF','TT','TF','VV','FV','FR','TH','MM','USP','ZERO','OLV','FI','HT','GAS','ED','UNI','CV','HM','PR','SG','GD','BF','LM','OP','BP','PP','SC',
+    'cooling','replacement','fruit','diet','ppp','percent','bulky','new','zero','ingredient','lowest','limit','benefit','sound','visual','lineup','bna','motion',
+    'magazine','compare','cancelline','fizz','fun','timer','voc','tweet','reaction','function','person','tpo',
+    'FOMO','CURIOUS','EMPATHY','ANKOR','SOCIAL','GASLIGHTING','URGENCY','PAINPOINT',
+    'aggro','galdeung','nego','scale','mt','viral','drunk','condition','number','notice','sleep','sales','WORKOUT','WORK','family','morning']
+};
+
+/* ════════════════════════ STORE (로컬 캐시 + Firebase 공용 동기화) ════════════════════════ */
+const LSK='cloop_utm_v2';
+function deepClone(o){return JSON.parse(JSON.stringify(o));}
+function load(){
+  try{const j=JSON.parse(localStorage.getItem(LSK));if(j&&j.maps)return j;}catch(e){}
+  return {maps:deepClone(SEED),sets:[],archive:[]};
+}
+let DB=load();
+const M=()=>DB.maps;
+
+/* ── Firebase 설정 ──
+   ▸ 아래 config 는 웹 SDK 특성상 공개돼도 정상인 값입니다.
+   ▸ 본인 소유 프로젝트로 바꾸려면 console.firebase.google.com 에서
+     새 프로젝트 → 웹앱 등록 → Realtime Database 생성 후, 이 config 만 교체하세요.
+   ▸ 데이터는 모두 /v2 경로에 저장됩니다(옛 앱 데이터와 분리). */
+const firebaseConfig = {
+  apiKey: "AIzaSyCXbz8grP-KAbaGfoNKjH6sAdzcwShLJcM",
+  authDomain: "utm-builder-cloop-260617.firebaseapp.com",
+  databaseURL: "https://utm-builder-cloop-260617-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "utm-builder-cloop-260617",
+  storageBucket: "utm-builder-cloop-260617.firebasestorage.app",
+  messagingSenderId: "943544286367",
+  appId: "1:943544286367:web:11756ca67a7120559e76aa"
+};
+let DBREF=null, _syncStarted=false;
+try{ firebase.initializeApp(firebaseConfig); DBREF=firebase.database().ref('v2'); }
+catch(e){ console.warn('Firebase 초기화 실패 — 로컬 모드로 동작합니다.', e); }
+
+function setSyncUI(state){ // 'on' | 'off' | 'local'
+  const dot=document.getElementById('syncDot'), lab=document.getElementById('syncLabel'), st=document.getElementById('syncState');
+  if(!dot) return;
+  if(state==='on'){dot.className='sync-dot on';lab.textContent='팀 공용 · 실시간 동기화';if(st)st.textContent='● 연결됨';}
+  else if(state==='local'){dot.className='sync-dot off';lab.textContent='로컬 모드 (미연결)';if(st)st.textContent='○ 로컬 전용';}
+  else {dot.className='sync-dot off';lab.textContent='연결 중…';if(st)st.textContent='';}
+}
+function save(){
+  localStorage.setItem(LSK,JSON.stringify(DB));
+  updateStats();
+  if(DBREF){ DBREF.set(DB).catch(e=>{console.warn('동기화 실패',e);setSyncUI('local');}); }
+}
+function startSync(){
+  if(_syncStarted) return;
+  if(!DBREF){ setSyncUI('local'); return; }
+  _syncStarted=true;
+  DBREF.on('value', snap=>{
+    const v=snap.val();
+    setSyncUI('on');
+    if(!v || !v.maps){ DBREF.set(DB); return; }          // 원격이 비어있으면 현재 데이터 업로드
+    if(JSON.stringify(v)===JSON.stringify(DB)) return;    // 내 변경 echo / 동일 → 무시
+    DB=v; localStorage.setItem(LSK,JSON.stringify(DB)); syncRerender();
+  }, err=>{ console.warn('Firebase 연결 실패',err); setSyncUI('local'); });
+}
+function syncRerender(){
+  updateStats(); renderSetLib(); renderCreativeCampaigns(); renderCreativeSets();
+  const ap=document.getElementById('page-archive'); if(ap&&ap.classList.contains('active')) renderArchive();
+}
+
+/* ════════════════════════ HELPERS ════════════════════════ */
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function yymmdd(d){return (d||'').replace(/-/g,'').slice(2);}
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1800);}
+function copy(text,btn){navigator.clipboard.writeText(text).then(()=>{if(btn){const o=btn.textContent;btn.textContent='✅';btn.classList.add('ok');setTimeout(()=>{btn.textContent=o;btn.classList.remove('ok');},1400);}toast('복사되었습니다');});}
+function compositeOf(goal,bid){const c=M().composite.find(x=>x.goal===goal&&x.bid===bid);return c?c.code:'??';}
+function firstcatCode(src){const f=M().firstcat.find(x=>x.src===src);return f?f.code:src;}
+function brandOf(code){const p=M().products.find(x=>x.code===code);return p?p.brand:code;}
+function schemeKr(code){const s=M().schemes.find(x=>x.code===code);return s?s.kr:code;}
+function goalKr(code){const g=M().goals.find(x=>x.code===code);return g?g.kr:code;}
+function bidKr(code){const b=M().bids.find(x=>x.code===code);return b?b.kr:code;}
+function mediaInfo(code){return M().media.find(x=>x.code===code)||{source:code.toLowerCase(),medium:'social'};}
+function landingFor(productCode,scheme){return M().landing[productCode+'+'+scheme]||'';}
+
+/* ════════════════════════ NAV ════════════════════════ */
+function go(tab){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.tab===tab));
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+tab));
+  if(tab==='creative'){renderCreativeCampaigns();renderCreativeSets();creativePreview();}
+  if(tab==='archive')renderArchive();
+  if(tab==='map')renderMap();
+  if(tab==='build')renderSetLib();
+}
+
+/* ════════════════════════ INIT ════════════════════════ */
+function init(){
+  const today=new Date().toISOString().split('T')[0];
+  $('b_date').value=today; $('c_date').value=today;
+  fillBuilderSelects();
+  renderBuilderChips();
+  renderSetLib();
+  onBidChange();
+  buildPreview();
+  if(!creativeRows.length)addCreativeRow();
+  updateStats();
+  startSync();
+}
+function updateStats(){
+  $('stSets').textContent=DB.sets.length;
+  $('stArc').textContent=DB.archive.length;
+  $('stProd').textContent=M().products.length;
+}
+
+/* ════════════════════════ TAB1: BUILDER ════════════════════════ */
+let bTargets=new Set(), bTams=new Set();
+function fillBuilderSelects(){
+  $('b_product').innerHTML=M().products.map(p=>`<option value="${p.code}">${esc(p.brand)} (${p.code})</option>`).join('');
+  $('b_media').innerHTML=M().media.map(m=>`<option value="${esc(m.code)}">${esc(m.code)} · ${esc(m.channel)}</option>`).join('');
+  $('b_goal').innerHTML=M().goals.map(g=>`<option value="${g.code}">${g.code} (${esc(g.kr)})</option>`).join('');
+  $('b_bid').innerHTML=M().bids.map(b=>`<option value="${b.code}">${b.code} (${esc(b.kr)})</option>`).join('');
+  $('b_scheme').innerHTML=M().schemes.map(s=>`<option value="${esc(s.code)}">${esc(s.code)} (${esc(s.kr)})</option>`).join('');
+  $('b_firstcat').innerHTML=M().firstcat.map(f=>`<option value="${f.src}">${f.code} · ${esc(f.kr)}</option>`).join('');
+  $('b_firstcat').value='regular';
+}
+function renderBuilderChips(){
+  $('b_targetingChips').innerHTML=M().targetings.map(t=>`<span class="chip ${bTargets.has(t)?'on':''}" onclick="toggleSet(bTargets,'${esc(t)}');renderBuilderChips();buildPreview()">${esc(t)}</span>`).join('');
+  $('b_tamChips').innerHTML=M().tams.map(t=>`<span class="chip ${bTams.has(t)?'on':''}" onclick="toggleSet(bTams,'${esc(t)}');renderBuilderChips();buildPreview()">${esc(t)}</span>`).join('');
+}
+function toggleSet(set,v){set.has(v)?set.delete(v):set.add(v);}
+function addTargeting(){const v=$('b_newTarget').value.trim().toUpperCase();if(!v)return;if(!M().targetings.includes(v)){M().targetings.push(v);save();}bTargets.add(v);$('b_newTarget').value='';renderBuilderChips();buildPreview();}
+function addTam(){const v=$('b_newTam').value.trim().toUpperCase();if(!v)return;if(!M().tams.includes(v)){M().tams.push(v);save();}bTams.add(v);$('b_newTam').value='';renderBuilderChips();buildPreview();}
+function onBidChange(){const isV=$('b_bid').value==='VMX';$('b_optWrap').style.opacity=isV?'1':'.4';if(isV&&!$('b_bidopt').value)$('b_bidopt').value='TROAS';if(!isV)$('b_bidopt').value='';buildPreview();}
+
+function buildSetName(o){
+  const parts=[o.media,o.product,o.goal,o.bid];
+  if(o.bidopt) parts.push(o.bidopt);
+  parts.push(o.targeting,o.scheme,o.tam,o.date);
+  return parts.join('_');
+}
+function buildKrName(o){
+  return `${o.media}_${brandOf(o.product)}_${schemeKr(o.scheme)}_${goalKr(o.goal)}_${bidKr(o.bid)}_${o.tam}`;
+}
+function currentBuilder(){
+  return {
+    product:$('b_product').value, media:$('b_media').value, date:yymmdd($('b_date').value),
+    goal:$('b_goal').value, bid:$('b_bid').value, scheme:$('b_scheme').value,
+    firstcat:$('b_firstcat').value, bidopt:$('b_bidopt').value.trim().toUpperCase()
+  };
+}
+function buildPreview(){
+  const b=currentBuilder();
+  const tg=[...bTargets][0]||'ALL', tm=[...bTams][0]||'TAM';
+  const o={...b,targeting:tg,tam:tm};
+  const valid=b.product&&b.media&&b.date&&b.goal&&b.bid&&b.scheme;
+  if(valid){
+    const name=buildSetName(o);
+    $('b_preview').innerHTML=name.split('_').map(t=>`<span class="tok">${esc(t)}</span>`).join('<span style="color:var(--text3)">_</span>');
+    $('b_previewKr').textContent=buildKrName(o);
+  }else{$('b_preview').innerHTML='<span class="ph">기본 정보를 채워주세요…</span>';$('b_previewKr').innerHTML='<span class="ph">—</span>';}
+  $('b_composite').textContent=valid?compositeOf(b.goal,b.bid):'—';
+  const cnt=(bTargets.size||0)*(bTams.size||0);
+  $('b_genCount').textContent=cnt;
+  const w=[];
+  if(valid&&!landingFor(b.product,b.scheme))w.push(`⚠️ ${b.product}+${b.scheme} 랜딩 URL 매핑 없음 — 매핑키 탭에서 추가하면 UTM이 완성됩니다.`);
+  if(bTargets.size===0)w.push('타게팅을 1개 이상 선택하세요.');
+  if(bTams.size===0)w.push('TAM을 1개 이상 선택하세요.');
+  const wb=$('b_warn');wb.innerHTML=w.join('<br>');wb.classList.toggle('show',w.length>0);
+}
+function generateSets(){
+  const b=currentBuilder();
+  if(!(b.product&&b.media&&b.date&&b.goal&&b.bid&&b.scheme)){toast('기본 정보를 모두 채워주세요');return;}
+  if(!bTargets.size||!bTams.size){toast('타게팅·TAM을 선택하세요');return;}
+  let added=0;
+  for(const tg of bTargets)for(const tm of bTams){
+    const o={...b,targeting:tg,tam:tm};
+    const name=buildSetName(o);
+    if(DB.sets.some(s=>s.name===name))continue;
+    DB.sets.push({
+      id:Date.now()+'-'+Math.random().toString(36).slice(2,6),
+      name, krName:buildKrName(o),
+      product:b.product, brand:brandOf(b.product), media:b.media,
+      goal:b.goal, bid:b.bid, composite:compositeOf(b.goal,b.bid),
+      targeting:tg, scheme:b.scheme, tam:tm, firstcat:b.firstcat, date:b.date,
+      landing:landingFor(b.product,b.scheme), createdAt:new Date().toISOString()
+    });
+    added++;
+  }
+  save();renderSetLib();
+  toast(`${added}개 광고세트 생성됨`);
+}
+function renderSetLib(){
+  const q=($('setSearch').value||'').toLowerCase();
+  const list=DB.sets.filter(s=>!q||s.name.toLowerCase().includes(q)).slice().reverse();
+  $('setLibCount').textContent=`${DB.sets.length}개`;
+  if(!list.length){$('setLibBody').innerHTML=`<tr><td colspan="8"><div class="empty"><div class="ic">📦</div>아직 생성된 광고세트가 없습니다</div></td></tr>`;return;}
+  $('setLibBody').innerHTML=list.map(s=>`<tr>
+    <td><span class="tag">${esc(s.brand)}</span></td>
+    <td class="t-mono">${esc(s.name)}</td>
+    <td><span class="bdg bdg-dcm">${esc(s.composite)}</span></td>
+    <td>${esc(s.targeting)}</td>
+    <td><span class="bdg bdg-${firstcatCode(s.firstcat).toLowerCase()}">${esc(firstcatCode(s.firstcat))}</span></td>
+    <td>${s.landing?'✅':'<span style="color:var(--text3)">—</span>'}</td>
+    <td style="color:var(--text3)">${esc(s.date)}</td>
+    <td><button class="iconbtn" onclick="copy('${esc(s.name)}')" title="복사">⧉</button> <button class="iconbtn" onclick="delSet('${s.id}')" title="삭제">🗑</button></td>
+  </tr>`).join('');
+}
+function delSet(id){DB.sets=DB.sets.filter(s=>s.id!==id);cSel.delete(id);save();renderSetLib();}
+function exportSets(){
+  if(!DB.sets.length){toast('세트가 없습니다');return;}
+  const rows=[['브랜드','광고세트명','합성코드','캠페인목표','입찰','타게팅','스킴','TAM','1차','날짜','랜딩URL','한글캠페인명']];
+  DB.sets.forEach(s=>rows.push([s.brand,s.name,s.composite,s.goal,s.bid,s.targeting,s.scheme,s.tam,firstcatCode(s.firstcat),s.date,s.landing,s.krName]));
+  downloadCSV(rows,'광고세트');
+}
+
+/* ════════════════════════ TAB2: CREATIVE ════════════════════════ */
+let cSel=new Set();
+let cCampKey=null;
+function campaignKey(s){return [s.media,s.product,s.goal,s.bid,s.scheme,s.date].join('_');}
+function campaignLabel(s){return `${s.brand} · ${schemeKr(s.scheme)} · ${goalKr(s.goal)}/${bidKr(s.bid)} · ${s.date}`;}
+function renderCreativeCampaigns(){
+  const q=($('cCampSearch').value||'').toLowerCase();
+  const groups={};
+  DB.sets.forEach(s=>{const k=campaignKey(s);(groups[k]=groups[k]||{label:campaignLabel(s),brand:s.brand,date:s.date,sets:[]}).sets.push(s);});
+  let entries=Object.entries(groups);
+  if(q)entries=entries.filter(([k,g])=>g.label.toLowerCase().includes(q)||g.sets.some(s=>s.name.toLowerCase().includes(q)));
+  entries.sort((a,b)=>(b[1].date||'').localeCompare(a[1].date||''));
+  $('cCampCount').textContent=`${entries.length}개 캠페인`;
+  if(!entries.length){$('cCampList').innerHTML=`<div class="empty"><div class="ic">📦</div>먼저 빌더에서 광고세트를 생성하세요</div>`;return;}
+  $('cCampList').innerHTML=entries.map(([k,g])=>{
+    const tams=g.sets.map(s=>s.tam).filter((v,i,a)=>a.indexOf(v)===i).join(', ');
+    return `<div class="set-card ${cCampKey===k?'on':''}" onclick="selectCampaign('${k}')">
+      <div class="meta" style="margin-top:0"><span class="tag">${esc(g.brand)}</span><b style="color:var(--text)">${esc(g.label)}</b></div>
+      <div class="meta"><span class="cnt">광고세트 ${g.sets.length}개</span> · ${esc(tams)}</div>
+    </div>`;}).join('');
+}
+function selectCampaign(k){
+  cCampKey=(cCampKey===k)?null:k;
+  cSel.clear();
+  if(cCampKey)DB.sets.filter(s=>campaignKey(s)===cCampKey).forEach(s=>cSel.add(s.id));
+  renderCreativeCampaigns();renderCreativeSets();creativePreview();
+}
+function visibleSets(){
+  const q=($('cSetSearch').value||'').toLowerCase();
+  let list=DB.sets.slice();
+  if(cCampKey)list=list.filter(s=>campaignKey(s)===cCampKey);
+  if(q)list=list.filter(s=>s.name.toLowerCase().includes(q));
+  return list.reverse();
+}
+function renderCreativeSets(){
+  $('cSelCount').textContent=cSel.size?`${cSel.size}개 선택`:'';
+  $('cSetHint').textContent=cCampKey?'캠페인 내 세트 (자동 선택됨 · 조정 가능)':'캠페인 미선택 — 전체 세트 표시';
+  const list=visibleSets();
+  if(!list.length){$('cSetList').innerHTML=`<div class="empty"><div class="ic">📦</div>${DB.sets.length?'해당 캠페인에 세트가 없습니다':'먼저 빌더에서 광고세트를 생성하세요'}</div>`;return;}
+  $('cSetList').innerHTML=list.map(s=>`<div class="set-card ${cSel.has(s.id)?'on':''}" onclick="toggleCSel('${s.id}')">
+    <div class="cn">${esc(s.name)}</div>
+    <div class="meta"><span class="tag">${esc(s.brand)}</span><span class="bdg bdg-dcm">${esc(s.composite)}</span>${esc(s.targeting)} · ${esc(s.tam)} ${s.landing?'· 🔗':'· <span style="color:var(--yellow)">랜딩없음</span>'}</div>
+  </div>`).join('');
+}
+function toggleCSel(id){cSel.has(id)?cSel.delete(id):cSel.add(id);renderCreativeSets();creativePreview();}
+function selectAllSets(){visibleSets().forEach(s=>cSel.add(s.id));renderCreativeSets();creativePreview();}
+function clearSetSel(){cSel.clear();renderCreativeSets();creativePreview();}
+
+let creativeRows=[];
+function addCreativeRow(){
+  const id='cr'+(Date.now()+Math.random()).toString(36).slice(2,7);
+  creativeRows.push(id);renderCreativeRows();
+}
+function renderCreativeRows(){
+  const fmtOpts=M().formats.map(f=>`<option value="${f.code}">${f.code}</option>`).join('');
+  $('creativeRows').innerHTML=creativeRows.map(id=>`<div class="creative-row" id="${id}">
+    <select onchange="creativePreview()"><option value="">-</option>${fmtOpts}</select>
+    <input list="msgDL" placeholder="ANKOR" oninput="creativePreview()">
+    <input list="msgDL" placeholder="(선택)" oninput="creativePreview()">
+    <input list="msgDL" placeholder="(선택)" oninput="creativePreview()">
+    <input placeholder="flyaway" oninput="creativePreview()">
+    <span></span>
+    <button class="iconbtn" onclick="rmCreativeRow('${id}')">✕</button>
+  </div>`).join('')+`<datalist id="msgDL">${M().msgpool.map(m=>`<option value="${esc(m)}">`).join('')}</datalist>`;
+}
+function rmCreativeRow(id){creativeRows=creativeRows.filter(x=>x!==id);renderCreativeRows();creativePreview();}
+function readCreativeRow(id){
+  const el=$(id);if(!el)return null;
+  const ins=el.querySelectorAll('input,select');
+  const fmt=ins[0].value, m1=ins[1].value.trim(), m2=ins[2].value.trim(), m3=ins[3].value.trim(), soje=ins[4].value.trim();
+  if(!fmt||!m1||!soje)return null;
+  return {fmt,msg:[m1,m2,m3].filter(Boolean).join('-'),soje};
+}
+function buildCreativeName(set,date,cr,manager){
+  return `${date}_${set.media}_${set.product}_${cr.fmt}_${cr.msg}_${cr.soje}-${set.tam}_${set.composite}_${set.targeting}_${firstcatCode(set.firstcat)}_${set.scheme}_${manager}`;
+}
+function buildUTM(set,creativeName){
+  const landing=set.landing;if(!landing)return '';
+  const mi=mediaInfo(set.media);
+  const sep=landing.includes('?')?'&':'?';
+  return `${landing}${sep}utm_source=${mi.source}&utm_medium=${mi.medium}&utm_campaign=${set.name}&utm_term={{ad.id}}&utm_content=${creativeName}`;
+}
+function validateName(name){
+  const segs=name.split('_');
+  if(name.includes('__')||name.includes(' '))return 'err';
+  if(/[가-힣]/.test(name))return 'warn';
+  if(segs.length<10||segs.length>12)return 'warn';
+  return 'ok';
+}
+function creativePreview(){
+  const date=yymmdd($('c_date').value), mgr=$('c_manager').value.trim();
+  const sets=DB.sets.filter(s=>cSel.has(s.id));
+  const crs=creativeRows.map(readCreativeRow).filter(Boolean);
+  const cnt=sets.length*crs.length;
+  $('c_genCount').textContent=cnt;
+  const w=[];
+  if(!sets.length)w.push('광고세트를 선택하세요.');
+  if(!date||!mgr)w.push('날짜·담당자는 필수입니다.');
+  if(!crs.length)w.push('소재 행을 1개 이상 완성하세요 (포맷·메시지1·소재명 필수).');
+  const wb=$('c_warn');wb.innerHTML=w.join('<br>');wb.classList.toggle('show',w.length>0);
+  if(sets.length&&crs.length&&date&&mgr){
+    const name=buildCreativeName(sets[0],date,crs[0],mgr);
+    $('c_preview').innerHTML=name.split('_').map(t=>`<span class="tok">${esc(t)}</span>`).join('<span style="color:var(--text3)">_</span>');
+  }else{$('c_preview').innerHTML='<span class="ph">세트 선택 + 소재 정보 입력 시 표시…</span>';}
+}
+let lastResults=[];
+function generateCreatives(){
+  const date=yymmdd($('c_date').value), mgr=$('c_manager').value.trim();
+  const sets=DB.sets.filter(s=>cSel.has(s.id));
+  const crs=creativeRows.map(readCreativeRow).filter(Boolean);
+  if(!sets.length){toast('광고세트를 선택하세요');return;}
+  if(!date||!mgr){toast('날짜·담당자를 입력하세요');return;}
+  if(!crs.length){toast('소재 정보를 완성하세요');return;}
+  lastResults=[];
+  const ts=new Date().toISOString();
+  sets.forEach(set=>crs.forEach(cr=>{
+    const name=buildCreativeName(set,date,cr,mgr);
+    const utm=buildUTM(set,name);
+    const item={id:(Date.now()+Math.random()).toString(36).slice(2,10),ts,setId:set.id,setName:set.name,brand:set.brand,manager:mgr,name,utm,status:validateName(name),done:false};
+    lastResults.push(item);DB.archive.unshift(item);
+  }));
+  save();renderResults();
+  toast(`${lastResults.length}개 소재명 생성 · 아카이브 저장됨`);
+}
+function renderResults(){
+  $('cResultsPanel').style.display=lastResults.length?'block':'none';
+  $('cResCount').textContent=`${lastResults.length}개`;
+  $('cResults').innerHTML=lastResults.map((r,i)=>`<div class="res">
+    <div class="set">📦 ${esc(r.setName)} ${badge(r.status)}</div>
+    <div class="nm" id="rn${i}">${esc(r.name)}</div>
+    ${r.utm?`<div class="ut" id="ru${i}">${esc(r.utm)}</div>`:'<div class="ut" style="color:var(--yellow)">⚠️ 랜딩 URL 매핑 없음 → UTM 미생성</div>'}
+    <div class="acts">
+      <button class="cbtn" onclick="copy(document.getElementById('rn${i}').textContent,this)">소재명</button>
+      ${r.utm?`<button class="cbtn" onclick="copy(document.getElementById('ru${i}').textContent,this)">UTM URL</button>`:''}
+    </div></div>`).join('');
+}
+function badge(st){return st==='ok'?'<span class="bdg bdg-ok">검증 OK</span>':st==='warn'?'<span class="bdg bdg-warn">검토 필요</span>':'<span class="bdg bdg-err">오류</span>';}
+function copyAllNames(){copy(lastResults.map(r=>r.name).join('\n'));}
+function copyAllUtms(){copy(lastResults.filter(r=>r.utm).map(r=>r.utm).join('\n'));}
+function exportCreatives(){
+  if(!lastResults.length){toast('결과가 없습니다');return;}
+  const rows=[['광고세트명','자동소재명','UTM URL','검증']];
+  lastResults.forEach(r=>rows.push([r.setName,r.name,r.utm,r.status]));
+  downloadCSV(rows,'소재명_UTM');
+}
+
+/* ════════════════════════ TAB3: ARCHIVE ════════════════════════ */
+let arcView='brand', arcFilter=null;
+function setArcView(v){arcView=v;arcFilter=null;$('avBrand').classList.toggle('on',v==='brand');$('avMgr').classList.toggle('on',v==='manager');renderArchive();}
+function renderArchive(){
+  const q=($('arcSearch').value||'').toLowerCase();
+  $('kTotal').textContent=DB.archive.length;
+  $('kDone').textContent=DB.archive.filter(a=>a.done).length;
+  $('kSets').textContent=new Set(DB.archive.map(a=>a.setId)).size;
+  $('kErr').textContent=DB.archive.filter(a=>a.status!=='ok').length;
+  const keyFn=arcView==='manager'?(a=>a.manager||'미상'):(a=>a.brand||'미분류');
+  const groups=[...new Set(DB.archive.map(keyFn))];
+  $('arcLabelFilter').innerHTML=`<span class="chip ${!arcFilter?'on':''}" onclick="setArcFilter(null)">전체</span>`+
+    groups.map(g=>`<span class="chip ${arcFilter===g?'on':''}" onclick="setArcFilter('${esc(g)}')">${esc(g)}</span>`).join('');
+  let items=DB.archive;
+  if(arcFilter)items=items.filter(a=>keyFn(a)===arcFilter);
+  if(q)items=items.filter(a=>a.name.toLowerCase().includes(q));
+  if(!items.length){$('archiveBody').innerHTML=`<div class="empty"><div class="ic">📋</div>${DB.archive.length?'검색 결과 없음':'아직 생성된 소재가 없습니다'}</div>`;return;}
+  const g1={};
+  items.forEach(a=>{const k=keyFn(a);(g1[k]=g1[k]||{})[a.setName]=(g1[k][a.setName]||[]);g1[k][a.setName].push(a);});
+  $('archiveBody').innerHTML=Object.entries(g1).map(([k,sets])=>{
+    const total=Object.values(sets).reduce((s,a)=>s+a.length,0);
+    const blocks=Object.entries(sets).map(([sn,arr])=>`<details class="acc" open>
+      <summary><span class="ch">▶</span><span class="t-mono" style="flex:1">${esc(sn)}</span><span class="cnt">${arr.length}개</span>
+        <button class="btn btn-ghost btn-xs" onclick="event.preventDefault();copy('${arr.map(a=>a.name).join('\\n').replace(/'/g,"\\'")}')">전체 복사</button></summary>
+      <div class="acc-body">${arr.map(arcItem).join('')}</div></details>`).join('');
+    return `<div style="margin-bottom:18px"><div class="sub-h" style="color:var(--accent2)">${esc(k)} <span style="color:var(--text3)">· ${total}개</span></div>${blocks}</div>`;
+  }).join('');
+}
+function arcItem(a){
+  const d=new Date(a.ts);const ts=`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  return `<div class="arc-item ${a.done?'done':''}">
+    <span class="check ${a.done?'on':''}" onclick="toggleDone('${a.id}')">${a.done?'✓':''}</span>
+    <span class="arc-ts">${ts}</span>
+    <div class="arc-main">
+      <div class="nm" contenteditable="true" onblur="editArc('${a.id}','name',this.textContent)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${esc(a.name)}</div>
+      ${a.utm?`<div class="ut">${esc(a.utm)}</div>`:''}
+    </div>
+    <div style="display:flex;gap:5px">${badge(a.status)}
+      <button class="cbtn" onclick="copy('${esc(a.name)}')">⧉</button>
+      <button class="iconbtn" onclick="delArc('${a.id}')">🗑</button>
+    </div></div>`;
+}
+function setArcFilter(v){arcFilter=v;renderArchive();}
+function toggleDone(id){const a=DB.archive.find(x=>x.id===id);if(a){a.done=!a.done;save();renderArchive();}}
+function editArc(id,f,v){const a=DB.archive.find(x=>x.id===id);if(!a)return;v=v.trim();if(!v||v===a[f])return;a[f]=v;if(f==='name'){a.status=validateName(v);if(a.utm)a.utm=a.utm.replace(/utm_content=[^&\s]*/,'utm_content='+v);}save();renderArchive();}
+function delArc(id){DB.archive=DB.archive.filter(x=>x.id!==id);save();renderArchive();}
+function clearArchive(){if(!confirm('아카이브를 모두 삭제하시겠습니까? (팀 전체에서 삭제됩니다)'))return;DB.archive=[];save();renderArchive();}
+function exportArchive(){
+  if(!DB.archive.length){toast('아카이브가 비어있습니다');return;}
+  const rows=[['생성시각','브랜드','광고세트명','자동소재명','UTM URL','담당자','검증','완료']];
+  DB.archive.forEach(a=>rows.push([a.ts,a.brand,a.setName,a.name,a.utm,a.manager,a.status,a.done?'완료':'']));
+  downloadCSV(rows,'아카이브');
+}
+
+/* ════════════════════════ TAB4: MAP ════════════════════════ */
+function renderMap(){
+  $('m_products').innerHTML=M().products.map((p,i)=>`<tr><td class="mono">${esc(p.code)}</td><td><input value="${esc(p.brand)}" onchange="M().products[${i}].brand=this.value;save()"></td><td><button class="iconbtn" onclick="rmArr('products',${i})">🗑</button></td></tr>`).join('');
+  $('m_media').innerHTML=M().media.map((m,i)=>`<tr><td class="mono">${esc(m.code)}</td><td><input class="mono" value="${esc(m.source)}" onchange="M().media[${i}].source=this.value;save()"></td><td><input class="mono" value="${esc(m.medium)}" onchange="M().media[${i}].medium=this.value;save()"></td><td><button class="iconbtn" onclick="rmArr('media',${i})">🗑</button></td></tr>`).join('');
+  $('m_landing').innerHTML=Object.entries(M().landing).map(([k,u])=>{const[p,s]=k.split('+');return `<tr><td class="mono">${esc(p)}</td><td class="mono">${esc(s)}</td><td><input value="${esc(u)}" onchange="M().landing['${esc(k)}']=this.value;save()"></td><td><button class="iconbtn" onclick="rmLanding('${esc(k)}')">🗑</button></td></tr>`;}).join('');
+  $('m_composite').innerHTML=M().composite.map(c=>`<tr><td>${esc(c.goal)} (${esc(goalKr(c.goal))})</td><td>${esc(c.bid)}</td><td><span class="bdg bdg-dcm">${esc(c.code)}</span></td></tr>`).join('');
+  $('m_firstcat').innerHTML=M().firstcat.map(f=>`<tr><td class="mono">${esc(f.src)}</td><td>${esc(f.kr)}</td><td><span class="bdg bdg-${f.code.toLowerCase()}">${esc(f.code)}</span></td></tr>`).join('');
+  $('m_tams').innerHTML=M().tams.map((t,i)=>`<span class="chip">${esc(t)}<span class="x" onclick="rmArr('tams',${i})">✕</span></span>`).join('');
+  $('m_schemes').innerHTML=M().schemes.map((s,i)=>`<span class="chip">${esc(s.code)} <span style="color:var(--text3)">${esc(s.kr)}</span><span class="x" onclick="rmArr('schemes',${i})">✕</span></span>`).join('');
+  $('m_formats').innerHTML=M().formats.map((f,i)=>`<span class="chip">${esc(f.code)} <span style="color:var(--text3)">${esc(f.label)}</span><span class="x" onclick="rmArr('formats',${i})">✕</span></span>`).join('');
+  $('m_msgpool').innerHTML=M().msgpool.map((m,i)=>`<span class="chip">${esc(m)}<span class="x" onclick="rmArr('msgpool',${i})">✕</span></span>`).join('');
+}
+function rmArr(key,i){M()[key].splice(i,1);save();refreshAll();}
+function rmLanding(k){delete M().landing[k];save();refreshAll();}
+function addProduct(){const c=$('mp_code').value.trim().toUpperCase(),b=$('mp_brand').value.trim();if(!c||!b)return;M().products.push({code:c,brand:b});$('mp_code').value='';$('mp_brand').value='';save();refreshAll();}
+function addMedia(){const c=$('mm_code').value.trim(),s=$('mm_src').value.trim(),m=$('mm_med').value.trim();if(!c||!s||!m)return;M().media.push({code:c,channel:c,source:s,medium:m});$('mm_code').value='';$('mm_src').value='';$('mm_med').value='';save();refreshAll();}
+function addLanding(){const p=$('ml_prod').value.trim().toUpperCase(),s=$('ml_scheme').value.trim().toUpperCase(),u=$('ml_url').value.trim();if(!p||!s||!u)return;M().landing[p+'+'+s]=u;$('ml_prod').value='';$('ml_scheme').value='';$('ml_url').value='';save();refreshAll();}
+function addMapTam(){const v=$('mt_new').value.trim().toUpperCase();if(!v||M().tams.includes(v))return;M().tams.push(v);$('mt_new').value='';save();refreshAll();}
+function addScheme(){const v=$('ms_new').value.trim().toUpperCase();if(!v||M().schemes.some(s=>s.code===v))return;M().schemes.push({code:v,kr:v});$('ms_new').value='';save();refreshAll();}
+function addFormat(){const v=$('mf_new').value.trim().toUpperCase();if(!v||M().formats.some(f=>f.code===v))return;M().formats.push({code:v,label:v});$('mf_new').value='';save();refreshAll();}
+function addMsg(){const v=$('mmsg_new').value.trim();if(!v||M().msgpool.includes(v))return;M().msgpool.push(v);$('mmsg_new').value='';save();refreshAll();}
+function refreshAll(){fillBuilderSelects();$('b_firstcat').value='regular';renderBuilderChips();buildPreview();renderMap();renderCreativeRows();renderCreativeCampaigns();renderCreativeSets();}
+
+/* ════════════════════════ DATA MGMT ════════════════════════ */
+function downloadCSV(rows,name){
+  const csv=rows.map(r=>r.map(c=>`"${String(c==null?'':c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`${name}_${new Date().toISOString().slice(0,10)}.csv`;a.click();
+}
+function exportAll(){
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`cloop_백업_${new Date().toISOString().slice(0,10)}.json`;a.click();
+}
+function importAll(e){
+  const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const j=JSON.parse(r.result);if(!j.maps)throw 0;if(!confirm('백업으로 전체 데이터를 교체합니다.\\n(Firebase 연결 시 팀 전체에 반영됩니다) 계속할까요?'))return;DB=j;save();go('build');refreshAll();toast('백업이 복원되었습니다');}catch(err){toast('잘못된 백업 파일입니다');}};
+  r.readAsText(f);
+}
+function resetSeed(){if(!confirm('매핑키를 기본값으로 초기화합니다. 생성된 세트·아카이브는 유지됩니다.'))return;DB.maps=deepClone(SEED);save();refreshAll();toast('매핑키가 초기화되었습니다');}
+
+window.addEventListener('load',init);
+</script>
+</body>
+</html>
