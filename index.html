@@ -165,7 +165,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
       <div class="nav-item active" data-tab="build" onclick="go('build')"><span class="n">1</span>캠페인·세트 빌더</div>
       <div class="nav-item" data-tab="creative" onclick="go('creative')"><span class="n">2</span>소재명·UTM 생성</div>
       <div class="nav-item" data-tab="archive" onclick="go('archive')"><span class="n">3</span>생성 아카이브</div>
-      <div class="nav-item" data-tab="map" onclick="go('map')"><span class="n">⚙</span>매핑키 관리</div>
+      <div class="nav-item" data-tab="map" onclick="go('map')"><span class="n">⚙</span>설정/매핑</div>
     </nav>
     <div class="side-foot">
       <div class="side-stat"><span>광고세트</span><b id="stSets">0</b></div>
@@ -176,6 +176,11 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
   </aside>
 
   <main class="main">
+    <div class="row-flex" id="areaNav" style="justify-content:flex-end;margin-bottom:14px;gap:6px">
+      <span class="cnt" style="margin-right:2px">영역</span>
+      <button class="btn btn-sm" data-area="클룹" onclick="setArea('클룹')">클룹</button>
+      <button class="btn btn-sm" data-area="스프린트" onclick="setArea('스프린트')">스프린트</button>
+    </div>
     <!-- ══════════ TAB 1: BUILDER ══════════ -->
     <section class="page active" id="page-build">
       <div class="page-head">
@@ -349,7 +354,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
 
     <!-- ══════════ TAB 4: MAP ══════════ -->
     <section class="page" id="page-map">
-      <div class="page-head"><h2>매핑키 관리</h2><p>모든 자동 생성의 단일 기준 데이터이며, <b>기존 구글시트를 대체</b>합니다. <b>TAM은 콘텐츠마케터 파트장</b>, 그 외(매체·합성·제품·스킴 등)는 <b>퍼포먼스마케터</b>가 관리합니다. 변경 시 전 탭·전 팀원에게 즉시 반영됩니다.</p></div>
+      <div class="page-head"><h2>설정/매핑 <span style="font-size:12px;font-weight:500;color:var(--text3)">· 클룹·스프린트 공통</span></h2><p>모든 자동 생성의 단일 기준 데이터이며, <b>기존 구글시트를 대체</b>합니다. (이 탭은 클룹/스프린트 공통 영역) <b>TAM은 콘텐츠마케터 파트장</b>, 그 외(매체·합성·제품·스킴 등)는 <b>퍼포먼스마케터</b>가 관리합니다. 변경 시 전 탭·전 팀원에게 즉시 반영됩니다.</p></div>
 
       <div class="notice" style="margin-bottom:14px">
         <b>자동 소재명</b> &nbsp;:&nbsp; <code>날짜_매체_제품코드_포맷_메시지(1-2-3)_소재명-TAM_합성코드_타게팅_1차_2차스킴_담당자</code><br>
@@ -357,7 +362,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
       </div>
 
       <div class="row-flex" id="mapSubNav" style="gap:6px;margin-bottom:16px">
-        <button class="btn btn-sm" data-ms="product" onclick="mapSub('product')">🏷 제품·계정</button>
+        <button class="btn btn-sm" data-ms="product" onclick="mapSub('product')">🏷 제품·구분</button>
         <button class="btn btn-sm" data-ms="media" onclick="mapSub('media')">📡 매체</button>
         <button class="btn btn-sm" data-ms="code" onclick="mapSub('code')">🧮 캠페인 코드</button>
         <button class="btn btn-sm" data-ms="landing" onclick="mapSub('landing')">🔗 랜딩 URL</button>
@@ -368,14 +373,14 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
       </div>
 
       <div class="msub" data-msub="product">
-        <div class="notice" style="margin-bottom:12px">제품 코드(<code>CLXX</code>) ↔ 브랜드명, 그리고 각 제품이 속한 <b>광고계정</b>을 정의합니다. 계정 값은 향후 상단 스코프 필터와 광고 세팅의 기준이 됩니다. <span style="color:var(--text3)">· 관리: 퍼포먼스마케터</span></div>
+        <div class="notice" style="margin-bottom:12px">제품 코드(<code>CLXX</code>) ↔ 브랜드명, 그리고 각 제품이 속한 <b>구분(클룹/스프린트)</b>을 정의합니다. 이 구분이 상단 영역 버튼의 필터 기준입니다. (메인·서브 계정 모두 같은 제품을 쓸 수 있어 계정이 아닌 클룹/스프린트로 묶음) <span style="color:var(--text3)">· 관리: 퍼포먼스마케터</span></div>
         <div class="panel">
-          <div class="panel-h">🏷 제품 (코드 · 브랜드 · 계정)</div>
-          <div class="tbl-wrap"><table><thead><tr><th>코드</th><th>브랜드</th><th>광고계정</th><th></th></tr></thead><tbody id="m_products"></tbody></table></div>
+          <div class="panel-h">🏷 제품 (코드 · 브랜드 · 구분)</div>
+          <div class="tbl-wrap"><table><thead><tr><th>코드</th><th>브랜드</th><th>구분</th><th></th></tr></thead><tbody id="m_products"></tbody></table></div>
           <div class="row-flex" style="margin-top:10px">
             <input id="mp_code" placeholder="CLXX" style="max-width:90px" class="mono">
             <input id="mp_brand" placeholder="브랜드명" style="max-width:130px">
-            <select id="mp_account" style="max-width:140px"></select>
+            <select id="mp_area" style="max-width:120px"><option>클룹</option><option>스프린트</option></select>
             <button class="btn btn-ghost btn-sm" onclick="addProduct()">+ 추가</button>
           </div>
         </div>
@@ -399,9 +404,21 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
         <div class="notice" style="margin-bottom:12px"><b>합성코드</b> = 캠페인목표 + 입찰유형 (예: PUR+CMX → <code>PRC</code>). <b>1차 구분</b>은 운영 성격을 3자로 압축(promo→PMO · regular→REG · dcommerce→DCM · organic→ORG). <span style="color:var(--red)">⚠️ 수식 핵심 — 임의 변경 주의</span></div>
         <div class="panel">
           <div class="panel-h">🧮 합성코드 <span class="hint">캠페인목표 + 입찰</span></div>
-          <div class="tbl-wrap" style="max-height:280px;overflow-y:auto"><table><thead><tr><th>목표</th><th>입찰</th><th>→ 코드</th></tr></thead><tbody id="m_composite"></tbody></table></div>
-          <div class="sub-h" style="margin-top:14px">1차 구분 압축</div>
-          <div class="tbl-wrap"><table><thead><tr><th>원본</th><th>의미</th><th>→ 압축</th></tr></thead><tbody id="m_firstcat"></tbody></table></div>
+          <div class="tbl-wrap" style="max-height:280px;overflow-y:auto"><table><thead><tr><th>목표</th><th>입찰</th><th>→ 코드</th><th></th></tr></thead><tbody id="m_composite"></tbody></table></div>
+          <div class="row-flex" style="margin-top:10px">
+            <select id="mc_goal" style="max-width:120px"></select>
+            <select id="mc_bid" style="max-width:110px"></select>
+            <input id="mc_code" placeholder="합성코드(PRX)" style="max-width:120px" class="mono">
+            <button class="btn btn-ghost btn-sm" onclick="addComposite()">+ 추가</button>
+          </div>
+          <div class="sub-h" style="margin-top:16px">1차 구분 압축</div>
+          <div class="tbl-wrap"><table><thead><tr><th>원본</th><th>의미</th><th>→ 압축</th><th></th></tr></thead><tbody id="m_firstcat"></tbody></table></div>
+          <div class="row-flex" style="margin-top:10px">
+            <input id="mfc_src" placeholder="원본(예: event)" style="max-width:120px" class="mono">
+            <input id="mfc_kr" placeholder="의미" style="max-width:120px">
+            <input id="mfc_code" placeholder="압축(EVT)" style="max-width:90px" class="mono">
+            <button class="btn btn-ghost btn-sm" onclick="addFirstcat()">+ 추가</button>
+          </div>
         </div>
       </div>
 
@@ -435,18 +452,18 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
       <div class="msub" data-msub="tam" style="display:none">
         <div class="notice" style="margin-bottom:12px"><b>TAM(타겟 메시지)</b> — 광고세트명·소재명에 들어가는 핵심 메시지 코드입니다. <span style="color:var(--accent2)">· 관리: 콘텐츠마케터 파트장</span></div>
         <div class="panel">
-          <div class="panel-h">🎯 TAM 풀</div>
-          <div class="chips" id="m_tams" style="margin-bottom:10px"></div>
-          <div class="row-flex"><input id="mt_new" placeholder="신규 TAM" style="max-width:160px" class="mono"><button class="btn btn-ghost btn-sm" onclick="addMapTam()">+</button></div>
+          <div class="panel-h">🎯 TAM 풀 <span class="hint">영문 코드 + 한글 의미</span></div>
+          <div class="tbl-wrap" style="max-height:340px;overflow-y:auto"><table><thead><tr><th>코드</th><th>한글 의미</th><th></th></tr></thead><tbody id="m_tams"></tbody></table></div>
+          <div class="row-flex" style="margin-top:10px"><input id="mt_new" placeholder="TAM 코드" style="max-width:140px" class="mono"><input id="mt_kr" placeholder="한글 의미" style="max-width:160px"><button class="btn btn-ghost btn-sm" onclick="addMapTam()">+ 추가</button></div>
         </div>
       </div>
 
       <div class="msub" data-msub="msg" style="display:none">
         <div class="notice" style="margin-bottom:12px">소재명 입력 시 자동완성으로 뜨는 <b>메시지 뎁스</b> 후보 목록입니다.</div>
         <div class="panel">
-          <div class="panel-h">💬 메시지 뎁스 풀</div>
-          <div class="chips" id="m_msgpool" style="margin-bottom:10px;max-height:220px;overflow-y:auto"></div>
-          <div class="row-flex"><input id="mmsg_new" placeholder="신규 메시지 코드" style="max-width:180px" class="mono"><button class="btn btn-ghost btn-sm" onclick="addMsg()">+</button></div>
+          <div class="panel-h">💬 메시지 뎁스 풀 <span class="hint">영문 코드 + 한글 의미</span></div>
+          <div class="tbl-wrap" style="max-height:360px;overflow-y:auto"><table><thead><tr><th>코드</th><th>한글 의미</th><th></th></tr></thead><tbody id="m_msgpool"></tbody></table></div>
+          <div class="row-flex" style="margin-top:10px"><input id="mmsg_new" placeholder="메시지 코드" style="max-width:140px" class="mono"><input id="mmsg_kr" placeholder="한글 의미" style="max-width:160px"><button class="btn btn-ghost btn-sm" onclick="addMsg()">+ 추가</button></div>
         </div>
       </div>
 
@@ -475,10 +492,11 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
 /* ════════════════════════ SEED DATA (시트 기반) ════════════════════════ */
 const SEED = {
   products:[
-    {code:'CLCL',brand:'콜사비'},{code:'CLAC',brand:'애사비즈'},{code:'CLAP',brand:'패사비'},
-    {code:'CLOH',brand:'오프아워'},{code:'CLWP',brand:'원더팝'},{code:'CLSO',brand:'소요일'},
-    {code:'CLAF',brand:'화이바'},{code:'CLTC',brand:'티카이브'},{code:'CLZS',brand:'제로소다'},
-    {code:'CLALL',brand:'공통'}
+    {code:'CLCL',brand:'콜사비',area:'클룹'},{code:'CLAC',brand:'애사비즈',area:'클룹'},{code:'CLAP',brand:'패사비',area:'클룹'},
+    {code:'CLOH',brand:'오프아워',area:'클룹'},{code:'CLWP',brand:'원더팝',area:'클룹'},{code:'CLSO',brand:'소요일',area:'클룹'},
+    {code:'CLAF',brand:'화이바',area:'클룹'},{code:'CLTC',brand:'티카이브',area:'클룹'},{code:'CLZS',brand:'제로소다',area:'클룹'},
+    {code:'CLALL',brand:'공통',area:'클룹'},
+    {code:'SPEN',brand:'스프린트에너지',area:'스프린트'}
   ],
   media:[
     {code:'FB',channel:'메타',source:'facebook',medium:'social'},
@@ -518,7 +536,7 @@ const SEED = {
   ],
   schemes:[
     {code:'100DEAL',kr:'100원딜'},{code:'BASIC',kr:'기본딜'},{code:'LAUNCH',kr:'출시특가'},
-    {code:'NGK',kr:'네고왕'},{code:'OYSALE',kr:'오야세일'},{code:'BKU',kr:'벌크업'}
+    {code:'NGK',kr:'네고왕'},{code:'OYSALE',kr:'올영세일'},{code:'BKU',kr:'벌크업'}
   ],
   targetings:['ALL','PRE','PDE','SRE','VDE','VRE-PDE','PLAL-PDE','VRE-PLAL-PDE','VDE-PLAL','PDE-2135','PDE-3649','TROAS'],
   tams:['BENEFIT','LOWEST','WORKOUT','DIETER','INGREDIENT','REPLACE','WINNING','BULK','NONTAM',
@@ -549,19 +567,33 @@ const SEED = {
 const LSK='cloop_utm_v2';
 function deepClone(o){return JSON.parse(JSON.stringify(o));}
 function load(){
-  try{const j=JSON.parse(localStorage.getItem(LSK));if(j&&j.maps)return j;}catch(e){}
-  return {maps:deepClone(SEED),sets:[],archive:[]};
+  let db;
+  try{const j=JSON.parse(localStorage.getItem(LSK));if(j&&j.maps)db=j;}catch(e){}
+  if(!db) db={maps:deepClone(SEED),sets:[],archive:[]};
+  ensureMaps(db.maps);
+  return db;
+}
+/* 구버전 데이터 호환 정규화 (공유 Firebase 데이터가 구형식일 수 있음) */
+function ensureMaps(m){
+  if(!m) return;
+  (m.products||[]).forEach(p=>{ if(!p.area) p.area='클룹'; });
+  const toObj=arr=>(arr||[]).map(x=>typeof x==='string'?{code:x,kr:''}:x);
+  m.tams=toObj(m.tams);
+  m.msgpool=toObj(m.msgpool);
+  const oy=(m.schemes||[]).find(s=>s.code==='OYSALE'); if(oy&&oy.kr==='오야세일') oy.kr='올영세일';
 }
 let DB=load();
 const M=()=>DB.maps;
 
-/* 광고계정 목록 (제품→계정 배정용 · 스코프/광고세팅 기준) */
-const ACCOUNTS = [
-  {id:'1462607070849777', name:'클룹 애사비'},
-  {id:'3342733785912061', name:'스프린트'},
-  {id:'793134085895227',  name:'클룹 서브'},
-  {id:'539103343188615',  name:'프로모션'}
-];
+/* 영역(클룹/스프린트) — 제품 구분 + 상단 스코프 버튼 */
+const AREAS=['클룹','스프린트'];
+let areaScope='클룹';
+function areaOf(productCode){const p=M().products.find(x=>x.code===productCode);return p?(p.area||'클룹'):'클룹';}
+function setArea(a){
+  areaScope=a;
+  document.querySelectorAll('#areaNav [data-area]').forEach(b=>{const on=b.dataset.area===a;b.classList.toggle('btn-primary',on);b.classList.toggle('btn-ghost',!on);});
+  fillBuilderSelects(); buildPreview(); renderSetLib(); renderCreativeCampaigns(); renderCreativeSets(); renderArchive();
+}
 let mapSubActive='product';
 function mapSub(name){
   mapSubActive=name;
@@ -607,6 +639,7 @@ function startSync(){
     const v=snap.val();
     setSyncUI('on');
     if(!v || !v.maps){ DBREF.set(DB); return; }          // 원격이 비어있으면 현재 데이터 업로드
+    ensureMaps(v.maps);                                  // 구버전 형식 정규화 후 비교
     if(JSON.stringify(v)===JSON.stringify(DB)) return;    // 내 변경 echo / 동일 → 무시
     DB=v; localStorage.setItem(LSK,JSON.stringify(DB)); syncRerender();
   }, err=>{ console.warn('Firebase 연결 실패',err); setSyncUI('local'); });
@@ -696,6 +729,7 @@ function init(){
   buildPreview();
   if(!creativeRows.length)addCreativeRow();
   updateStats();
+  setArea(areaScope);
   startSync();
   startMetaSync();
 }
@@ -708,7 +742,7 @@ function updateStats(){
 /* ════════════════════════ TAB1: BUILDER ════════════════════════ */
 let bTargets=new Set(), bTams=new Set();
 function fillBuilderSelects(){
-  $('b_product').innerHTML=M().products.map(p=>`<option value="${p.code}">${esc(p.brand)} (${p.code})</option>`).join('');
+  $('b_product').innerHTML=M().products.filter(p=>(p.area||'클룹')===areaScope).map(p=>`<option value="${p.code}">${esc(p.brand)} (${p.code})</option>`).join('');
   $('b_media').innerHTML=M().media.map(m=>`<option value="${esc(m.code)}">${esc(m.code)} · ${esc(m.channel)}</option>`).join('');
   $('b_goal').innerHTML=M().goals.map(g=>`<option value="${g.code}">${g.code} (${esc(g.kr)})</option>`).join('');
   $('b_bid').innerHTML=M().bids.map(b=>`<option value="${b.code}">${b.code} (${esc(b.kr)})</option>`).join('');
@@ -718,11 +752,11 @@ function fillBuilderSelects(){
 }
 function renderBuilderChips(){
   $('b_targetingChips').innerHTML=M().targetings.map(t=>`<span class="chip ${bTargets.has(t)?'on':''}" onclick="toggleSet(bTargets,'${esc(t)}');renderBuilderChips();buildPreview()">${esc(t)}</span>`).join('');
-  $('b_tamChips').innerHTML=M().tams.map(t=>`<span class="chip ${bTams.has(t)?'on':''}" onclick="toggleSet(bTams,'${esc(t)}');renderBuilderChips();buildPreview()">${esc(t)}</span>`).join('');
+  $('b_tamChips').innerHTML=M().tams.map(t=>`<span class="chip ${bTams.has(t.code)?'on':''}" title="${esc(t.kr||'')}" onclick="toggleSet(bTams,'${esc(t.code)}');renderBuilderChips();buildPreview()">${esc(t.code)}</span>`).join('');
 }
 function toggleSet(set,v){set.has(v)?set.delete(v):set.add(v);}
 function addTargeting(){const v=$('b_newTarget').value.trim().toUpperCase();if(!v)return;if(!M().targetings.includes(v)){M().targetings.push(v);save();}bTargets.add(v);$('b_newTarget').value='';renderBuilderChips();buildPreview();}
-function addTam(){const v=$('b_newTam').value.trim().toUpperCase();if(!v)return;if(!M().tams.includes(v)){M().tams.push(v);save();}bTams.add(v);$('b_newTam').value='';renderBuilderChips();buildPreview();}
+function addTam(){const v=$('b_newTam').value.trim().toUpperCase();if(!v)return;if(!M().tams.some(t=>t.code===v)){M().tams.push({code:v,kr:''});save();}bTams.add(v);$('b_newTam').value='';renderBuilderChips();buildPreview();}
 function onBidChange(){const isV=$('b_bid').value==='VMX';$('b_optWrap').style.opacity=isV?'1':'.4';if(isV&&!$('b_bidopt').value)$('b_bidopt').value='TROAS';if(!isV)$('b_bidopt').value='';buildPreview();}
 
 function buildSetName(o){
@@ -784,9 +818,10 @@ function generateSets(){
 }
 function renderSetLib(){
   const q=($('setSearch').value||'').toLowerCase();
-  const list=DB.sets.filter(s=>!q||s.name.toLowerCase().includes(q)).slice().reverse();
-  $('setLibCount').textContent=`${DB.sets.length}개`;
-  if(!list.length){$('setLibBody').innerHTML=`<tr><td colspan="8"><div class="empty"><div class="ic">📦</div>아직 생성된 광고세트가 없습니다</div></td></tr>`;return;}
+  const scoped=DB.sets.filter(s=>areaOf(s.product)===areaScope);
+  const list=scoped.filter(s=>!q||s.name.toLowerCase().includes(q)).slice().reverse();
+  $('setLibCount').textContent=`${scoped.length}개 (${areaScope})`;
+  if(!list.length){$('setLibBody').innerHTML=`<tr><td colspan="8"><div class="empty"><div class="ic">📦</div>${areaScope} 영역에 광고세트가 없습니다</div></td></tr>`;return;}
   $('setLibBody').innerHTML=list.map(s=>`<tr>
     <td><span class="tag">${esc(s.brand)}</span></td>
     <td class="t-mono">${esc(s.name)}${metaBadge(s.id)}</td>
@@ -814,7 +849,7 @@ function campaignLabel(s){return `${s.brand} · ${schemeKr(s.scheme)} · ${goalK
 function renderCreativeCampaigns(){
   const q=($('cCampSearch').value||'').toLowerCase();
   const groups={};
-  DB.sets.forEach(s=>{const k=campaignKey(s);(groups[k]=groups[k]||{label:campaignLabel(s),brand:s.brand,date:s.date,sets:[]}).sets.push(s);});
+  DB.sets.filter(s=>areaOf(s.product)===areaScope).forEach(s=>{const k=campaignKey(s);(groups[k]=groups[k]||{label:campaignLabel(s),brand:s.brand,date:s.date,sets:[]}).sets.push(s);});
   let entries=Object.entries(groups);
   if(q)entries=entries.filter(([k,g])=>g.label.toLowerCase().includes(q)||g.sets.some(s=>s.name.toLowerCase().includes(q)));
   entries.sort((a,b)=>(b[1].date||'').localeCompare(a[1].date||''));
@@ -835,7 +870,7 @@ function selectCampaign(k){
 }
 function visibleSets(){
   const q=($('cSetSearch').value||'').toLowerCase();
-  let list=DB.sets.slice();
+  let list=DB.sets.filter(s=>areaOf(s.product)===areaScope);
   if(cCampKey)list=list.filter(s=>campaignKey(s)===cCampKey);
   if(q)list=list.filter(s=>s.name.toLowerCase().includes(q));
   return list.reverse();
@@ -869,7 +904,7 @@ function renderCreativeRows(){
     <input placeholder="flyaway" oninput="creativePreview()">
     <span></span>
     <button class="iconbtn" onclick="rmCreativeRow('${id}')">✕</button>
-  </div>`).join('')+`<datalist id="msgDL">${M().msgpool.map(m=>`<option value="${esc(m)}">`).join('')}</datalist>`;
+  </div>`).join('')+`<datalist id="msgDL">${M().msgpool.map(m=>`<option value="${esc(m.code)}">${esc(m.kr||'')}`).join('')}</datalist>`;
 }
 function rmCreativeRow(id){creativeRows=creativeRows.filter(x=>x!==id);renderCreativeRows();creativePreview();}
 function readCreativeRow(id){
@@ -970,17 +1005,19 @@ function exportCreatives(){
 /* ════════════════════════ TAB3: ARCHIVE ════════════════════════ */
 let arcView='brand', arcFilter=null;
 function setArcView(v){arcView=v;arcFilter=null;$('avBrand').classList.toggle('on',v==='brand');$('avMgr').classList.toggle('on',v==='manager');renderArchive();}
+function archiveArea(a){return areaOf((a.setName||'').split('_')[1]||'');}
 function renderArchive(){
   const q=($('arcSearch').value||'').toLowerCase();
-  $('kTotal').textContent=DB.archive.length;
-  $('kDone').textContent=DB.archive.filter(a=>a.done).length;
-  $('kSets').textContent=new Set(DB.archive.map(a=>a.setId)).size;
-  $('kErr').textContent=DB.archive.filter(a=>a.status!=='ok').length;
+  const base=DB.archive.filter(a=>archiveArea(a)===areaScope);
+  $('kTotal').textContent=base.length;
+  $('kDone').textContent=base.filter(a=>a.done).length;
+  $('kSets').textContent=new Set(base.map(a=>a.setId)).size;
+  $('kErr').textContent=base.filter(a=>a.status!=='ok').length;
   const keyFn=arcView==='manager'?(a=>a.manager||'미상'):(a=>a.brand||'미분류');
-  const groups=[...new Set(DB.archive.map(keyFn))];
+  const groups=[...new Set(base.map(keyFn))];
   $('arcLabelFilter').innerHTML=`<span class="chip ${!arcFilter?'on':''}" onclick="setArcFilter(null)">전체</span>`+
     groups.map(g=>`<span class="chip ${arcFilter===g?'on':''}" onclick="setArcFilter('${esc(g)}')">${esc(g)}</span>`).join('');
-  let items=DB.archive;
+  let items=base;
   if(arcFilter)items=items.filter(a=>keyFn(a)===arcFilter);
   if(q)items=items.filter(a=>a.name.toLowerCase().includes(q));
   if(!items.length){$('archiveBody').innerHTML=`<div class="empty"><div class="ic">📋</div>${DB.archive.length?'검색 결과 없음':'아직 생성된 소재가 없습니다'}</div>`;return;}
@@ -1023,27 +1060,30 @@ function exportArchive(){
 
 /* ════════════════════════ TAB4: MAP ════════════════════════ */
 function renderMap(){
-  $('m_products').innerHTML=M().products.map((p,i)=>`<tr><td class="mono">${esc(p.code)}</td><td><input value="${esc(p.brand)}" onchange="M().products[${i}].brand=this.value;save()"></td><td><select onchange="M().products[${i}].account=this.value;save()"><option value="">—</option>${ACCOUNTS.map(a=>`<option value="${a.id}" ${p.account===a.id?'selected':''}>${esc(a.name)}</option>`).join('')}</select></td><td><button class="iconbtn" onclick="rmArr('products',${i})">🗑</button></td></tr>`).join('');
+  $('m_products').innerHTML=M().products.map((p,i)=>`<tr><td class="mono">${esc(p.code)}</td><td><input value="${esc(p.brand)}" onchange="M().products[${i}].brand=this.value;save()"></td><td><select onchange="M().products[${i}].area=this.value;save();refreshAll()">${AREAS.map(a=>`<option ${(p.area||'클룹')===a?'selected':''}>${esc(a)}</option>`).join('')}</select></td><td><button class="iconbtn" onclick="rmArr('products',${i})">🗑</button></td></tr>`).join('');
   $('m_media').innerHTML=M().media.map((m,i)=>`<tr><td class="mono">${esc(m.code)}</td><td><input class="mono" value="${esc(m.source)}" onchange="M().media[${i}].source=this.value;save()"></td><td><input class="mono" value="${esc(m.medium)}" onchange="M().media[${i}].medium=this.value;save()"></td><td><button class="iconbtn" onclick="rmArr('media',${i})">🗑</button></td></tr>`).join('');
   $('m_landing').innerHTML=Object.entries(M().landing).map(([k,u])=>{const[p,s]=k.split('+');return `<tr><td class="mono">${esc(p)}</td><td class="mono">${esc(s)}</td><td><input value="${esc(u)}" onchange="M().landing['${esc(k)}']=this.value;save()"></td><td><button class="iconbtn" onclick="rmLanding('${esc(k)}')">🗑</button></td></tr>`;}).join('');
-  $('m_composite').innerHTML=M().composite.map(c=>`<tr><td>${esc(c.goal)} (${esc(goalKr(c.goal))})</td><td>${esc(c.bid)}</td><td><span class="bdg bdg-dcm">${esc(c.code)}</span></td></tr>`).join('');
-  $('m_firstcat').innerHTML=M().firstcat.map(f=>`<tr><td class="mono">${esc(f.src)}</td><td>${esc(f.kr)}</td><td><span class="bdg bdg-${f.code.toLowerCase()}">${esc(f.code)}</span></td></tr>`).join('');
-  $('m_tams').innerHTML=M().tams.map((t,i)=>`<span class="chip">${esc(t)}<span class="x" onclick="rmArr('tams',${i})">✕</span></span>`).join('');
+  $('m_composite').innerHTML=M().composite.map((c,i)=>`<tr><td>${esc(c.goal)} (${esc(goalKr(c.goal))})</td><td>${esc(c.bid)}</td><td><span class="bdg bdg-dcm">${esc(c.code)}</span></td><td><button class="iconbtn" onclick="rmArr('composite',${i})">🗑</button></td></tr>`).join('');
+  $('m_firstcat').innerHTML=M().firstcat.map((f,i)=>`<tr><td class="mono">${esc(f.src)}</td><td><input value="${esc(f.kr)}" onchange="M().firstcat[${i}].kr=this.value;save()"></td><td><span class="bdg bdg-${f.code.toLowerCase()}">${esc(f.code)}</span></td><td><button class="iconbtn" onclick="rmArr('firstcat',${i})">🗑</button></td></tr>`).join('');
+  $('m_tams').innerHTML=M().tams.map((t,i)=>`<tr><td class="mono">${esc(t.code)}</td><td><input value="${esc(t.kr||'')}" placeholder="한글 의미" onchange="M().tams[${i}].kr=this.value;save()"></td><td><button class="iconbtn" onclick="rmArr('tams',${i})">🗑</button></td></tr>`).join('');
   $('m_schemes').innerHTML=M().schemes.map((s,i)=>`<span class="chip">${esc(s.code)} <span style="color:var(--text3)">${esc(s.kr)}</span><span class="x" onclick="rmArr('schemes',${i})">✕</span></span>`).join('');
   $('m_formats').innerHTML=M().formats.map((f,i)=>`<span class="chip">${esc(f.code)} <span style="color:var(--text3)">${esc(f.label)}</span><span class="x" onclick="rmArr('formats',${i})">✕</span></span>`).join('');
-  $('m_msgpool').innerHTML=M().msgpool.map((m,i)=>`<span class="chip">${esc(m)}<span class="x" onclick="rmArr('msgpool',${i})">✕</span></span>`).join('');
-  const ma=$('mp_account'); if(ma) ma.innerHTML='<option value="">계정 선택</option>'+ACCOUNTS.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
+  $('m_msgpool').innerHTML=M().msgpool.map((m,i)=>`<tr><td class="mono">${esc(m.code)}</td><td><input value="${esc(m.kr||'')}" placeholder="한글 의미" onchange="M().msgpool[${i}].kr=this.value;save()"></td><td><button class="iconbtn" onclick="rmArr('msgpool',${i})">🗑</button></td></tr>`).join('');
+  const gsel=$('mc_goal'); if(gsel) gsel.innerHTML=M().goals.map(g=>`<option value="${g.code}">${g.code} (${esc(g.kr)})</option>`).join('');
+  const bsel=$('mc_bid'); if(bsel) bsel.innerHTML=M().bids.map(b=>`<option value="${b.code}">${b.code} (${esc(b.kr)})</option>`).join('');
   mapSub(mapSubActive);
 }
 function rmArr(key,i){M()[key].splice(i,1);save();refreshAll();}
 function rmLanding(k){delete M().landing[k];save();refreshAll();}
-function addProduct(){const c=$('mp_code').value.trim().toUpperCase(),b=$('mp_brand').value.trim();if(!c||!b)return;M().products.push({code:c,brand:b,account:($('mp_account')?$('mp_account').value:'')});$('mp_code').value='';$('mp_brand').value='';save();refreshAll();}
+function addProduct(){const c=$('mp_code').value.trim().toUpperCase(),b=$('mp_brand').value.trim();if(!c||!b)return;M().products.push({code:c,brand:b,area:($('mp_area')?$('mp_area').value:'클룹')});$('mp_code').value='';$('mp_brand').value='';save();refreshAll();}
 function addMedia(){const c=$('mm_code').value.trim(),s=$('mm_src').value.trim(),m=$('mm_med').value.trim();if(!c||!s||!m)return;M().media.push({code:c,channel:c,source:s,medium:m});$('mm_code').value='';$('mm_src').value='';$('mm_med').value='';save();refreshAll();}
 function addLanding(){const p=$('ml_prod').value.trim().toUpperCase(),s=$('ml_scheme').value.trim().toUpperCase(),u=$('ml_url').value.trim();if(!p||!s||!u)return;M().landing[p+'+'+s]=u;$('ml_prod').value='';$('ml_scheme').value='';$('ml_url').value='';save();refreshAll();}
-function addMapTam(){const v=$('mt_new').value.trim().toUpperCase();if(!v||M().tams.includes(v))return;M().tams.push(v);$('mt_new').value='';save();refreshAll();}
+function addMapTam(){const v=$('mt_new').value.trim().toUpperCase();if(!v||M().tams.some(t=>t.code===v))return;M().tams.push({code:v,kr:($('mt_kr')?$('mt_kr').value.trim():'')});$('mt_new').value='';if($('mt_kr'))$('mt_kr').value='';save();refreshAll();}
 function addScheme(){const v=$('ms_new').value.trim().toUpperCase();if(!v||M().schemes.some(s=>s.code===v))return;M().schemes.push({code:v,kr:v});$('ms_new').value='';save();refreshAll();}
 function addFormat(){const v=$('mf_new').value.trim().toUpperCase();if(!v||M().formats.some(f=>f.code===v))return;M().formats.push({code:v,label:v});$('mf_new').value='';save();refreshAll();}
-function addMsg(){const v=$('mmsg_new').value.trim();if(!v||M().msgpool.includes(v))return;M().msgpool.push(v);$('mmsg_new').value='';save();refreshAll();}
+function addMsg(){const v=$('mmsg_new').value.trim();if(!v||M().msgpool.some(m=>m.code===v))return;M().msgpool.push({code:v,kr:($('mmsg_kr')?$('mmsg_kr').value.trim():'')});$('mmsg_new').value='';if($('mmsg_kr'))$('mmsg_kr').value='';save();refreshAll();}
+function addComposite(){const g=$('mc_goal').value,b=$('mc_bid').value,c=$('mc_code').value.trim().toUpperCase();if(!g||!b||!c)return;if(M().composite.some(x=>x.goal===g&&x.bid===b)){toast('이미 있는 목표+입찰 조합');return;}M().composite.push({goal:g,bid:b,code:c});$('mc_code').value='';save();refreshAll();}
+function addFirstcat(){const s=$('mfc_src').value.trim(),k=$('mfc_kr').value.trim(),c=$('mfc_code').value.trim().toUpperCase();if(!s||!c)return;M().firstcat.push({src:s,kr:k,code:c});$('mfc_src').value='';$('mfc_kr').value='';$('mfc_code').value='';save();refreshAll();}
 function refreshAll(){fillBuilderSelects();$('b_firstcat').value='regular';renderBuilderChips();buildPreview();renderMap();renderCreativeRows();renderCreativeCampaigns();renderCreativeSets();}
 
 /* ════════════════════════ DATA MGMT ════════════════════════ */
