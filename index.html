@@ -424,6 +424,10 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
 
       <div class="panel">
         <div class="panel-h">🛠 데이터 관리 <span class="hint" id="syncState"></span></div>
+        <div class="row-flex" style="margin-bottom:12px">
+          <button class="btn btn-primary btn-sm" onclick="runMetaSync(this)">🔄 Meta 동기화</button>
+          <span class="cnt" id="metaStatus">Meta 동기화 데이터 없음</span>
+        </div>
         <div class="row-flex">
           <button class="btn btn-ghost btn-sm" onclick="exportAll()">📦 전체 백업(JSON)</button>
           <label class="btn btn-ghost btn-sm" style="width:auto;display:inline-block">📂 백업 복원<input type="file" accept=".json" style="display:none" onchange="importAll(event)"></label>
@@ -567,6 +571,50 @@ function syncRerender(){
   const ap=document.getElementById('page-archive'); if(ap&&ap.classList.contains('active')) renderArchive();
 }
 
+/* ── Meta 실데이터 스냅샷 (서버함수 /api/sync 가 Firebase /meta_v2 에 기록) ── */
+let metaSnap=null, metaIndex={}, metaRefStarted=false;
+function startMetaSync(){
+  if(metaRefStarted) return;
+  try{
+    if(!window.firebase || !firebase.database) return;
+    metaRefStarted=true;
+    firebase.database().ref('meta_v2').on('value', snap=>{ metaSnap=snap.val(); applyMeta(); });
+  }catch(e){ console.warn('meta 리스너 실패',e); }
+}
+function applyMeta(){
+  metaIndex={};
+  const adsets = metaSnap && metaSnap.adsets ? (Array.isArray(metaSnap.adsets)?metaSnap.adsets:Object.values(metaSnap.adsets)) : [];
+  const byId={}, byName={};
+  adsets.forEach(a=>{ if(a&&a.adsetId)byId[a.adsetId]=a; if(a&&a.adsetName)byName[a.adsetName]=a; });
+  let changed=false;
+  DB.sets.forEach(s=>{
+    let live=null;
+    if(s.adsetId && byId[s.adsetId]) live=byId[s.adsetId];
+    else if(byName[s.name]){ live=byName[s.name]; if(!s.adsetId&&live.adsetId){ s.adsetId=live.adsetId; s.campaignId=live.campaignId; changed=true; } }
+    if(live) metaIndex[s.id]={total:live.total,active:live.active,liveName:live.adsetName,renamed:!!(s.adsetId&&live.adsetName&&live.adsetName!==s.name)};
+  });
+  if(changed) save();
+  renderSetLib(); renderCreativeSets(); updateMetaStatus();
+}
+function metaBadge(setId){
+  const m=metaIndex[setId]; if(!m) return '';
+  const warn = m.renamed?` <span class="bdg bdg-warn" title="매체에서 이름변경됨: ${esc(m.liveName)}">⚠이름변경</span>`:'';
+  return ` <span class="bdg" style="background:#15263f;color:#5fa8ff">소재 ${m.total}·활성 ${m.active}</span>${warn}`;
+}
+function updateMetaStatus(){
+  const el=document.getElementById('metaStatus'); if(!el) return;
+  if(metaSnap&&metaSnap.syncedAt){ const d=new Date(metaSnap.syncedAt); el.textContent=`Meta 동기화: ${d.toLocaleString('ko-KR')} · 세트 ${metaSnap.adsetCount||0}·소재 ${metaSnap.adCount||0}`; }
+  else el.textContent='Meta 동기화 데이터 없음 (토큰·배포 후 동기화 필요)';
+}
+async function runMetaSync(btn){
+  const t0=btn?btn.textContent:''; if(btn){btn.disabled=true;btn.textContent='동기화 중…';}
+  try{
+    const r=await fetch('/api/sync'); const j=await r.json();
+    toast(j&&j.ok ? `Meta 동기화 완료 · 세트 ${j.adsetCount}·소재 ${j.adCount}` : '동기화 실패: '+((j&&j.error)||'서버 확인'));
+  }catch(e){ toast('동기화 호출 실패 — Vercel 배포·토큰 설정 후 사용 가능'); }
+  if(btn){btn.disabled=false;btn.textContent=t0||'🔄 Meta 동기화';}
+}
+
 /* ════════════════════════ HELPERS ════════════════════════ */
 function $(id){return document.getElementById(id);}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -604,6 +652,7 @@ function init(){
   if(!creativeRows.length)addCreativeRow();
   updateStats();
   startSync();
+  startMetaSync();
 }
 function updateStats(){
   $('stSets').textContent=DB.sets.length;
@@ -695,7 +744,7 @@ function renderSetLib(){
   if(!list.length){$('setLibBody').innerHTML=`<tr><td colspan="8"><div class="empty"><div class="ic">📦</div>아직 생성된 광고세트가 없습니다</div></td></tr>`;return;}
   $('setLibBody').innerHTML=list.map(s=>`<tr>
     <td><span class="tag">${esc(s.brand)}</span></td>
-    <td class="t-mono">${esc(s.name)}</td>
+    <td class="t-mono">${esc(s.name)}${metaBadge(s.id)}</td>
     <td><span class="bdg bdg-dcm">${esc(s.composite)}</span></td>
     <td>${esc(s.targeting)}</td>
     <td><span class="bdg bdg-${firstcatCode(s.firstcat).toLowerCase()}">${esc(firstcatCode(s.firstcat))}</span></td>
@@ -753,7 +802,7 @@ function renderCreativeSets(){
   if(!list.length){$('cSetList').innerHTML=`<div class="empty"><div class="ic">📦</div>${DB.sets.length?'해당 캠페인에 세트가 없습니다':'먼저 빌더에서 광고세트를 생성하세요'}</div>`;return;}
   $('cSetList').innerHTML=list.map(s=>`<div class="set-card ${cSel.has(s.id)?'on':''}" onclick="toggleCSel('${s.id}')">
     <div class="cn">${esc(s.name)}</div>
-    <div class="meta"><span class="tag">${esc(s.brand)}</span><span class="bdg bdg-dcm">${esc(s.composite)}</span>${esc(s.targeting)} · ${esc(s.tam)} ${s.landing?'· 🔗':'· <span style="color:var(--yellow)">랜딩없음</span>'}</div>
+    <div class="meta"><span class="tag">${esc(s.brand)}</span><span class="bdg bdg-dcm">${esc(s.composite)}</span>${esc(s.targeting)} · ${esc(s.tam)} ${s.landing?'· 🔗':'· <span style="color:var(--yellow)">랜딩없음</span>'}${metaBadge(s.id)}</div>
   </div>`).join('');
 }
 function toggleCSel(id){cSel.has(id)?cSel.delete(id):cSel.add(id);renderCreativeSets();creativePreview();}
