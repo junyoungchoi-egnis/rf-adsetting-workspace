@@ -566,6 +566,8 @@ const SEED = {
 /* ════════════════════════ STORE (로컬 캐시 + Firebase 공용 동기화) ════════════════════════ */
 const LSK='cloop_utm_v2';
 function deepClone(o){return JSON.parse(JSON.stringify(o));}
+/* TAM 영문→한글 (시트 [소재정보 매핑키] 기준; 복합 그룹뿐이던 코드는 의미로 보완 — 필요시 설정/매핑에서 수정) */
+const TAM_KR={BENEFIT:'혜택',LOWEST:'최저가',WORKOUT:'운동',DIETER:'다이어터',INGREDIENT:'성분집착',REPLACE:'대체재',WINNING:'위닝',BULK:'대량구매',NONTAM:'논탐',GROGGY:'그로기',MANAGE:'관리',FAMILY:'가족',MEAL:'식사대용',CONSTIPATION:'변비',MODERNSODA:'모던소다',FLAVOR:'맛',BLOODSUGAR:'혈당',CONDITION:'컨디션',CATALOG:'카탈로그',PAIRING:'페어링',SEASONAL:'시즈널',SECRET:'비밀링크',TEST:'테스트',OYSALE:'올영세일',COOLING:'쿨링'};
 function load(){
   let db;
   try{const j=JSON.parse(localStorage.getItem(LSK));if(j&&j.maps)db=j;}catch(e){}
@@ -579,6 +581,7 @@ function ensureMaps(m){
   (m.products||[]).forEach(p=>{ if(!p.area) p.area='클룹'; });
   const toObj=arr=>(arr||[]).map(x=>typeof x==='string'?{code:x,kr:''}:x);
   m.tams=toObj(m.tams);
+  m.tams.forEach(t=>{ if(!t.kr && TAM_KR[t.code]) t.kr=TAM_KR[t.code]; });
   m.msgpool=toObj(m.msgpool);
   const oy=(m.schemes||[]).find(s=>s.code==='OYSALE'); if(oy&&oy.kr==='오야세일') oy.kr='올영세일';
 }
@@ -589,6 +592,7 @@ const M=()=>DB.maps;
 const AREAS=['클룹','스프린트'];
 let areaScope='클룹';
 function areaOf(productCode){const p=M().products.find(x=>x.code===productCode);return p?(p.area||'클룹'):'클룹';}
+function tamKr(code){const t=(M().tams||[]).find(x=>x.code===code);return (t&&t.kr)?t.kr:(TAM_KR[code]||code);}
 function setArea(a){
   areaScope=a;
   document.querySelectorAll('#areaNav [data-area]').forEach(b=>{const on=b.dataset.area===a;b.classList.toggle('btn-primary',on);b.classList.toggle('btn-ghost',!on);});
@@ -766,7 +770,7 @@ function buildSetName(o){
   return parts.join('_');
 }
 function buildKrName(o){
-  return `${o.media}_${brandOf(o.product)}_${schemeKr(o.scheme)}_${goalKr(o.goal)}_${bidKr(o.bid)}_${o.tam}`;
+  return `${o.media}_${brandOf(o.product)}_${schemeKr(o.scheme)}_${goalKr(o.goal)}_${bidKr(o.bid)}_${tamKr(o.tam)}`;
 }
 function currentBuilder(){
   return {
