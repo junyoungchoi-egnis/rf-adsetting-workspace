@@ -756,7 +756,7 @@ function fillBuilderSelects(){
 }
 function renderBuilderChips(){
   $('b_targetingChips').innerHTML=M().targetings.map(t=>`<span class="chip ${bTargets.has(t)?'on':''}" onclick="toggleSet(bTargets,'${esc(t)}');renderBuilderChips();buildPreview()">${esc(t)}</span>`).join('');
-  $('b_tamChips').innerHTML=M().tams.map(t=>`<span class="chip ${bTams.has(t.code)?'on':''}" title="${esc(t.kr||'')}" onclick="toggleSet(bTams,'${esc(t.code)}');renderBuilderChips();buildPreview()">${esc(t.code)}</span>`).join('');
+  $('b_tamChips').innerHTML=M().tams.map(t=>`<span class="chip ${bTams.has(t.code)?'on':''}" title="${esc(t.code)}" onclick="toggleSet(bTams,'${esc(t.code)}');renderBuilderChips();buildPreview()">${esc(t.kr||t.code)}${t.kr?` <span style="color:var(--text3);font-size:10px">${esc(t.code)}</span>`:''}</span>`).join('');
 }
 function toggleSet(set,v){set.has(v)?set.delete(v):set.add(v);}
 function addTargeting(){const v=$('b_newTarget').value.trim().toUpperCase();if(!v)return;if(!M().targetings.includes(v)){M().targetings.push(v);save();}bTargets.add(v);$('b_newTarget').value='';renderBuilderChips();buildPreview();}
