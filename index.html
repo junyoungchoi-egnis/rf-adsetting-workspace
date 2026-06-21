@@ -349,24 +349,40 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
 
     <!-- ══════════ TAB 4: MAP ══════════ -->
     <section class="page" id="page-map">
-      <div class="page-head"><h2>매핑키 관리</h2><p>모든 자동 생성의 단일 기준 데이터입니다. <b>TAM은 콘텐츠마케터 파트장</b>, 그 외(매체·합성·제품·스킴 등)는 <b>퍼포먼스마케터</b>가 관리합니다. 변경 시 전 탭·전 팀원에게 즉시 반영됩니다.</p></div>
+      <div class="page-head"><h2>매핑키 관리</h2><p>모든 자동 생성의 단일 기준 데이터이며, <b>기존 구글시트를 대체</b>합니다. <b>TAM은 콘텐츠마케터 파트장</b>, 그 외(매체·합성·제품·스킴 등)는 <b>퍼포먼스마케터</b>가 관리합니다. 변경 시 전 탭·전 팀원에게 즉시 반영됩니다.</p></div>
 
-      <div class="notice" style="margin-bottom:18px">
-        <b>자동 소재명 토큰 구조</b> &nbsp;:&nbsp; <code>날짜_매체_제품코드_포맷_메시지(1-2-3)_소재명-TAM_합성코드_타게팅_1차_2차스킴_담당자</code><br>
-        <b>광고세트명 구조</b> &nbsp;:&nbsp; <code>매체_제품코드_캠페인목표_입찰_[최적화]_타게팅_스킴_TAM_날짜</code>
+      <div class="notice" style="margin-bottom:14px">
+        <b>자동 소재명</b> &nbsp;:&nbsp; <code>날짜_매체_제품코드_포맷_메시지(1-2-3)_소재명-TAM_합성코드_타게팅_1차_2차스킴_담당자</code><br>
+        <b>광고세트명</b> &nbsp;:&nbsp; <code>매체_제품코드_캠페인목표_입찰_[최적화]_타게팅_스킴_TAM_날짜</code>
       </div>
 
-      <div class="mapgrid">
+      <div class="row-flex" id="mapSubNav" style="gap:6px;margin-bottom:16px">
+        <button class="btn btn-sm" data-ms="product" onclick="mapSub('product')">🏷 제품·계정</button>
+        <button class="btn btn-sm" data-ms="media" onclick="mapSub('media')">📡 매체</button>
+        <button class="btn btn-sm" data-ms="code" onclick="mapSub('code')">🧮 캠페인 코드</button>
+        <button class="btn btn-sm" data-ms="landing" onclick="mapSub('landing')">🔗 랜딩 URL</button>
+        <button class="btn btn-sm" data-ms="scheme" onclick="mapSub('scheme')">📐 스킴·포맷</button>
+        <button class="btn btn-sm" data-ms="tam" onclick="mapSub('tam')">🎯 TAM</button>
+        <button class="btn btn-sm" data-ms="msg" onclick="mapSub('msg')">💬 메시지</button>
+        <button class="btn btn-sm" data-ms="data" onclick="mapSub('data')">🛠 데이터·동기화</button>
+      </div>
+
+      <div class="msub" data-msub="product">
+        <div class="notice" style="margin-bottom:12px">제품 코드(<code>CLXX</code>) ↔ 브랜드명, 그리고 각 제품이 속한 <b>광고계정</b>을 정의합니다. 계정 값은 향후 상단 스코프 필터와 광고 세팅의 기준이 됩니다. <span style="color:var(--text3)">· 관리: 퍼포먼스마케터</span></div>
         <div class="panel">
-          <div class="panel-h">🏷 제품 (코드 · 브랜드)</div>
-          <div class="tbl-wrap"><table><thead><tr><th>코드</th><th>브랜드</th><th></th></tr></thead><tbody id="m_products"></tbody></table></div>
+          <div class="panel-h">🏷 제품 (코드 · 브랜드 · 계정)</div>
+          <div class="tbl-wrap"><table><thead><tr><th>코드</th><th>브랜드</th><th>광고계정</th><th></th></tr></thead><tbody id="m_products"></tbody></table></div>
           <div class="row-flex" style="margin-top:10px">
             <input id="mp_code" placeholder="CLXX" style="max-width:90px" class="mono">
-            <input id="mp_brand" placeholder="브랜드명" style="max-width:140px">
+            <input id="mp_brand" placeholder="브랜드명" style="max-width:130px">
+            <select id="mp_account" style="max-width:140px"></select>
             <button class="btn btn-ghost btn-sm" onclick="addProduct()">+ 추가</button>
           </div>
         </div>
+      </div>
 
+      <div class="msub" data-msub="media" style="display:none">
+        <div class="notice" style="margin-bottom:12px">매체 코드 → <code>utm_source</code> / <code>utm_medium</code>. 광고세트명의 매체 토큰과 UTM 파라미터가 여기서 결정됩니다. <span style="color:var(--text3)">· 관리: 퍼포먼스마케터</span></div>
         <div class="panel">
           <div class="panel-h">📡 매체 (utm_source / medium)</div>
           <div class="tbl-wrap"><table><thead><tr><th>코드</th><th>source</th><th>medium</th><th></th></tr></thead><tbody id="m_media"></tbody></table></div>
@@ -379,7 +395,18 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
         </div>
       </div>
 
-      <div class="mapgrid">
+      <div class="msub" data-msub="code" style="display:none">
+        <div class="notice" style="margin-bottom:12px"><b>합성코드</b> = 캠페인목표 + 입찰유형 (예: PUR+CMX → <code>PRC</code>). <b>1차 구분</b>은 운영 성격을 3자로 압축(promo→PMO · regular→REG · dcommerce→DCM · organic→ORG). <span style="color:var(--red)">⚠️ 수식 핵심 — 임의 변경 주의</span></div>
+        <div class="panel">
+          <div class="panel-h">🧮 합성코드 <span class="hint">캠페인목표 + 입찰</span></div>
+          <div class="tbl-wrap" style="max-height:280px;overflow-y:auto"><table><thead><tr><th>목표</th><th>입찰</th><th>→ 코드</th></tr></thead><tbody id="m_composite"></tbody></table></div>
+          <div class="sub-h" style="margin-top:14px">1차 구분 압축</div>
+          <div class="tbl-wrap"><table><thead><tr><th>원본</th><th>의미</th><th>→ 압축</th></tr></thead><tbody id="m_firstcat"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="msub" data-msub="landing" style="display:none">
+        <div class="notice" style="margin-bottom:12px">제품코드 + 스킴 조합 → 랜딩 URL. 소재의 UTM 완성 URL에 사용됩니다. 매핑이 없으면 해당 세트는 UTM이 생성되지 않습니다.</div>
         <div class="panel">
           <div class="panel-h">🔗 랜딩 URL 매핑 <span class="hint">제품코드 + 스킴 → URL</span></div>
           <div class="tbl-wrap"><table><thead><tr><th>제품</th><th>스킴</th><th>랜딩 URL</th><th></th></tr></thead><tbody id="m_landing"></tbody></table></div>
@@ -390,50 +417,54 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
             <button class="btn btn-ghost btn-sm" onclick="addLanding()">+</button>
           </div>
         </div>
-
-        <div class="panel">
-          <div class="panel-h">🧮 합성코드 <span class="hint">캠페인목표 + 입찰</span></div>
-          <div class="tbl-wrap" style="max-height:280px;overflow-y:auto"><table><thead><tr><th>목표</th><th>입찰</th><th>→ 코드</th></tr></thead><tbody id="m_composite"></tbody></table></div>
-          <div class="sub-h" style="margin-top:14px">1차 구분 압축</div>
-          <div class="tbl-wrap"><table><thead><tr><th>원본</th><th>의미</th><th>→ 압축</th></tr></thead><tbody id="m_firstcat"></tbody></table></div>
-        </div>
       </div>
 
-      <div class="mapgrid">
+      <div class="msub" data-msub="scheme" style="display:none">
+        <div class="notice" style="margin-bottom:12px"><b>스킴(2차)</b> = 프로모션 유형(100원딜·기본딜·네고왕 등), <b>소재 포맷</b> = I(이미지)/V(영상)/G(GIF) 등. 타게팅 코드는 빌더의 타게팅 칩에서 추가합니다.</div>
         <div class="panel">
-          <div class="panel-h">🎯 TAM 풀 <span class="hint">콘텐츠마케터 관리</span></div>
-          <div class="chips" id="m_tams" style="margin-bottom:10px"></div>
-          <div class="row-flex"><input id="mt_new" placeholder="신규 TAM" style="max-width:160px" class="mono"><button class="btn btn-ghost btn-sm" onclick="addMapTam()">+</button></div>
-        </div>
-        <div class="panel">
-          <div class="panel-h">📐 스킴 · 포맷 · 타게팅</div>
+          <div class="panel-h">📐 스킴 · 포맷</div>
           <div class="sub-h">스킴 (2차)</div>
           <div class="chips" id="m_schemes" style="margin-bottom:8px"></div>
-          <div class="row-flex" style="margin-bottom:12px"><input id="ms_new" placeholder="스킴" style="max-width:130px" class="mono"><button class="btn btn-ghost btn-xs" onclick="addScheme()">+</button></div>
+          <div class="row-flex" style="margin-bottom:14px"><input id="ms_new" placeholder="스킴" style="max-width:130px" class="mono"><button class="btn btn-ghost btn-xs" onclick="addScheme()">+</button></div>
           <div class="sub-h">소재 포맷</div>
           <div class="chips" id="m_formats" style="margin-bottom:8px"></div>
           <div class="row-flex"><input id="mf_new" placeholder="포맷(I/V/G)" style="max-width:130px" class="mono"><button class="btn btn-ghost btn-xs" onclick="addFormat()">+</button></div>
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-h">💬 메시지 뎁스 풀 <span class="hint">소재명 자동완성용</span></div>
-        <div class="chips" id="m_msgpool" style="margin-bottom:10px;max-height:180px;overflow-y:auto"></div>
-        <div class="row-flex"><input id="mmsg_new" placeholder="신규 메시지 코드" style="max-width:180px" class="mono"><button class="btn btn-ghost btn-sm" onclick="addMsg()">+</button></div>
+      <div class="msub" data-msub="tam" style="display:none">
+        <div class="notice" style="margin-bottom:12px"><b>TAM(타겟 메시지)</b> — 광고세트명·소재명에 들어가는 핵심 메시지 코드입니다. <span style="color:var(--accent2)">· 관리: 콘텐츠마케터 파트장</span></div>
+        <div class="panel">
+          <div class="panel-h">🎯 TAM 풀</div>
+          <div class="chips" id="m_tams" style="margin-bottom:10px"></div>
+          <div class="row-flex"><input id="mt_new" placeholder="신규 TAM" style="max-width:160px" class="mono"><button class="btn btn-ghost btn-sm" onclick="addMapTam()">+</button></div>
+        </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-h">🛠 데이터 관리 <span class="hint" id="syncState"></span></div>
-        <div class="row-flex" style="margin-bottom:12px">
-          <button class="btn btn-primary btn-sm" onclick="runMetaSync(this)">🔄 Meta 동기화</button>
-          <span class="cnt" id="metaStatus">Meta 동기화 데이터 없음</span>
+      <div class="msub" data-msub="msg" style="display:none">
+        <div class="notice" style="margin-bottom:12px">소재명 입력 시 자동완성으로 뜨는 <b>메시지 뎁스</b> 후보 목록입니다.</div>
+        <div class="panel">
+          <div class="panel-h">💬 메시지 뎁스 풀</div>
+          <div class="chips" id="m_msgpool" style="margin-bottom:10px;max-height:220px;overflow-y:auto"></div>
+          <div class="row-flex"><input id="mmsg_new" placeholder="신규 메시지 코드" style="max-width:180px" class="mono"><button class="btn btn-ghost btn-sm" onclick="addMsg()">+</button></div>
         </div>
-        <div class="row-flex">
-          <button class="btn btn-ghost btn-sm" onclick="exportAll()">📦 전체 백업(JSON)</button>
-          <label class="btn btn-ghost btn-sm" style="width:auto;display:inline-block">📂 백업 복원<input type="file" accept=".json" style="display:none" onchange="importAll(event)"></label>
-          <button class="btn btn-danger btn-sm" onclick="resetSeed()">🔄 기본 매핑키로 초기화</button>
+      </div>
+
+      <div class="msub" data-msub="data" style="display:none">
+        <div class="notice" style="margin-bottom:12px">팀 공용 데이터는 <b>Firebase</b>에 실시간 저장됩니다(<code>/v2</code>). <b>Meta 동기화</b>는 광고계정에서 캠페인/세트/소재 현황을 가져옵니다(자정·정오 자동 + 수동).</div>
+        <div class="panel">
+          <div class="panel-h">🛠 데이터 관리 <span class="hint" id="syncState"></span></div>
+          <div class="row-flex" style="margin-bottom:12px">
+            <button class="btn btn-primary btn-sm" onclick="runMetaSync(this)">🔄 Meta 동기화</button>
+            <span class="cnt" id="metaStatus">Meta 동기화 데이터 없음</span>
+          </div>
+          <div class="row-flex">
+            <button class="btn btn-ghost btn-sm" onclick="exportAll()">📦 전체 백업(JSON)</button>
+            <label class="btn btn-ghost btn-sm" style="width:auto;display:inline-block">📂 백업 복원<input type="file" accept=".json" style="display:none" onchange="importAll(event)"></label>
+            <button class="btn btn-danger btn-sm" onclick="resetSeed()">🔄 기본 매핑키로 초기화</button>
+          </div>
+          <div class="notice" style="margin-top:12px">백업 복원을 하면 <b>전체 팀 데이터가 교체</b>되니 주의하세요. 본인 소유 DB로 바꾸려면 코드 상단 <code>firebaseConfig</code>만 교체하면 됩니다.</div>
         </div>
-        <div class="notice" style="margin-top:12px">팀 공용 데이터는 <b>Firebase</b>에 실시간 저장됩니다(<code>/v2</code> 경로). 백업 복원을 하면 <b>전체 팀 데이터가 교체</b>되니 주의하세요. 본인 소유 DB로 바꾸려면 코드 상단 <code>firebaseConfig</code>만 교체하면 됩니다.</div>
       </div>
     </section>
   </main>
@@ -523,6 +554,20 @@ function load(){
 }
 let DB=load();
 const M=()=>DB.maps;
+
+/* 광고계정 목록 (제품→계정 배정용 · 스코프/광고세팅 기준) */
+const ACCOUNTS = [
+  {id:'1462607070849777', name:'클룹 애사비'},
+  {id:'3342733785912061', name:'스프린트'},
+  {id:'793134085895227',  name:'클룹 서브'},
+  {id:'539103343188615',  name:'프로모션'}
+];
+let mapSubActive='product';
+function mapSub(name){
+  mapSubActive=name;
+  document.querySelectorAll('#mapSubNav [data-ms]').forEach(b=>{const on=b.dataset.ms===name;b.classList.toggle('btn-primary',on);b.classList.toggle('btn-ghost',!on);});
+  document.querySelectorAll('#page-map .msub').forEach(s=>{s.style.display=(s.dataset.msub===name)?'':'none';});
+}
 
 /* ── Firebase 설정 ──
    ▸ 아래 config 는 웹 SDK 특성상 공개돼도 정상인 값입니다.
@@ -850,6 +895,21 @@ function validateName(name){
   if(segs.length<10||segs.length>12)return 'warn';
   return 'ok';
 }
+function validateReasons(name){
+  const r=[]; const segs=(name||'').split('_');
+  if((name||'').includes('__')) r.push('빈 토큰(연속 _) — 누락된 값이 있는지 확인');
+  if(/\s/.test(name||'')) r.push('공백 포함 — 공백 제거');
+  if(/[가-힣]/.test(name||'')) r.push('한글 포함 — 영문/코드로 변경');
+  if(segs.length<10) r.push(`토큰 ${segs.length}개(정상 10~12) — 필드 누락 확인`);
+  else if(segs.length>12) r.push(`토큰 ${segs.length}개(정상 10~12) — 소재명에 _ 가 들어갔는지 확인`);
+  return r;
+}
+function arcBadge(a){
+  if(a.status==='ok') return '<span class="bdg bdg-ok">검증 OK</span>';
+  const rs=validateReasons(a.name);
+  const tip=`⚠ 검증 ${a.status==='err'?'오류':'경고'}\n사유: ${rs.join(' / ')||'-'}\n담당자: ${a.manager||'?'}`;
+  return `<span class="bdg bdg-${a.status==='err'?'err':'warn'}" style="cursor:help" title="${esc(tip)}">${a.status==='err'?'오류':'검토 필요'} ⓘ</span>`;
+}
 function creativePreview(){
   const date=yymmdd($('c_date').value), mgr=$('c_manager').value.trim();
   const sets=DB.sets.filter(s=>cSel.has(s.id));
@@ -944,7 +1004,7 @@ function arcItem(a){
       <div class="nm" contenteditable="true" onblur="editArc('${a.id}','name',this.textContent)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${esc(a.name)}</div>
       ${a.utm?`<div class="ut">${esc(a.utm)}</div>`:''}
     </div>
-    <div style="display:flex;gap:5px">${badge(a.status)}
+    <div style="display:flex;gap:5px">${arcBadge(a)}
       <button class="cbtn" onclick="copy('${esc(a.name)}')">⧉</button>
       <button class="iconbtn" onclick="delArc('${a.id}')">🗑</button>
     </div></div>`;
@@ -963,7 +1023,7 @@ function exportArchive(){
 
 /* ════════════════════════ TAB4: MAP ════════════════════════ */
 function renderMap(){
-  $('m_products').innerHTML=M().products.map((p,i)=>`<tr><td class="mono">${esc(p.code)}</td><td><input value="${esc(p.brand)}" onchange="M().products[${i}].brand=this.value;save()"></td><td><button class="iconbtn" onclick="rmArr('products',${i})">🗑</button></td></tr>`).join('');
+  $('m_products').innerHTML=M().products.map((p,i)=>`<tr><td class="mono">${esc(p.code)}</td><td><input value="${esc(p.brand)}" onchange="M().products[${i}].brand=this.value;save()"></td><td><select onchange="M().products[${i}].account=this.value;save()"><option value="">—</option>${ACCOUNTS.map(a=>`<option value="${a.id}" ${p.account===a.id?'selected':''}>${esc(a.name)}</option>`).join('')}</select></td><td><button class="iconbtn" onclick="rmArr('products',${i})">🗑</button></td></tr>`).join('');
   $('m_media').innerHTML=M().media.map((m,i)=>`<tr><td class="mono">${esc(m.code)}</td><td><input class="mono" value="${esc(m.source)}" onchange="M().media[${i}].source=this.value;save()"></td><td><input class="mono" value="${esc(m.medium)}" onchange="M().media[${i}].medium=this.value;save()"></td><td><button class="iconbtn" onclick="rmArr('media',${i})">🗑</button></td></tr>`).join('');
   $('m_landing').innerHTML=Object.entries(M().landing).map(([k,u])=>{const[p,s]=k.split('+');return `<tr><td class="mono">${esc(p)}</td><td class="mono">${esc(s)}</td><td><input value="${esc(u)}" onchange="M().landing['${esc(k)}']=this.value;save()"></td><td><button class="iconbtn" onclick="rmLanding('${esc(k)}')">🗑</button></td></tr>`;}).join('');
   $('m_composite').innerHTML=M().composite.map(c=>`<tr><td>${esc(c.goal)} (${esc(goalKr(c.goal))})</td><td>${esc(c.bid)}</td><td><span class="bdg bdg-dcm">${esc(c.code)}</span></td></tr>`).join('');
@@ -972,10 +1032,12 @@ function renderMap(){
   $('m_schemes').innerHTML=M().schemes.map((s,i)=>`<span class="chip">${esc(s.code)} <span style="color:var(--text3)">${esc(s.kr)}</span><span class="x" onclick="rmArr('schemes',${i})">✕</span></span>`).join('');
   $('m_formats').innerHTML=M().formats.map((f,i)=>`<span class="chip">${esc(f.code)} <span style="color:var(--text3)">${esc(f.label)}</span><span class="x" onclick="rmArr('formats',${i})">✕</span></span>`).join('');
   $('m_msgpool').innerHTML=M().msgpool.map((m,i)=>`<span class="chip">${esc(m)}<span class="x" onclick="rmArr('msgpool',${i})">✕</span></span>`).join('');
+  const ma=$('mp_account'); if(ma) ma.innerHTML='<option value="">계정 선택</option>'+ACCOUNTS.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
+  mapSub(mapSubActive);
 }
 function rmArr(key,i){M()[key].splice(i,1);save();refreshAll();}
 function rmLanding(k){delete M().landing[k];save();refreshAll();}
-function addProduct(){const c=$('mp_code').value.trim().toUpperCase(),b=$('mp_brand').value.trim();if(!c||!b)return;M().products.push({code:c,brand:b});$('mp_code').value='';$('mp_brand').value='';save();refreshAll();}
+function addProduct(){const c=$('mp_code').value.trim().toUpperCase(),b=$('mp_brand').value.trim();if(!c||!b)return;M().products.push({code:c,brand:b,account:($('mp_account')?$('mp_account').value:'')});$('mp_code').value='';$('mp_brand').value='';save();refreshAll();}
 function addMedia(){const c=$('mm_code').value.trim(),s=$('mm_src').value.trim(),m=$('mm_med').value.trim();if(!c||!s||!m)return;M().media.push({code:c,channel:c,source:s,medium:m});$('mm_code').value='';$('mm_src').value='';$('mm_med').value='';save();refreshAll();}
 function addLanding(){const p=$('ml_prod').value.trim().toUpperCase(),s=$('ml_scheme').value.trim().toUpperCase(),u=$('ml_url').value.trim();if(!p||!s||!u)return;M().landing[p+'+'+s]=u;$('ml_prod').value='';$('ml_scheme').value='';$('ml_url').value='';save();refreshAll();}
 function addMapTam(){const v=$('mt_new').value.trim().toUpperCase();if(!v||M().tams.includes(v))return;M().tams.push(v);$('mt_new').value='';save();refreshAll();}
