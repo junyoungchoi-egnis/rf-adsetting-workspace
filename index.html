@@ -72,6 +72,10 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .chip:hover{border-color:var(--accent);color:var(--text)}
 .chip.on{border-color:var(--accent);background:var(--accentbg);color:var(--accent2)}
 .chip.tok{padding:4px 9px;font-size:11.5px;border-radius:14px;border-width:1px}
+.memo-row{display:flex;align-items:center;gap:6px;margin-top:6px}
+.memo-ic{font-size:12px;opacity:.6}
+.memo-in{flex:1;height:30px;font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:0 9px;color:var(--text)}
+.iconbtn.memo-on{color:var(--accent2);opacity:1}
 .chip .x{opacity:.45;font-size:13px}.chip .x:hover{opacity:1;color:var(--red)}
 .chip.add{border-style:dashed;color:var(--text3)}
 
@@ -640,6 +644,7 @@ function load(){
   if(!db.seen||typeof db.seen!=='object') db.seen={adsets:{},campaigns:{}};
   if(!db.seen.adsets) db.seen.adsets={};
   if(!db.seen.campaigns) db.seen.campaigns={};
+  if(!db.setMemo||typeof db.setMemo!=='object') db.setMemo={};
   return db;
 }
 /* 구버전 데이터 호환 정규화 (공유 Firebase 데이터가 구형식일 수 있음) */
@@ -716,6 +721,7 @@ function startSync(){
     if(!Array.isArray(DB.changes)) DB.changes=[];
     if(!DB.seen||typeof DB.seen!=='object') DB.seen={adsets:{},campaigns:{}};
     if(!DB.seen.adsets) DB.seen.adsets={}; if(!DB.seen.campaigns) DB.seen.campaigns={};
+    if(!DB.setMemo||typeof DB.setMemo!=='object') DB.setMemo={};
     localStorage.setItem(LSK,JSON.stringify(DB)); syncRerender(); applyMeta();
   }, err=>{ console.warn('Firebase 연결 실패',err); setSyncUI('local'); });
 }
@@ -1378,23 +1384,29 @@ function renderArchive(){
     const blocks=Object.entries(sets).map(([sn,arr])=>{
       const allDone=arr.length>0&&arr.every(a=>a.done);
       const snEsc=sn.replace(/'/g,"\\'");
+      const sMemo=(DB.setMemo||{})[sn]; const sMemoOpen=sMemo||openSetMemo.has(sn);
       return `<details class="acc" open>
       <summary><span class="ch">▶</span><span class="check ${allDone?'on':''}" title="이 세트 전체 완료 토글" onclick="event.preventDefault();event.stopPropagation();toggleSetDone('${snEsc}')">${allDone?'✓':''}</span><span class="t-mono" style="flex:1">${esc(sn)}</span><span class="cnt">${arr.filter(a=>a.done).length}/${arr.length}</span>
+        <button class="iconbtn ${sMemo?'memo-on':''}" title="세트 메모" onclick="event.preventDefault();event.stopPropagation();toggleSetMemo('${snEsc}')">📝</button>
         <button class="btn btn-ghost btn-xs" onclick="event.preventDefault();copy('${arr.map(a=>a.name).join('\\n').replace(/'/g,"\\'")}')">전체 복사</button></summary>
+      ${sMemoOpen?`<div class="memo-row" style="padding:7px 14px;border-top:1px solid var(--border)"><span class="memo-ic">📝</span><input class="memo-in" value="${esc(sMemo||'')}" placeholder="세트 메모 입력…" onclick="event.stopPropagation()" onblur="setGroupMemo('${snEsc}',this.value)" onkeydown="if(event.key==='Enter')this.blur()"></div>`:''}
       <div class="acc-body">${arr.map(arcItem).join('')}</div></details>`;}).join('');
     return `<div style="margin-bottom:18px"><div class="sub-h" style="color:var(--accent2)">${esc(k)} <span style="color:var(--text3)">· ${total}개</span></div>${blocks}</div>`;
   }).join('');
 }
 function arcItem(a){
   const d=new Date(a.ts);const ts=`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  const memoOpen=a.memo||openMemo.has(a.id);
   return `<div class="arc-item ${a.done?'done':''}">
     <span class="check ${a.done?'on':''}" onclick="toggleDone('${a.id}')">${a.done?'✓':''}</span>
     <span class="arc-ts">${ts}</span>
     <div class="arc-main">
       <div class="nm" title="생성된 소재명은 수정 불가 (데이터 보호) · 삭제 후 재생성하세요">${esc(a.name)}</div>
       ${a.utm?`<div class="ut">${esc(a.utm)}</div>`:''}
+      ${memoOpen?`<div class="memo-row"><span class="memo-ic">📝</span><input class="memo-in" value="${esc(a.memo||'')}" placeholder="메모 입력…" onblur="setItemMemo('${a.id}',this.value)" onkeydown="if(event.key==='Enter')this.blur()"></div>`:''}
     </div>
     <div style="display:flex;gap:5px">${arcBadge(a)}
+      <button class="iconbtn ${a.memo?'memo-on':''}" title="메모" onclick="toggleMemo('${a.id}')">📝</button>
       ${itemPayload(a)?`<button class="iconbtn" title="이 소재를 다른 세트로 복제" onclick="cloneFromArchive('${a.id}')">📑</button>`:''}
       <button class="cbtn" onclick="copy('${esc(a.name)}')">⧉</button>
       <button class="iconbtn" onclick="delArc('${a.id}')">🗑</button>
@@ -1407,6 +1419,12 @@ function cloneFromArchive(id){
   toast('소스 선택됨 · A·B에서 대상 세트를 고르고 복제하세요');
 }
 function toggleDone(id){const a=DB.archive.find(x=>x.id===id);if(a){a.done=!a.done;save();renderArchive();}}
+/* ── 메모 (소재·세트) ── */
+let openMemo=new Set(), openSetMemo=new Set();
+function toggleMemo(id){ openMemo.has(id)?openMemo.delete(id):openMemo.add(id); renderArchive(); }
+function setItemMemo(id,v){ const a=DB.archive.find(x=>x.id===id); if(!a)return; v=v.trim(); if((a.memo||'')===v){return;} a.memo=v; if(!v)delete a.memo; save(); renderArchive(); }
+function toggleSetMemo(sn){ openSetMemo.has(sn)?openSetMemo.delete(sn):openSetMemo.add(sn); renderArchive(); }
+function setGroupMemo(sn,v){ if(!DB.setMemo)DB.setMemo={}; v=v.trim(); if((DB.setMemo[sn]||'')===v)return; if(v)DB.setMemo[sn]=v; else delete DB.setMemo[sn]; save(); renderArchive(); }
 function toggleSetDone(sn){const items=DB.archive.filter(a=>a.setName===sn&&archiveArea(a)===areaScope);if(!items.length)return;const allDone=items.every(a=>a.done);items.forEach(a=>a.done=!allDone);save();renderArchive();}
 function editArc(id,f,v){const a=DB.archive.find(x=>x.id===id);if(!a)return;v=v.trim();if(!v||v===a[f])return;a[f]=v;if(f==='name'){a.status=validateName(v);if(a.utm)a.utm=a.utm.replace(/utm_content=[^&\s]*/,'utm_content='+v);}save();renderArchive();}
 function delArc(id){DB.archive=DB.archive.filter(x=>x.id!==id);save();renderArchive();}
