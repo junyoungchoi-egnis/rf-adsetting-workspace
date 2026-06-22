@@ -427,15 +427,51 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
 
       <div class="notice" style="margin-bottom:14px">⚠️ 현재는 <b>미리보기 전용</b>입니다. 실제 캠페인 생성(쓰기)은 ads_management 권한·앱 심사 확보 후 다음 단계에서 연결됩니다. 생성 시에도 항상 <b>PAUSED</b>로 만들어 즉시 노출되지 않게 합니다.</div>
 
-      <div class="row-flex" style="margin-bottom:10px">
-        <input id="mcSearch" placeholder="🔍 세트명 검색" style="max-width:260px" oninput="renderMetaCreate()">
-        <div class="seg-toggle"><button id="mcAll" class="on" onclick="setMcFilter('all')">전체</button><button id="mcActive" onclick="setMcFilter('active')">활성</button></div>
-        <div class="spacer"></div>
-        <span class="cnt" id="mcSelCount"></span>
-        <button class="btn btn-primary btn-sm" onclick="previewMetaCreate()">🔎 페이로드 미리보기</button>
+      <div class="row-flex" id="mcSubNav" style="gap:6px;margin-bottom:16px">
+        <button class="btn btn-sm" data-mc="campaign" onclick="mcSub('campaign')">① 캠페인 생성</button>
+        <button class="btn btn-sm" data-mc="adset" onclick="mcSub('adset')">② 광고세트 생성</button>
+        <button class="btn btn-sm" data-mc="ad" onclick="mcSub('ad')">③ 광고 소재 세팅</button>
       </div>
-      <div id="mcSetList" style="max-height:240px;overflow-y:auto;margin-bottom:14px"></div>
-      <div id="mcPreview"></div>
+
+      <div class="mcsub" data-mcsub="campaign">
+        <div class="panel">
+          <div class="panel-h">① 캠페인 생성 <span class="hint">독립 실행 — 캠페인만 만들기</span></div>
+          <div class="grid g2">
+            <div class="field"><label>제품</label><select id="mcc_product" onchange="mcAutoName()"></select></div>
+            <div class="field"><label>스킴</label><select id="mcc_scheme" onchange="mcAutoName()"></select></div>
+            <div class="field"><label>캠페인 목표</label><select id="mcc_goal" onchange="mcAutoName()"></select></div>
+            <div class="field"><label>캠페인명 <span class="opt">(자동 생성 · 수정 가능)</span></label><input id="mcc_name" placeholder="캠페인명"></div>
+          </div>
+          <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="mcPreviewCampaign()">🔎 페이로드 미리보기</button>
+        </div>
+        <div id="mcc_out"></div>
+      </div>
+
+      <div class="mcsub" data-mcsub="adset" style="display:none">
+        <div class="panel">
+          <div class="panel-h">② 광고세트 생성 <span class="hint">대상 캠페인 선택 → 광고세트 정의</span></div>
+          <div class="grid g2">
+            <div class="field"><label>대상 캠페인 (Meta 라이브)</label><select id="mca_camp"></select></div>
+            <div class="field"><label>기준 광고세트 (빌더)</label><select id="mca_set"></select></div>
+            <div class="field"><label>일 예산 (원 · 선택)</label><input id="mca_budget" type="number" placeholder="예: 50000"></div>
+          </div>
+          <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="mcPreviewAdset()">🔎 페이로드 미리보기</button>
+        </div>
+        <div id="mca_out"></div>
+      </div>
+
+      <div class="mcsub" data-mcsub="ad" style="display:none">
+        <div class="panel">
+          <div class="panel-h">③ 광고 소재 세팅 <span class="hint">대상 광고세트에 소재 연결</span></div>
+          <div class="grid g2">
+            <div class="field"><label>대상 광고세트 (Meta 라이브)</label><select id="mcd_adset"></select></div>
+            <div class="field"><label>소재 (생성 아카이브)</label><select id="mcd_creative"></select></div>
+          </div>
+          <div class="notice" style="margin-top:8px">이미지/영상 에셋 업로드는 다음 단계(Phase 3)입니다. 여기선 소재명·UTM·랜딩 기준 페이로드만 미리봅니다.</div>
+          <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="mcPreviewAd()">🔎 페이로드 미리보기</button>
+        </div>
+        <div id="mcd_out"></div>
+      </div>
     </section>
 
     <!-- ══════════ TAB 6: MAP ══════════ -->
@@ -1514,8 +1550,8 @@ function exportChanges(){
   const csv='﻿'+rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='변경아카이브_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
 }
-/* ════════════════════════ TAB5: META 생성 (dry-run) ════════════════════════ */
-let mSel=new Set(), mcFilter='all';
+/* ════════════════════════ TAB5: META 생성 (dry-run, 3단계 독립) ════════════════════════ */
+let mcCur='campaign';
 // 목표·입찰 → Meta API 값 매핑 (초안 · 추후 설정/매핑으로 이관 가능)
 const META_OBJECTIVE={PUR:'OUTCOME_SALES',TRF:'OUTCOME_TRAFFIC',AWR:'OUTCOME_AWARENESS',ENG:'OUTCOME_ENGAGEMENT',LEAD:'OUTCOME_LEADS'};
 const META_BID={CMX:{optimization_goal:'OFFSITE_CONVERSIONS',bid_strategy:'LOWEST_COST_WITHOUT_CAP'},VMX:{optimization_goal:'VALUE',bid_strategy:'LOWEST_COST_WITHOUT_CAP'}};
@@ -1545,34 +1581,73 @@ function mcGaps(s){
   if(!landingFor(s.product,s.scheme))g.push(`랜딩 URL 매핑 없음(${s.product}+${s.scheme})`);
   return g;
 }
-function setMcFilter(v){mcFilter=v;$('mcAll').classList.toggle('on',v==='all');$('mcActive').classList.toggle('on',v==='active');renderMetaCreate();}
-function mcSets(){ let l=DB.sets.filter(s=>areaOf(s.product)===areaScope); if(mcFilter==='active')l=l.filter(s=>setActiveState(s)===true); const q=($('mcSearch')&&$('mcSearch').value||'').toLowerCase(); if(q)l=l.filter(s=>s.name.toLowerCase().includes(q)); return l; }
-function renderMetaCreate(){
-  if(!document.getElementById('mcSetList'))return;
-  const list=mcSets();
-  $('mcSelCount').textContent=mSel.size?`${mSel.size}개 선택`:`${list.length}개`;
-  if(!list.length){$('mcSetList').innerHTML=`<div class="empty"><div class="ic">🚀</div>빌더에서 광고세트를 먼저 생성하세요</div>`;}
-  else $('mcSetList').innerHTML=list.map(s=>`<div class="set-card ${mSel.has(s.id)?'on':''}" onclick="toggleMc('${s.id}')">
-    <div class="cn">${esc(s.name)}</div>
-    <div class="meta"><span class="tag">${esc(s.brand)}</span>${statusBadge(setActiveState(s))} 목표 ${esc(s.goal)} · 입찰 ${esc(s.bid)} · 타게팅 ${esc(s.targeting)}</div>
-  </div>`).join('');
+/* 라이브(메타) 캠페인·광고세트 목록 — 현재 영역 기준 */
+function mcLiveCampaigns(){
+  const ad=metaSnap&&metaSnap.adsets?(Array.isArray(metaSnap.adsets)?metaSnap.adsets:Object.values(metaSnap.adsets)):[];
+  const m={}; ad.forEach(a=>{ if(!a.campaignId)return; const c=parseLiveSet(a); if(c&&M().products.find(p=>p.code===c.product)&&areaOf(c.product)===areaScope) m[a.campaignId]=a.campaignName||a.campaignId; });
+  return Object.entries(m).map(([id,name])=>({id,name}));
 }
-function toggleMc(id){mSel.has(id)?mSel.delete(id):mSel.add(id);renderMetaCreate();}
-function previewMetaCreate(){
-  const sets=[...mSel].map(id=>DB.sets.find(s=>s.id===id)).filter(Boolean);
-  if(!sets.length){toast('미리볼 광고세트를 선택하세요');return;}
-  $('mcPreview').innerHTML=sets.map(s=>{
-    const cp=buildCampaignPayload(s), ap=buildAdsetPayload(s), gaps=mcGaps(s);
-    return `<div class="panel" style="margin-bottom:14px">
-      <div class="panel-h" style="font-size:13px">📦 ${esc(s.name)}</div>
-      <div class="sub-h" style="color:var(--accent2);margin:4px 0 4px">① 캠페인 (POST /act_{id}/campaigns)</div>
-      <pre class="mc-json">${esc(JSON.stringify(cp,null,2))}</pre>
-      <div class="sub-h" style="color:var(--accent2);margin:10px 0 4px">② 광고세트 (POST /act_{id}/adsets)</div>
-      <pre class="mc-json">${esc(JSON.stringify(ap,null,2))}</pre>
-      <div class="notice" style="margin-top:10px"><b>생성 전 보완 필요:</b><br>${gaps.map(g=>'• '+esc(g)).join('<br>')}</div>
-    </div>`;
-  }).join('');
-  toast(`${sets.length}개 세트 페이로드 미리보기 생성 (실제 생성 아님)`);
+function mcLiveAdsets(){
+  const ad=metaSnap&&metaSnap.adsets?(Array.isArray(metaSnap.adsets)?metaSnap.adsets:Object.values(metaSnap.adsets)):[];
+  return ad.filter(a=>a.adsetId).filter(a=>{const c=parseLiveSet(a);return c&&M().products.find(p=>p.code===c.product)&&areaOf(c.product)===areaScope;}).map(a=>({id:a.adsetId,name:a.adsetName||a.adsetId}));
+}
+function _opt(v,t){return `<option value="${esc(v)}">${esc(t)}</option>`;}
+function mcSub(name){ mcCur=name; renderMetaCreate(); }
+function renderMetaCreate(){
+  if(!document.getElementById('mcSubNav'))return;
+  document.querySelectorAll('#mcSubNav [data-mc]').forEach(b=>{const on=b.dataset.mc===mcCur;b.classList.toggle('btn-primary',on);b.classList.toggle('btn-ghost',!on);});
+  document.querySelectorAll('#page-metacreate .mcsub').forEach(s=>{s.style.display=(s.dataset.mcsub===mcCur)?'':'none';});
+  if(mcCur==='campaign'){
+    const ps=M().products.filter(p=>(p.area||'클룹')===areaScope);
+    if($('mcc_product'))$('mcc_product').innerHTML=ps.map(p=>_opt(p.code,`${p.brand} (${p.code})`)).join('');
+    if($('mcc_scheme'))$('mcc_scheme').innerHTML=M().schemes.map(s=>_opt(s.code,`${s.code} (${s.kr})`)).join('');
+    if($('mcc_goal'))$('mcc_goal').innerHTML=M().goals.map(g=>_opt(g.code,`${g.code} (${g.kr})`)).join('');
+    mcAutoName();
+  } else if(mcCur==='adset'){
+    const camps=mcLiveCampaigns();
+    if($('mca_camp'))$('mca_camp').innerHTML=camps.length?camps.map(c=>_opt(c.id,c.name)).join(''):_opt('','(라이브 캠페인 없음 — Meta 동기화 필요)');
+    const sets=DB.sets.filter(s=>areaOf(s.product)===areaScope);
+    if($('mca_set'))$('mca_set').innerHTML=sets.length?sets.map(s=>_opt(s.id,s.name)).join(''):_opt('','(빌더 세트 없음)');
+  } else if(mcCur==='ad'){
+    const ads=mcLiveAdsets();
+    if($('mcd_adset'))$('mcd_adset').innerHTML=ads.length?ads.map(a=>_opt(a.id,a.name)).join(''):_opt('','(라이브 광고세트 없음)');
+    const arc=DB.archive.filter(a=>archiveArea(a)===areaScope);
+    if($('mcd_creative'))$('mcd_creative').innerHTML=arc.length?arc.map(a=>_opt(a.id,a.name)).join(''):_opt('','(아카이브 소재 없음)');
+  }
+}
+function mcAutoName(){ if(!$('mcc_product'))return; const p=$('mcc_product').value,sc=$('mcc_scheme').value,g=$('mcc_goal').value; if($('mcc_name'))$('mcc_name').value=`FB_${brandOf(p)}_${schemeKr(sc)}_${goalKr(g)}`; }
+function mcJson(o){return `<pre class="mc-json">${esc(JSON.stringify(o,null,2))}</pre>`;}
+function mcGapBox(g){return g.length?`<div class="notice" style="margin-top:10px"><b>생성 전 보완 필요:</b><br>${g.map(x=>'• '+esc(x)).join('<br>')}</div>`:'';}
+function mcPreviewCampaign(){
+  const g=$('mcc_goal').value, name=($('mcc_name').value||'').trim();
+  if(!name){toast('캠페인명을 입력하세요');return;}
+  const payload={name, objective:META_OBJECTIVE[g]||'OUTCOME_SALES', special_ad_categories:[], status:'PAUSED'};
+  const gaps=[]; if(!META_OBJECTIVE[g])gaps.push(`목표 매핑 없음(${g}) — 기본 OUTCOME_SALES 사용`);
+  $('mcc_out').innerHTML=`<div class="panel" style="margin-top:14px"><div class="sub-h" style="color:var(--accent2)">캠페인 — POST /act_{id}/campaigns</div>${mcJson(payload)}${mcGapBox(gaps)}<div class="notice" style="margin-top:8px">생성하면 받는 <b>campaign_id</b>를 ② 광고세트 단계의 "대상 캠페인"으로 사용합니다.</div></div>`;
+}
+function mcPreviewAdset(){
+  const campId=$('mca_camp').value, campName=($('mca_camp').selectedOptions[0]||{}).textContent||'';
+  const s=DB.sets.find(x=>x.id===$('mca_set').value); const budget=($('mca_budget').value||'').trim();
+  if(!s){toast('기준 광고세트를 선택하세요');return;}
+  const bid=META_BID[s.bid]||META_BID.CMX; const tg=targetingSpec(s.targeting);
+  const payload={ name:s.name, campaign_id:campId||'<대상 캠페인 미선택>',
+    optimization_goal:bid.optimization_goal, billing_event:'IMPRESSIONS', bid_strategy:bid.bid_strategy,
+    daily_budget: budget?String(Math.round(Number(budget))):'<예산 미입력>', start_time:mcDate(s.date)||'<날짜>',
+    targeting:tg.value, promoted_object:{pixel_id:'<픽셀 미입력>',custom_event_type:'PURCHASE',page_id:'<페이지 미입력>'}, status:'PAUSED' };
+  const gaps=[]; if(!campId)gaps.push('대상 캠페인 미선택'); if(!budget)gaps.push('일 예산 미입력'); gaps.push('전환 픽셀 ID 미입력','페이지 ID 미입력');
+  if(s.targeting&&s.targeting!=='ALL')gaps.push(`타게팅 '${s.targeting}' 오디언스 매핑 필요(Phase 2)`);
+  $('mca_out').innerHTML=`<div class="panel" style="margin-top:14px"><div style="font-size:11px;color:var(--text3);margin-bottom:4px">대상 캠페인: ${esc(campName)}</div><div class="sub-h" style="color:var(--accent2)">광고세트 — POST /act_{id}/adsets</div>${mcJson(payload)}${mcGapBox(gaps)}</div>`;
+}
+function mcPreviewAd(){
+  const adsetId=$('mcd_adset').value, adsetName=($('mcd_adset').selectedOptions[0]||{}).textContent||'';
+  const a=DB.archive.find(x=>x.id===$('mcd_creative').value);
+  if(!a){toast('소재를 선택하세요');return;}
+  const set=DB.sets.find(x=>x.name===a.setName); const landing=set?set.landing:'';
+  let urlTags=''; if(a.utm&&a.utm.indexOf('?')>=0) urlTags=a.utm.slice(a.utm.indexOf('?')+1);
+  const creative={ name:a.name, object_story_spec:{ page_id:'<페이지 미입력>', link_data:{ link:landing||'<랜딩 미입력>', message:'<광고 카피 미입력>', image_hash:'<이미지 에셋 미업로드>' } }, url_tags:urlTags||'<UTM 없음>' };
+  const ad={ name:a.name, adset_id:adsetId||'<대상 광고세트 미선택>', creative:{creative_id:'<위 adcreative 생성 결과 ID>'}, status:'PAUSED' };
+  const gaps=[]; if(!adsetId)gaps.push('대상 광고세트 미선택'); gaps.push('페이지 ID 미입력','이미지/영상 에셋 업로드 필요(Phase 3)','광고 카피(message) 미입력'); if(!landing)gaps.push('랜딩 URL 없음');
+  $('mcd_out').innerHTML=`<div class="panel" style="margin-top:14px"><div style="font-size:11px;color:var(--text3);margin-bottom:4px">대상 광고세트: ${esc(adsetName)}</div><div class="sub-h" style="color:var(--accent2)">① 크리에이티브 — POST /act_{id}/adcreatives</div>${mcJson(creative)}<div class="sub-h" style="color:var(--accent2);margin-top:10px">② 광고 — POST /act_{id}/ads</div>${mcJson(ad)}${mcGapBox(gaps)}</div>`;
 }
 function exportArchive(){
   if(!DB.archive.length){toast('아카이브가 비어있습니다');return;}
