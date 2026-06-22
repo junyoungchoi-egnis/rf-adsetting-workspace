@@ -71,6 +71,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .chip{padding:7px 13px;border-radius:18px;border:1.5px solid var(--border);background:var(--surface2);cursor:pointer;font-size:12px;font-weight:600;color:var(--text2);transition:.12s;user-select:none;display:flex;align-items:center;gap:6px}
 .chip:hover{border-color:var(--accent);color:var(--text)}
 .chip.on{border-color:var(--accent);background:var(--accentbg);color:var(--accent2)}
+.chip.tok{padding:4px 9px;font-size:11.5px;border-radius:14px;border-width:1px}
 .chip .x{opacity:.45;font-size:13px}.chip .x:hover{opacity:1;color:var(--red)}
 .chip.add{border-style:dashed;color:var(--text3)}
 
@@ -899,8 +900,8 @@ function renderTokenComposer(){
   const groups={};
   TARGET_TOKENS.forEach(t=>{(groups[t.cat]=groups[t.cat]||[]).push(t);});
   $('b_tokGroups').innerHTML=Object.keys(groups).sort((a,b)=>a-b).map(c=>{
-    const chips=groups[c].map(t=>`<span class="chip ${bTokens.has(t.code)?'on':''}" title="${esc(t.code)}" onclick="toggleSet(bTokens,'${esc(t.code)}');renderTokenComposer()">${esc(t.kr)} <span style="color:var(--text3);font-size:10px">${esc(t.code)}</span></span>`).join('');
-    return `<div style="margin-bottom:6px"><span class="cnt" style="display:inline-block;min-width:92px">${esc(TARGET_CATS[c]||'기타')}</span>${chips}</div>`;
+    const chips=groups[c].map(t=>`<span class="chip tok ${bTokens.has(t.code)?'on':''}" title="${esc(t.code)}" onclick="toggleSet(bTokens,'${esc(t.code)}');renderTokenComposer()">${esc(t.kr)}<span style="color:var(--text3);font-size:9.5px;margin-left:4px">${esc(t.code)}</span></span>`).join('');
+    return `<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:5px"><span class="cnt" style="min-width:78px;flex:none;padding-top:5px">${esc(TARGET_CATS[c]||'기타')}</span><div class="chips" style="flex:1">${chips}</div></div>`;
   }).join('');
   const ageSel=$('b_tgAge'); if(ageSel&&!ageSel.options.length) ageSel.innerHTML=TARGET_AGES.map(a=>`<option value="${a.code}">${esc(a.kr)}</option>`).join('');
   if(ageSel) bAge=ageSel.value;
