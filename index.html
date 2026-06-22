@@ -267,6 +267,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
         <div class="panel-h">광고세트 라이브러리 <span class="hint" id="setLibCount"></span></div>
         <div class="row-flex" style="margin-bottom:12px">
           <input id="setSearch" placeholder="🔍 세트명 검색" style="max-width:260px" oninput="renderSetLib()">
+          <div class="seg-toggle"><button id="lsAll" class="on" onclick="setLibFilter('all')">전체</button><button id="lsActive" onclick="setLibFilter('active')">활성</button><button id="lsInactive" onclick="setLibFilter('inactive')">비활성</button></div>
           <div class="spacer"></div>
           <button class="btn btn-ghost btn-sm" onclick="exportSets()">📥 세트 CSV</button>
         </div>
@@ -1009,12 +1010,18 @@ function generateSets(){
   save();renderSetLib();
   toast(`${added}개 광고세트 생성됨`);
 }
+let libFilter='all';
+function setLibFilter(v){ libFilter=v; ['all','active','inactive'].forEach(x=>$('ls'+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle('on',x===v)); renderSetLib(); }
 function renderSetLib(){
   const q=($('setSearch').value||'').toLowerCase();
   const scoped=DB.sets.filter(s=>areaOf(s.product)===areaScope);
-  const list=scoped.filter(s=>!q||s.name.toLowerCase().includes(q)).slice().reverse();
-  $('setLibCount').textContent=`${scoped.length}개 (${areaScope})`;
-  if(!list.length){$('setLibBody').innerHTML=`<tr><td colspan="8"><div class="empty"><div class="ic">📦</div>${areaScope} 영역에 광고세트가 없습니다</div></td></tr>`;return;}
+  let list=scoped.filter(s=>!q||s.name.toLowerCase().includes(q));
+  if(libFilter==='active') list=list.filter(s=>setActiveState(s)===true);
+  else if(libFilter==='inactive') list=list.filter(s=>setActiveState(s)!==true);
+  list=list.slice().reverse();
+  const actN=scoped.filter(s=>setActiveState(s)===true).length;
+  $('setLibCount').textContent=`${scoped.length}개 (${areaScope}) · 활성 ${actN}`;
+  if(!list.length){$('setLibBody').innerHTML=`<tr><td colspan="8"><div class="empty"><div class="ic">📦</div>${libFilter==='active'?'활성 광고세트가 없습니다':libFilter==='inactive'?'비활성 광고세트가 없습니다':areaScope+' 영역에 광고세트가 없습니다'}</div></td></tr>`;return;}
   $('setLibBody').innerHTML=list.map(s=>`<tr>
     <td><span class="tag">${esc(s.brand)}</span>${statusBadge(setActiveState(s))}</td>
     <td class="t-mono">${esc(s.name)}${metaBadge(s.id)}</td>
