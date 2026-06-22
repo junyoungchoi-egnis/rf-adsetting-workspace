@@ -76,6 +76,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .memo-ic{font-size:12px;opacity:.6}
 .memo-in{flex:1;height:30px;font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:0 9px;color:var(--text)}
 .iconbtn.memo-on{color:var(--accent2);opacity:1}
+.mc-json{background:#0d1424;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:var(--mono,monospace);font-size:11.5px;line-height:1.5;color:#bcd;white-space:pre-wrap;overflow-x:auto;margin:0}
 .chip .x{opacity:.45;font-size:13px}.chip .x:hover{opacity:1;color:var(--red)}
 .chip.add{border-style:dashed;color:var(--text3)}
 
@@ -176,6 +177,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
       <div class="nav-item" data-tab="creative" onclick="go('creative')"><span class="n">2</span>소재명·UTM 생성</div>
       <div class="nav-item" data-tab="archive" onclick="go('archive')"><span class="n">3</span>생성 아카이브</div>
       <div class="nav-item" data-tab="changes" onclick="go('changes')"><span class="n">4</span>변경 아카이브</div>
+      <div class="nav-item" data-tab="metacreate" onclick="go('metacreate')"><span class="n">5</span>Meta 생성 <span style="font-size:9px;background:#3a2e15;color:#ffcf66;padding:1px 5px;border-radius:6px;margin-left:2px">beta</span></div>
       <div class="nav-item" data-tab="map" onclick="go('map')"><span class="n">⚙</span>설정/매핑</div>
     </nav>
     <div class="side-foot">
@@ -419,7 +421,24 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
       <div id="changesBody"></div>
     </section>
 
-    <!-- ══════════ TAB 5: MAP ══════════ -->
+    <!-- ══════════ TAB 5: META CREATE (dry-run) ══════════ -->
+    <section class="page" id="page-metacreate">
+      <div class="page-head"><h2>Meta 생성 <span style="font-size:12px;font-weight:500;color:var(--text3)">· dry-run 미리보기</span></h2><p>빌더 광고세트를 골라 <b>Meta에 보낼 캠페인·광고세트 페이로드</b>를 미리 만들어 봅니다. <b>실제 생성은 하지 않습니다</b>(권한 불필요). 목표·입찰·타게팅 매핑과 부족한 값(예산·픽셀·페이지 등)을 먼저 점검하는 단계입니다.</p></div>
+
+      <div class="notice" style="margin-bottom:14px">⚠️ 현재는 <b>미리보기 전용</b>입니다. 실제 캠페인 생성(쓰기)은 ads_management 권한·앱 심사 확보 후 다음 단계에서 연결됩니다. 생성 시에도 항상 <b>PAUSED</b>로 만들어 즉시 노출되지 않게 합니다.</div>
+
+      <div class="row-flex" style="margin-bottom:10px">
+        <input id="mcSearch" placeholder="🔍 세트명 검색" style="max-width:260px" oninput="renderMetaCreate()">
+        <div class="seg-toggle"><button id="mcAll" class="on" onclick="setMcFilter('all')">전체</button><button id="mcActive" onclick="setMcFilter('active')">활성</button></div>
+        <div class="spacer"></div>
+        <span class="cnt" id="mcSelCount"></span>
+        <button class="btn btn-primary btn-sm" onclick="previewMetaCreate()">🔎 페이로드 미리보기</button>
+      </div>
+      <div id="mcSetList" style="max-height:240px;overflow-y:auto;margin-bottom:14px"></div>
+      <div id="mcPreview"></div>
+    </section>
+
+    <!-- ══════════ TAB 6: MAP ══════════ -->
     <section class="page" id="page-map">
       <div class="page-head"><h2>설정/매핑 <span style="font-size:12px;font-weight:500;color:var(--text3)">· 클룹·스프린트 공통</span></h2><p>모든 자동 생성의 단일 기준 데이터이며, <b>기존 구글시트를 대체</b>합니다. (이 탭은 클룹/스프린트 공통 영역) <b>TAM은 콘텐츠마케터 파트장</b>, 그 외(매체·합성·제품·스킴 등)는 <b>퍼포먼스마케터</b>가 관리합니다. 변경 시 전 탭·전 팀원에게 즉시 반영됩니다.</p></div>
 
@@ -840,6 +859,7 @@ function go(tab){
   if(tab==='creative'){renderCreativeCampaigns();renderCreativeSets();creativePreview();}
   if(tab==='archive')renderArchive();
   if(tab==='changes')renderChanges();
+  if(tab==='metacreate')renderMetaCreate();
   if(tab==='map')renderMap();
   if(tab==='build')renderSetLib();
 }
@@ -1493,6 +1513,66 @@ function exportChanges(){
     c.at||'', c.kind==='campaign'?'캠페인':'광고세트', c.from||'', c.to||'', c.campaignName||'', c.entityId||'']));
   const csv='﻿'+rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='변경아카이브_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+}
+/* ════════════════════════ TAB5: META 생성 (dry-run) ════════════════════════ */
+let mSel=new Set(), mcFilter='all';
+// 목표·입찰 → Meta API 값 매핑 (초안 · 추후 설정/매핑으로 이관 가능)
+const META_OBJECTIVE={PUR:'OUTCOME_SALES',TRF:'OUTCOME_TRAFFIC',AWR:'OUTCOME_AWARENESS',ENG:'OUTCOME_ENGAGEMENT',LEAD:'OUTCOME_LEADS'};
+const META_BID={CMX:{optimization_goal:'OFFSITE_CONVERSIONS',bid_strategy:'LOWEST_COST_WITHOUT_CAP'},VMX:{optimization_goal:'VALUE',bid_strategy:'LOWEST_COST_WITHOUT_CAP'}};
+function mcDate(d){ // 260617 → ISO(KST 자정)
+  if(!/^\d{6}$/.test(d||'')) return null;
+  return `20${d.slice(0,2)}-${d.slice(2,4)}-${d.slice(4,6)}T00:00:00+0900`;
+}
+function targetingSpec(code){
+  if(!code||code==='ALL') return {value:{geo_locations:{countries:['KR']}}, note:'Broad(전체) — 지역 KR만'};
+  return {value:{geo_locations:{countries:['KR']}, _audience:code}, note:`'${code}' 오디언스 매핑 필요 (Custom Audience ID 연결 — Phase 2)`};
+}
+function buildCampaignPayload(s){
+  return { name:(s.krName||s.name), objective:META_OBJECTIVE[s.goal]||'OUTCOME_SALES', special_ad_categories:[], status:'PAUSED' };
+}
+function buildAdsetPayload(s){
+  const bid=META_BID[s.bid]||META_BID.CMX; const tg=targetingSpec(s.targeting);
+  return { name:s.name, campaign_id:'<생성된 캠페인 ID>',
+    optimization_goal:bid.optimization_goal, billing_event:'IMPRESSIONS', bid_strategy:bid.bid_strategy,
+    daily_budget:'<예산 미입력>', start_time:mcDate(s.date)||'<날짜 미정>',
+    targeting:tg.value, promoted_object:{pixel_id:'<픽셀 미입력>',custom_event_type:'PURCHASE',page_id:'<페이지 미입력>'},
+    status:'PAUSED' };
+}
+function mcGaps(s){
+  const g=[]; if(!META_OBJECTIVE[s.goal])g.push(`목표 매핑 없음(${s.goal}) — 기본 OUTCOME_SALES 사용`);
+  g.push('일 예산(daily_budget) 미입력'); g.push('전환 픽셀 ID 미입력'); g.push('페이지 ID 미입력');
+  if(s.targeting&&s.targeting!=='ALL')g.push(`타게팅 '${s.targeting}' → 실제 오디언스 매핑 필요(Phase 2)`);
+  if(!landingFor(s.product,s.scheme))g.push(`랜딩 URL 매핑 없음(${s.product}+${s.scheme})`);
+  return g;
+}
+function setMcFilter(v){mcFilter=v;$('mcAll').classList.toggle('on',v==='all');$('mcActive').classList.toggle('on',v==='active');renderMetaCreate();}
+function mcSets(){ let l=DB.sets.filter(s=>areaOf(s.product)===areaScope); if(mcFilter==='active')l=l.filter(s=>setActiveState(s)===true); const q=($('mcSearch')&&$('mcSearch').value||'').toLowerCase(); if(q)l=l.filter(s=>s.name.toLowerCase().includes(q)); return l; }
+function renderMetaCreate(){
+  if(!document.getElementById('mcSetList'))return;
+  const list=mcSets();
+  $('mcSelCount').textContent=mSel.size?`${mSel.size}개 선택`:`${list.length}개`;
+  if(!list.length){$('mcSetList').innerHTML=`<div class="empty"><div class="ic">🚀</div>빌더에서 광고세트를 먼저 생성하세요</div>`;}
+  else $('mcSetList').innerHTML=list.map(s=>`<div class="set-card ${mSel.has(s.id)?'on':''}" onclick="toggleMc('${s.id}')">
+    <div class="cn">${esc(s.name)}</div>
+    <div class="meta"><span class="tag">${esc(s.brand)}</span>${statusBadge(setActiveState(s))} 목표 ${esc(s.goal)} · 입찰 ${esc(s.bid)} · 타게팅 ${esc(s.targeting)}</div>
+  </div>`).join('');
+}
+function toggleMc(id){mSel.has(id)?mSel.delete(id):mSel.add(id);renderMetaCreate();}
+function previewMetaCreate(){
+  const sets=[...mSel].map(id=>DB.sets.find(s=>s.id===id)).filter(Boolean);
+  if(!sets.length){toast('미리볼 광고세트를 선택하세요');return;}
+  $('mcPreview').innerHTML=sets.map(s=>{
+    const cp=buildCampaignPayload(s), ap=buildAdsetPayload(s), gaps=mcGaps(s);
+    return `<div class="panel" style="margin-bottom:14px">
+      <div class="panel-h" style="font-size:13px">📦 ${esc(s.name)}</div>
+      <div class="sub-h" style="color:var(--accent2);margin:4px 0 4px">① 캠페인 (POST /act_{id}/campaigns)</div>
+      <pre class="mc-json">${esc(JSON.stringify(cp,null,2))}</pre>
+      <div class="sub-h" style="color:var(--accent2);margin:10px 0 4px">② 광고세트 (POST /act_{id}/adsets)</div>
+      <pre class="mc-json">${esc(JSON.stringify(ap,null,2))}</pre>
+      <div class="notice" style="margin-top:10px"><b>생성 전 보완 필요:</b><br>${gaps.map(g=>'• '+esc(g)).join('<br>')}</div>
+    </div>`;
+  }).join('');
+  toast(`${sets.length}개 세트 페이로드 미리보기 생성 (실제 생성 아님)`);
 }
 function exportArchive(){
   if(!DB.archive.length){toast('아카이브가 비어있습니다');return;}
