@@ -1113,8 +1113,7 @@ function renderCreativeCampaigns(){
 }
 function selectCampaign(k){
   cCampKey=(cCampKey===k)?null:k;
-  cSel.clear();
-  if(cCampKey)_cands.filter(c=>candCampKey(c)===cCampKey).forEach(c=>cSel.add(c.id));
+  cSel.clear();   // 기본 미선택 — 광고세트는 직접 선택
   renderCreativeCampaigns();renderCreativeSets();creativePreview();
 }
 function visibleSets(){
@@ -1129,7 +1128,7 @@ function visibleSets(){
 function renderCreativeSets(){
   _abtn('btnActiveSet',activeOnlySet);
   $('cSelCount').textContent=cSel.size?`${cSel.size}개 선택`:'';
-  $('cSetHint').textContent=cCampKey?'캠페인 내 광고세트 (자동 선택됨 · 조정 가능)':'캠페인 미선택 — 전체 광고세트 표시';
+  $('cSetHint').textContent=cCampKey?'캠페인 내 광고세트 — 직접 선택':'캠페인 미선택 — 전체 광고세트 표시';
   const list=visibleSets();
   if(!list.length){$('cSetList').innerHTML=`<div class="empty"><div class="ic">📦</div>${activeOnlySet?'활성 광고세트가 없습니다':'표시할 광고세트가 없습니다 (Meta 동기화 필요)'}</div>`;return;}
   $('cSetList').innerHTML=list.map(s=>`<div class="set-card ${cSel.has(s.id)?'on':''}" onclick="toggleCSel('${esc(s.id)}')">
