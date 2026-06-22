@@ -318,12 +318,27 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
           </div>
 
           <div class="panel">
-            <div class="panel-h"><span class="step">D</span>소재 행 <span class="hint">행마다 1개 소재 · 행 추가로 대량 생성</span></div>
-            <div class="creative-row head">
-              <div>포맷*</div><div>메시지1*</div><div>메시지2</div><div>메시지3</div><div>소재명*</div><div></div><div></div>
+            <div class="panel-h"><span class="step">D</span>소재 입력
+              <div class="seg-toggle" style="margin-left:10px"><button id="cmNew" class="on" onclick="setCreativeMode('new')">신규 입력</button><button id="cmClone" onclick="setCreativeMode('clone')">복제</button></div>
+              <span class="hint" id="cModeHint">행마다 1개 소재 · 행 추가로 대량 생성</span>
             </div>
-            <div id="creativeRows"></div>
-            <button class="btn btn-ghost btn-sm" style="margin-top:6px" onclick="addCreativeRow()">+ 소재 행 추가</button>
+            <div id="cNewArea">
+              <div class="creative-row head">
+                <div>포맷*</div><div>메시지1*</div><div>메시지2</div><div>메시지3</div><div>소재명*</div><div></div><div></div>
+              </div>
+              <div id="creativeRows"></div>
+              <button class="btn btn-ghost btn-sm" style="margin-top:6px" onclick="addCreativeRow()">+ 소재 행 추가</button>
+            </div>
+            <div id="cCloneArea" style="display:none">
+              <div class="notice" style="margin-bottom:9px">생성 아카이브의 소재를 골라 <b>위 A·B에서 선택한 세트들</b>로 복제합니다. 콘텐츠(포맷·메시지·소재명·날짜·담당자)는 그대로, 타게팅·TAM·합성코드·랜딩·UTM은 대상 세트 기준으로 자동 치환됩니다.</div>
+              <div class="row-flex" style="margin-bottom:8px">
+                <input id="cloneSearch" placeholder="🔍 소스 소재 검색" style="max-width:240px" oninput="renderClonePicker()">
+                <span class="cnt" id="cloneSrcCount"></span>
+                <div class="spacer"></div>
+                <button class="btn btn-ghost btn-xs" onclick="clearCloneSources()">선택 해제</button>
+              </div>
+              <div id="clonePicker" style="max-height:240px;overflow-y:auto"></div>
+            </div>
           </div>
         </div>
 
@@ -333,7 +348,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
             <div class="preview" id="c_preview" style="font-size:11.5px"><span class="ph">세트 선택 + 소재 정보 입력 시 표시…</span></div>
             <div style="font-size:11.5px;color:var(--text2);margin:13px 0 4px">생성 예정 <b id="c_genCount" style="color:var(--accent2)">0</b>개 <span class="opt">(세트 × 소재)</span></div>
             <div class="warnbox" id="c_warn"></div>
-            <button class="btn btn-primary" style="width:100%;margin-top:10px;padding:12px" onclick="generateCreatives()">✨ 소재명 생성</button>
+            <button id="cRunBtn" class="btn btn-primary" style="width:100%;margin-top:10px;padding:12px" onclick="runCreative()">✨ 소재명 생성</button>
           </div>
         </div>
       </div>
@@ -1175,22 +1190,75 @@ function arcBadge(a){
   return `<span class="bdg bdg-${a.status==='err'?'err':'warn'}" style="cursor:help" title="${esc(tip)}">${a.status==='err'?'오류':'검토 필요'} ⓘ</span>`;
 }
 function creativePreview(){
-  const date=yymmdd($('c_date').value), mgr=$('c_manager').value.trim();
   const sets=[...cSel].map(curSet).filter(Boolean);
+  const wb=$('c_warn');
+  if(cMode==='clone'){
+    const srcs=[...cloneSources].map(id=>DB.archive.find(a=>a.id===id)).filter(Boolean);
+    $('c_genCount').textContent=sets.length*srcs.length;
+    const w=[]; if(!sets.length)w.push('대상 세트를 선택하세요 (A·B).'); if(!srcs.length)w.push('복제할 소스 소재를 선택하세요.');
+    wb.innerHTML=w.join('<br>');wb.classList.toggle('show',w.length>0);
+    if(sets.length&&srcs.length){ const s=srcs[0]; const name=buildCreativeName(sets[0],s.date,{fmt:s.fmt,msg:s.msg,soje:s.soje},s.manager||'');
+      $('c_preview').innerHTML=name.split('_').map(t=>`<span class="tok">${esc(t)}</span>`).join('<span style="color:var(--text3)">_</span>');
+    }else{$('c_preview').innerHTML='<span class="ph">소스 소재 + 대상 세트 선택 시 표시…</span>';}
+    return;
+  }
+  const date=yymmdd($('c_date').value), mgr=$('c_manager').value.trim();
   const crs=creativeRows.map(readCreativeRow).filter(Boolean);
-  const cnt=sets.length*crs.length;
-  $('c_genCount').textContent=cnt;
+  $('c_genCount').textContent=sets.length*crs.length;
   const w=[];
   if(!sets.length)w.push('광고세트를 선택하세요.');
   if(!date)w.push('날짜는 필수입니다.');
   if(!crs.length)w.push('소재 행을 1개 이상 완성하세요 (포맷·메시지1·소재명 필수).');
-  const wb=$('c_warn');wb.innerHTML=w.join('<br>');wb.classList.toggle('show',w.length>0);
+  wb.innerHTML=w.join('<br>');wb.classList.toggle('show',w.length>0);
   if(sets.length&&crs.length&&date){
     const name=buildCreativeName(sets[0],date,crs[0],mgr);
     $('c_preview').innerHTML=name.split('_').map(t=>`<span class="tok">${esc(t)}</span>`).join('<span style="color:var(--text3)">_</span>');
   }else{$('c_preview').innerHTML='<span class="ph">세트 선택 + 소재 정보 입력 시 표시…</span>';}
 }
-let lastResults=[];
+/* ════════════ 복제 (기존 소재 → 다른 세트 재적용) ════════════ */
+let cMode='new'; let cloneSources=new Set();
+function runCreative(){ cMode==='clone'?runClone():generateCreatives(); }
+function setCreativeMode(m){
+  cMode=m;
+  $('cmNew').classList.toggle('on',m==='new'); $('cmClone').classList.toggle('on',m==='clone');
+  $('cNewArea').style.display=m==='new'?'':'none';
+  $('cCloneArea').style.display=m==='clone'?'':'none';
+  $('cModeHint').textContent=m==='clone'?'아카이브 소재를 선택한 세트들로 복제':'행마다 1개 소재 · 행 추가로 대량 생성';
+  $('cRunBtn').textContent=m==='clone'?'📑 선택 세트로 복제':'✨ 소재명 생성';
+  if(m==='clone')renderClonePicker();
+  creativePreview();
+}
+function cloneable(){ return DB.archive.filter(a=>a.fmt!=null && archiveArea(a)===areaScope); }
+function renderClonePicker(){
+  const q=($('cloneSearch').value||'').toLowerCase();
+  let items=cloneable(); if(q)items=items.filter(a=>(a.name||'').toLowerCase().includes(q));
+  $('cloneSrcCount').textContent=cloneSources.size?`${cloneSources.size}개 선택`:`복제 가능 ${cloneable().length}개`;
+  if(!items.length){$('clonePicker').innerHTML=`<div class="empty"><div class="ic">📑</div>${cloneable().length?'검색 결과 없음':'복제 가능한 소재가 없습니다 (소재명 생성 후 복제 가능)'}</div>`;return;}
+  $('clonePicker').innerHTML=items.map(a=>`<div class="set-card ${cloneSources.has(a.id)?'on':''}" onclick="toggleCloneSource('${a.id}')">
+    <div class="cn">${esc(a.name)}</div>
+    <div class="meta"><span class="bdg" style="background:#15263f;color:#5fa8ff">포맷 ${esc(a.fmt)}</span> 메시지 ${esc(a.msg)} · 소재명 ${esc(a.soje)} · ${esc(a.date)}${a.manager?' · '+esc(a.manager):''}</div>
+  </div>`).join('');
+}
+function toggleCloneSource(id){ cloneSources.has(id)?cloneSources.delete(id):cloneSources.add(id); renderClonePicker(); creativePreview(); }
+function clearCloneSources(){ cloneSources.clear(); renderClonePicker(); creativePreview(); }
+function runClone(){
+  const sets=[...cSel].map(curSet).filter(Boolean);
+  const srcs=[...cloneSources].map(id=>DB.archive.find(a=>a.id===id)).filter(Boolean);
+  if(!sets.length){toast('대상 세트를 선택하세요 (A·B)');return;}
+  if(!srcs.length){toast('복제할 소스 소재를 선택하세요');return;}
+  lastResults=[]; let skip=0; const ts=new Date().toISOString();
+  sets.forEach(set=>srcs.forEach(src=>{
+    const cr={fmt:src.fmt,msg:src.msg,soje:src.soje};
+    const name=buildCreativeName(set,src.date,cr,src.manager||'');
+    if(DB.archive.some(a=>a.name===name)){skip++;return;}
+    const utm=buildUTM(set,name);
+    const item={id:(Date.now()+Math.random()).toString(36).slice(2,10),ts,setId:set.id,setName:set.name,brand:set.brand,manager:src.manager||'',name,utm,status:validateName(name),done:false,
+      fmt:src.fmt,msg:src.msg,soje:src.soje,date:src.date,cloned:true};
+    lastResults.push(item);DB.archive.unshift(item);
+  }));
+  save();renderResults();
+  toast(`복제 ${lastResults.length}건 생성${skip?` · 중복 ${skip} 제외`:''}`);
+}
 function generateCreatives(){
   const date=yymmdd($('c_date').value), mgr=$('c_manager').value.trim();
   const sets=[...cSel].map(curSet).filter(Boolean);
@@ -1203,7 +1271,8 @@ function generateCreatives(){
   sets.forEach(set=>crs.forEach(cr=>{
     const name=buildCreativeName(set,date,cr,mgr);
     const utm=buildUTM(set,name);
-    const item={id:(Date.now()+Math.random()).toString(36).slice(2,10),ts,setId:set.id,setName:set.name,brand:set.brand,manager:mgr,name,utm,status:validateName(name),done:false};
+    const item={id:(Date.now()+Math.random()).toString(36).slice(2,10),ts,setId:set.id,setName:set.name,brand:set.brand,manager:mgr,name,utm,status:validateName(name),done:false,
+      fmt:cr.fmt,msg:cr.msg,soje:cr.soje,date};   // 복제용 소재 페이로드 저장
     lastResults.push(item);DB.archive.unshift(item);
   }));
   save();renderResults();
@@ -1274,9 +1343,16 @@ function arcItem(a){
       ${a.utm?`<div class="ut">${esc(a.utm)}</div>`:''}
     </div>
     <div style="display:flex;gap:5px">${arcBadge(a)}
+      ${a.fmt!=null?`<button class="iconbtn" title="이 소재를 다른 세트로 복제" onclick="cloneFromArchive('${a.id}')">📑</button>`:''}
       <button class="cbtn" onclick="copy('${esc(a.name)}')">⧉</button>
       <button class="iconbtn" onclick="delArc('${a.id}')">🗑</button>
     </div></div>`;
+}
+function cloneFromArchive(id){
+  const a=DB.archive.find(x=>x.id===id); if(!a)return;
+  if(a.fmt==null){toast('구버전 항목은 복제 불가 — 다시 생성 후 이용하세요');return;}
+  cMode='clone'; cloneSources=new Set([id]); go('creative'); setCreativeMode('clone');
+  toast('소스 선택됨 · A·B에서 대상 세트를 고르고 복제하세요');
 }
 function setArcFilter(v){arcFilter=v;renderArchive();}
 function toggleDone(id){const a=DB.archive.find(x=>x.id===id);if(a){a.done=!a.done;save();renderArchive();}}
