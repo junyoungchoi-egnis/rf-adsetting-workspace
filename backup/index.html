@@ -1,0 +1,1559 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLOOP·SPRINT 광고 네이밍 워크스페이스</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+:root{
+  --bg:#0f1117; --surface:#171a23; --surface2:#1e2230; --surface3:#2a3046;
+  --border:#2c324c; --accent:#5b6af0; --accent2:#8b97ff; --accentbg:#1c2150;
+  --green:#22c55e; --greenbg:#0f2417; --yellow:#f59e0b; --red:#ef4444; --redbg:#2a1414;
+  --purple:#a855f7; --cyan:#22d3ee;
+  --text:#e8eaf6; --text2:#9aa2c8; --text3:#6b7299; --radius:9px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Apple SD Gothic Neo',-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;min-height:100vh}
+code,.mono{font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace}
+
+/* layout */
+.app{display:grid;grid-template-columns:212px 1fr;min-height:100vh}
+.side{background:var(--surface);border-right:1px solid var(--border);padding:18px 14px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:4px}
+.brand{font-size:15px;font-weight:800;letter-spacing:-.02em;margin-bottom:2px}
+.brand small{display:block;font-size:10px;font-weight:500;color:var(--text3);margin-top:3px;letter-spacing:.02em}
+.nav{margin-top:18px;display:flex;flex-direction:column;gap:3px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);cursor:pointer;color:var(--text2);font-weight:600;font-size:13px;transition:.15s;user-select:none}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--accentbg);color:var(--accent2)}
+.nav-item .n{font-size:11px;width:18px;height:18px;border-radius:5px;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+.nav-item.active .n{background:var(--accent);color:#fff}
+.side-foot{margin-top:auto;font-size:10px;color:var(--text3);line-height:1.6;border-top:1px solid var(--border);padding-top:12px}
+.side-stat{display:flex;justify-content:space-between;font-size:11px;color:var(--text2);padding:3px 0}
+.side-stat b{color:var(--accent2)}
+.sync-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--text3);margin-right:5px;vertical-align:middle}
+.sync-dot.on{background:var(--green)}.sync-dot.off{background:var(--yellow)}
+
+.main{padding:26px 30px;max-width:1280px}
+.page{display:none}.page.active{display:block}
+.page-head{margin-bottom:20px}
+.page-head h2{font-size:19px;font-weight:800;letter-spacing:-.02em}
+.page-head p{font-size:12.5px;color:var(--text2);margin-top:5px;line-height:1.5}
+
+/* buttons */
+.btn{padding:9px 16px;border-radius:var(--radius);border:none;cursor:pointer;font-size:13px;font-weight:600;transition:.15s;font-family:inherit}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent2)}
+.btn-ghost{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}.btn-ghost:hover{border-color:var(--accent);color:var(--accent2)}
+.btn-sm{padding:6px 11px;font-size:12px}
+.btn-xs{padding:4px 9px;font-size:11px;border-radius:6px}
+.btn-danger{background:var(--redbg);color:#ff8b8b;border:1px solid #5a2a2a}.btn-danger:hover{border-color:var(--red)}
+
+/* form */
+label{display:block;font-size:11.5px;font-weight:600;color:var(--text2);margin-bottom:5px}
+input,select,textarea{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 11px;font-size:13px;width:100%;outline:none;transition:border-color .15s;font-family:inherit}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+input::placeholder{color:var(--text3)}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239aa2c8' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+.field{margin-bottom:13px}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}.g4{grid-template-columns:repeat(4,1fr)}
+.req{color:var(--red)}.opt{color:var(--text3);font-weight:400}
+
+/* panel */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px}
+.panel-h{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:15px;display:flex;align-items:center;gap:9px}
+.panel-h .step{background:var(--accent);color:#fff;font-size:11px;width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center}
+.panel-h .hint{margin-left:auto;font-size:11px;font-weight:500;color:var(--text3);text-transform:none;letter-spacing:0}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{padding:7px 13px;border-radius:18px;border:1.5px solid var(--border);background:var(--surface2);cursor:pointer;font-size:12px;font-weight:600;color:var(--text2);transition:.12s;user-select:none;display:flex;align-items:center;gap:6px}
+.chip:hover{border-color:var(--accent);color:var(--text)}
+.chip.on{border-color:var(--accent);background:var(--accentbg);color:var(--accent2)}
+.chip.tok{padding:4px 9px;font-size:11.5px;border-radius:14px;border-width:1px}
+.memo-row{display:flex;align-items:center;gap:6px;margin-top:6px}
+.memo-ic{font-size:12px;opacity:.6}
+.memo-in{flex:1;height:30px;font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:0 9px;color:var(--text)}
+.iconbtn.memo-on{color:var(--accent2);opacity:1}
+.chip .x{opacity:.45;font-size:13px}.chip .x:hover{opacity:1;color:var(--red)}
+.chip.add{border-style:dashed;color:var(--text3)}
+
+/* preview box */
+.preview{background:var(--surface2);border:1px dashed var(--border);border-radius:10px;padding:13px 15px;font-size:12.5px;word-break:break-all;line-height:1.7;min-height:46px}
+.preview .tok{color:var(--text);background:#262c44;padding:1px 5px;border-radius:4px;margin:1px}
+.preview .ph{color:var(--text3)}
+
+/* table */
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:var(--surface2);color:var(--text2);font-weight:700;padding:10px 11px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0}
+td{padding:8px 11px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:#ffffff05}
+td input,td select{padding:6px 8px;font-size:12px}
+.t-mono{font-family:'SF Mono',monospace;font-size:11.5px;color:var(--accent2);word-break:break-all}
+
+/* badges */
+.bdg{display:inline-block;padding:2px 8px;border-radius:5px;font-size:10.5px;font-weight:700;letter-spacing:.02em}
+.bdg-dcm{background:#15263f;color:#5fa8ff}.bdg-reg{background:#10241a;color:#34d399}
+.bdg-pmo{background:#2a2410;color:#fbbf24}.bdg-org{background:#241f33;color:#c084fc}
+.bdg-ok{background:var(--greenbg);color:#4ade80}.bdg-warn{background:#2a2410;color:#fbbf24}.bdg-err{background:var(--redbg);color:#ff8b8b}
+
+/* result rows */
+.res{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:13px 15px;margin-bottom:9px}
+.res .set{font-size:11px;color:var(--text2);margin-bottom:7px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.res .nm{font-family:'SF Mono',monospace;font-size:12px;color:var(--accent2);word-break:break-all;line-height:1.55}
+.res .ut{font-family:'SF Mono',monospace;font-size:10.5px;color:var(--text3);word-break:break-all;margin-top:5px;line-height:1.5}
+.res .acts{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+.cbtn{background:var(--surface);border:1px solid var(--border);color:var(--text2);padding:4px 11px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600}
+.cbtn:hover{border-color:var(--accent);color:var(--accent2)}.cbtn.ok{border-color:var(--green);color:var(--green)}
+
+.empty{text-align:center;color:var(--text3);padding:48px 20px}
+.empty .ic{font-size:34px;margin-bottom:10px;opacity:.6}
+.notice{background:#141a2c;border:1px solid #243152;border-radius:10px;padding:12px 14px;font-size:12px;color:var(--text2);line-height:1.6}
+.notice b{color:var(--accent2)}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:15px 17px}
+.kpi .v{font-size:24px;font-weight:800;letter-spacing:-.02em}
+.kpi .l{font-size:11px;color:var(--text2);margin-top:3px}
+.row-flex{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.spacer{flex:1}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.4);opacity:0;transition:.25s;pointer-events:none;z-index:999}
+.toast.show{opacity:1;bottom:30px}
+.sub-h{font-size:12px;font-weight:700;color:var(--text2);margin:6px 0 9px;text-transform:uppercase;letter-spacing:.05em}
+.mapgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:1100px){.mapgrid{grid-template-columns:1fr}.two-col{grid-template-columns:1fr!important}}
+.two-col{display:grid;grid-template-columns:1fr 400px;gap:18px;align-items:start}
+.set-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:8px;cursor:pointer;transition:.12s}
+.set-card:hover{border-color:var(--accent)}
+.set-card.on{border-color:var(--accent);background:var(--accentbg)}
+.set-card .cn{font-family:'SF Mono',monospace;font-size:11.5px;color:var(--accent2);word-break:break-all}
+.set-card .meta{font-size:11px;color:var(--text2);margin-top:5px;display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.tag{font-size:10px;background:var(--surface3);color:var(--text2);padding:1px 7px;border-radius:4px}
+.cnt{font-size:11px;color:var(--text3);font-weight:500}
+.creative-row{display:grid;grid-template-columns:80px 1fr 1fr 1fr 1.1fr 70px 28px;gap:7px;margin-bottom:7px;align-items:center}
+.creative-row.head{font-size:10.5px;color:var(--text3);font-weight:600;margin-bottom:4px}
+.iconbtn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;padding:2px}.iconbtn:hover{color:var(--red)}
+.seg-toggle{display:inline-flex;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px;gap:2px}
+.seg-toggle button{background:none;border:none;color:var(--text2);padding:5px 13px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit}
+.seg-toggle button.on{background:var(--accent);color:#fff}
+details.acc{background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden}
+details.acc>summary{padding:11px 14px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:9px;list-style:none}
+details.acc>summary::-webkit-details-marker{display:none}
+details.acc>summary .ch{transition:.2s;color:var(--text3)}
+details.acc[open]>summary .ch{transform:rotate(90deg)}
+.acc-body{border-top:1px solid var(--border)}
+.arc-item{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.arc-item:last-child{border-bottom:none}
+.arc-item.done{opacity:.45}.arc-item.done .nm{text-decoration:line-through}
+.arc-ts{font-size:10px;color:var(--text3);min-width:74px;margin-top:2px}
+.chg-item{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border)}
+.chg-item:last-child{border-bottom:none}
+.chg-ts{font-size:10px;color:var(--text3);min-width:74px;margin-top:3px}
+.chg-main{flex:1;min-width:0;font-size:12.5px;line-height:1.5}
+.diverge-row{display:flex;align-items:center;gap:12px;padding:8px 10px;border:1px solid var(--border);border-radius:7px;margin-bottom:6px;background:rgba(255,207,102,.04)}
+.arc-main{flex:1;min-width:0}
+.arc-main .nm{font-family:'SF Mono',monospace;font-size:11.5px;color:var(--accent2);word-break:break-all;line-height:1.5}
+.arc-main .ut{font-family:'SF Mono',monospace;font-size:10px;color:var(--text3);word-break:break-all;margin-top:3px;line-height:1.45}
+.check{width:18px;height:18px;border:2px solid var(--border);border-radius:5px;cursor:pointer;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff}
+.check.on{background:var(--green);border-color:var(--green)}
+.helpkey{display:inline-block;font-size:10px;background:var(--surface3);color:var(--text2);border-radius:4px;padding:1px 6px;margin:0 2px;font-family:monospace}
+.warnbox{background:var(--redbg);border:1px solid #5a2a2a;color:#ffb4b4;border-radius:8px;padding:9px 12px;font-size:11.5px;margin-top:8px;display:none}
+.warnbox.show{display:block}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="side">
+    <div>
+      <div class="brand">🧊 광고 워크스페이스<small>CLOOP · SPRINT D2C</small></div>
+    </div>
+    <nav class="nav">
+      <div class="nav-item active" data-tab="build" onclick="go('build')"><span class="n">1</span>캠페인·세트 빌더</div>
+      <div class="nav-item" data-tab="creative" onclick="go('creative')"><span class="n">2</span>소재명·UTM 생성</div>
+      <div class="nav-item" data-tab="archive" onclick="go('archive')"><span class="n">3</span>생성 아카이브</div>
+      <div class="nav-item" data-tab="changes" onclick="go('changes')"><span class="n">4</span>변경 아카이브</div>
+      <div class="nav-item" data-tab="map" onclick="go('map')"><span class="n">⚙</span>설정/매핑</div>
+    </nav>
+    <div class="side-foot">
+      <div class="side-stat"><span>광고세트</span><b id="stSets">0</b></div>
+      <div class="side-stat"><span>생성 소재</span><b id="stArc">0</b></div>
+      <div class="side-stat"><span>제품</span><b id="stProd">0</b></div>
+      <div style="margin-top:8px"><span class="sync-dot off" id="syncDot"></span><span id="syncLabel">연결 중…</span></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="row-flex" id="areaNav" style="justify-content:flex-end;margin-bottom:14px;gap:6px">
+      <span class="cnt" style="margin-right:2px">영역</span>
+      <button class="btn btn-sm" data-area="클룹" onclick="setArea('클룹')">클룹</button>
+      <button class="btn btn-sm" data-area="스프린트" onclick="setArea('스프린트')">스프린트</button>
+    </div>
+    <!-- ══════════ TAB 1: BUILDER ══════════ -->
+    <section class="page active" id="page-build">
+      <div class="page-head">
+        <h2>캠페인 · 광고세트 빌더</h2>
+        <p>제품·목표·입찰·스킴·타게팅·TAM을 조합하면 <b>광고세트명(=utm_campaign)</b>·합성코드·한글 캠페인명이 시트 규칙대로 자동 생성됩니다. 타게팅·TAM을 여러 개 선택하면 조합만큼 세트가 한 번에 만들어집니다.</p>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <div class="panel">
+            <div class="panel-h"><span class="step">A</span>캠페인 기본 정보</div>
+            <div class="grid g3">
+              <div class="field"><label>제품 <span class="req">*</span></label><select id="b_product" onchange="buildPreview()"></select></div>
+              <div class="field"><label>매체 <span class="req">*</span></label><select id="b_media" onchange="buildPreview()"></select></div>
+              <div class="field"><label>날짜 <span class="req">*</span></label><input type="date" id="b_date" onchange="buildPreview()"></div>
+            </div>
+            <div class="grid g3">
+              <div class="field"><label>캠페인 목표 <span class="req">*</span></label><select id="b_goal" onchange="buildPreview()"></select></div>
+              <div class="field"><label>입찰 유형 <span class="req">*</span></label><select id="b_bid" onchange="onBidChange()"></select></div>
+              <div class="field"><label>스킴 (2차) <span class="req">*</span></label><select id="b_scheme" onchange="buildPreview()"></select></div>
+            </div>
+            <div class="grid g2">
+              <div class="field"><label>1차 구분 <span class="req">*</span></label><select id="b_firstcat" onchange="buildPreview()"></select></div>
+              <div class="field" id="b_optWrap"><label>입찰 최적화 토큰 <span class="opt">(VMX→TROAS, CMX→TCPA · 직접수정 가능)</span></label><input id="b_bidopt" placeholder="TROAS" oninput="buildPreview()"></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-h"><span class="step">B</span>타게팅 <span class="hint">한글 토큰 선택 → 규칙대로 자동 조합 (전환 V&gt;P, 유형 리타겟&gt;유사&gt;디타겟&gt;기타)</span></div>
+            <div id="b_tokGroups" style="margin-bottom:8px"></div>
+            <div class="row-flex" style="align-items:center;margin-bottom:10px">
+              <span class="cnt">연령대</span>
+              <select id="b_tgAge" onchange="renderTokenComposer();buildPreview()" style="max-width:130px"></select>
+              <div class="spacer"></div>
+              <span class="t-mono" id="b_tgPreview" style="color:var(--accent2);font-weight:600"></span>
+              <button class="btn btn-primary btn-sm" onclick="addComposedTargeting()">+ 타게팅 추가</button>
+            </div>
+            <div style="border-top:0.5px solid var(--border);padding-top:9px">
+              <div class="cnt" style="margin-bottom:5px">추가된 타게팅 <span style="color:var(--text3)">(이 목록 × TAM 조합만큼 세트 생성)</span></div>
+              <div class="chips" id="b_targetingChips"></div>
+              <div class="row-flex" style="margin-top:7px">
+                <input id="b_newTarget" placeholder="예외 코드 직접입력 (예: VRE-PDE)" style="max-width:200px" onkeydown="if(event.key==='Enter')addTargeting()">
+                <button class="btn btn-ghost btn-sm" onclick="addTargeting()">직접 추가</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-h"><span class="step">C</span>TAM (타겟 메시지) <span class="hint">콘텐츠마케터 영역 · 여러 개 선택 가능</span></div>
+            <div class="chips" id="b_tamChips" style="margin-bottom:9px"></div>
+            <div class="row-flex">
+              <input id="b_newTam" placeholder="신규 TAM 추가 (예: BENEFIT)" style="max-width:220px" onkeydown="if(event.key==='Enter')addTam()">
+              <button class="btn btn-ghost btn-sm" onclick="addTam()">+ 추가</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- right: preview + generate -->
+        <div>
+          <div class="panel" style="position:sticky;top:20px">
+            <div class="panel-h">미리보기 & 생성</div>
+            <div style="font-size:11px;color:var(--text2);margin-bottom:5px">광고세트명 (utm_campaign)</div>
+            <div class="preview" id="b_preview"><span class="ph">기본 정보를 채워주세요…</span></div>
+            <div style="font-size:11px;color:var(--text2);margin:13px 0 5px">한글 캠페인명 (참조용)</div>
+            <div class="preview" id="b_previewKr" style="min-height:auto;padding:10px 13px"><span class="ph">—</span></div>
+            <div style="display:flex;gap:14px;margin:14px 0 4px;font-size:11.5px;color:var(--text2)">
+              <div>합성코드 <b id="b_composite" style="color:var(--cyan)">—</b></div>
+              <div>생성 예정 <b id="b_genCount" style="color:var(--accent2)">0</b>개</div>
+            </div>
+            <div class="warnbox" id="b_warn"></div>
+            <button class="btn btn-primary" style="width:100%;margin-top:12px;padding:12px" onclick="generateSets()">+ 광고세트 생성</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h">광고세트 라이브러리 <span class="hint" id="setLibCount"></span></div>
+        <div class="row-flex" style="margin-bottom:12px">
+          <input id="setSearch" placeholder="🔍 세트명 검색" style="max-width:260px" oninput="renderSetLib()">
+          <div class="seg-toggle"><button id="lsAll" class="on" onclick="setLibFilter('all')">전체</button><button id="lsActive" onclick="setLibFilter('active')">활성</button><button id="lsInactive" onclick="setLibFilter('inactive')">비활성</button></div>
+          <div class="spacer"></div>
+          <button class="btn btn-ghost btn-sm" onclick="exportSets()">📥 세트 CSV</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>제품</th><th>광고세트명 (utm_campaign)</th><th>합성</th><th>타게팅</th><th>1차</th><th>랜딩</th><th>생성일</th><th></th></tr></thead>
+            <tbody id="setLibBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ TAB 2: CREATIVE ══════════ -->
+    <section class="page" id="page-creative">
+      <div class="page-head">
+        <h2>소재명 · UTM 생성</h2>
+        <p>광고 캠페인을 먼저 고르고 → 그 안의 광고세트를 선택한 뒤 소재 정보를 입력하면 <b>자동 소재명</b>과 <b>UTM 완성 URL</b>이 생성됩니다. 소재 행을 여러 개 추가하면 세트 × 소재 조합만큼 한 번에 만들어집니다.</p>
+      </div>
+      <div class="two-col">
+        <div>
+          <div class="panel">
+            <div class="panel-h"><span class="step">A</span>광고 캠페인 선택 <span class="hint">캠페인 → 세트 순서</span></div>
+            <div class="row-flex" style="margin-bottom:10px">
+              <input id="cCampSearch" placeholder="🔍 캠페인 검색" style="max-width:240px" oninput="renderCreativeCampaigns()">
+              <span class="cnt" id="cCampCount"></span>
+              <div class="spacer"></div>
+              <button id="btnActiveCamp" class="btn btn-ghost btn-sm" onclick="toggleActiveCamp()" title="Meta에서 현재 활성(ACTIVE)인 캠페인만 표시">활성만</button>
+            </div>
+            <div id="cCampList" style="max-height:230px;overflow-y:auto"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-h"><span class="step">B</span>광고세트 선택 <span class="hint" id="cSetHint">캠페인을 먼저 선택하세요</span></div>
+            <div class="row-flex" style="margin-bottom:10px">
+              <input id="cSetSearch" placeholder="🔍 세트 검색" style="max-width:220px" oninput="renderCreativeSets()">
+              <span class="cnt" id="cSelCount"></span>
+              <div class="spacer"></div>
+              <button id="btnActiveSet" class="btn btn-ghost btn-sm" onclick="toggleActiveSet()" title="Meta에서 현재 활성(ACTIVE)인 광고세트만 표시">활성만</button>
+            </div>
+            <div id="cSetList" style="max-height:260px;overflow-y:auto"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-h"><span class="step">C</span>공통 정보</div>
+            <div class="grid g2">
+              <div class="field"><label>날짜 <span class="req">*</span></label><input type="date" id="c_date" onchange="creativePreview()"></div>
+              <div class="field"><label>담당자 <span class="opt">(선택 · 3글자 권장)</span></label><input id="c_manager" placeholder="cmj" oninput="creativePreview()"></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-h"><span class="step">D</span>소재 입력
+              <div class="seg-toggle" style="margin-left:10px"><button id="cmNew" class="on" onclick="setCreativeMode('new')">신규 입력</button><button id="cmClone" onclick="setCreativeMode('clone')">복제</button></div>
+              <span class="hint" id="cModeHint">행마다 1개 소재 · 행 추가로 대량 생성</span>
+            </div>
+            <div id="cNewArea">
+              <div class="creative-row head">
+                <div>포맷*</div><div>메시지1*</div><div>메시지2</div><div>메시지3</div><div>소재명*</div><div></div><div></div>
+              </div>
+              <div id="creativeRows"></div>
+              <button class="btn btn-ghost btn-sm" style="margin-top:6px" onclick="addCreativeRow()">+ 소재 행 추가</button>
+            </div>
+            <div id="cCloneArea" style="display:none">
+              <div class="notice" style="margin-bottom:9px">생성 아카이브의 소재를 골라 <b>위 A·B에서 선택한 세트들</b>로 복제합니다. 콘텐츠(포맷·메시지·소재명·날짜·담당자)는 그대로, 타게팅·TAM·합성코드·랜딩·UTM은 대상 세트 기준으로 자동 치환됩니다.</div>
+              <div class="row-flex" style="margin-bottom:7px;gap:6px">
+                <input id="cloneSearch" placeholder="🔍 소재명 검색" style="max-width:190px" oninput="renderClonePicker()">
+                <select id="cloneFltProduct" onchange="renderClonePicker()" style="max-width:140px"></select>
+                <select id="cloneFltDate" onchange="renderClonePicker()" style="max-width:120px"></select>
+                <select id="cloneFltMgr" onchange="renderClonePicker()" style="max-width:120px"></select>
+              </div>
+              <div class="row-flex" style="margin-bottom:8px">
+                <span class="cnt" id="cloneSrcCount"></span>
+                <div class="spacer"></div>
+                <button class="btn btn-ghost btn-xs" onclick="resetCloneFilters()">필터 초기화</button>
+                <button class="btn btn-ghost btn-xs" onclick="clearCloneSources()">선택 해제</button>
+              </div>
+              <div id="clonePicker" style="max-height:240px;overflow-y:auto"></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="panel" style="position:sticky;top:20px">
+            <div class="panel-h">생성</div>
+            <div class="preview" id="c_preview" style="font-size:11.5px"><span class="ph">세트 선택 + 소재 정보 입력 시 표시…</span></div>
+            <div style="font-size:11.5px;color:var(--text2);margin:13px 0 4px">생성 예정 <b id="c_genCount" style="color:var(--accent2)">0</b>개 <span class="opt">(세트 × 소재)</span></div>
+            <div class="warnbox" id="c_warn"></div>
+            <button id="cRunBtn" class="btn btn-primary" style="width:100%;margin-top:10px;padding:12px" onclick="runCreative()">✨ 소재명 생성</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="cResultsPanel" style="display:none">
+        <div class="panel-h">생성 결과 <span class="hint" id="cResCount"></span></div>
+        <div id="cResults"></div>
+        <div class="row-flex" style="margin-top:10px">
+          <button class="btn btn-ghost btn-sm" onclick="copyAllNames()">📋 소재명 전체 복사</button>
+          <button class="btn btn-ghost btn-sm" onclick="copyAllUtms()">🔗 UTM 전체 복사</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportCreatives()">📥 CSV 내보내기</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════ TAB 3: ARCHIVE ══════════ -->
+    <section class="page" id="page-archive">
+      <div class="page-head"><h2>생성 아카이브</h2><p>생성된 모든 소재명·UTM 이력입니다. 직접 수정·완료체크·검색·내보내기가 가능합니다.</p></div>
+      <div class="kpi-row">
+        <div class="kpi"><div class="v" id="kTotal">0</div><div class="l">총 생성 소재</div></div>
+        <div class="kpi"><div class="v" id="kDone">0</div><div class="l">세팅 완료</div></div>
+        <div class="kpi"><div class="v" id="kSets">0</div><div class="l">광고세트 수</div></div>
+        <div class="kpi"><div class="v" id="kErr" style="color:#ff8b8b">0</div><div class="l">검증 경고</div></div>
+      </div>
+      <div class="row-flex" style="margin-bottom:14px">
+        <div class="seg-toggle">
+          <button id="avBrand" class="on" onclick="setArcView('brand')">제품별</button>
+          <button id="avMgr" onclick="setArcView('manager')">담당자별</button>
+        </div>
+        <div class="spacer"></div>
+        <input id="arcSearch" placeholder="🔍 소재명 검색" style="max-width:240px" oninput="renderArchive()">
+        <button class="btn btn-ghost btn-sm" onclick="exportArchive()">📥 CSV</button>
+        <button class="btn btn-danger btn-sm" onclick="clearArchive()">전체 초기화</button>
+      </div>
+      <div id="arcLabelFilter" class="chips" style="margin-bottom:14px"></div>
+      <div id="archiveBody"></div>
+    </section>
+
+    <!-- ══════════ TAB 4: CHANGES ══════════ -->
+    <section class="page" id="page-changes">
+      <div class="page-head"><h2>변경 아카이브</h2><p>Meta 동기화가 감지한 <b>캠페인·광고세트 이름 변경 이력</b>입니다. 세트·캠페인 <b>ID 기준</b>으로 추적하므로 매체에서 이름을 바꿔도 어떤 세트가 어떻게 바뀌었는지 남습니다. <b>자동 동기화(자정·정오)</b> 때마다 갱신됩니다.</p></div>
+
+      <div class="notice" style="margin-bottom:14px" id="chgDivergeNote"></div>
+
+      <div class="row-flex" style="margin-bottom:14px">
+        <div class="seg-toggle">
+          <button id="cfAll" class="on" onclick="setChgFilter(null)">전체</button>
+          <button id="cfSet" onclick="setChgFilter('adset')">광고세트</button>
+          <button id="cfCam" onclick="setChgFilter('campaign')">캠페인</button>
+        </div>
+        <div class="spacer"></div>
+        <input id="chgSearch" placeholder="🔍 이름 검색" style="max-width:240px" oninput="renderChanges()">
+        <button class="btn btn-ghost btn-sm" onclick="exportChanges()">📥 CSV</button>
+        <button class="btn btn-danger btn-sm" onclick="clearChanges()">전체 초기화</button>
+      </div>
+      <div id="changesDiverge"></div>
+      <div id="changesBody"></div>
+    </section>
+
+    <!-- ══════════ TAB 5: MAP ══════════ -->
+    <section class="page" id="page-map">
+      <div class="page-head"><h2>설정/매핑 <span style="font-size:12px;font-weight:500;color:var(--text3)">· 클룹·스프린트 공통</span></h2><p>모든 자동 생성의 단일 기준 데이터이며, <b>기존 구글시트를 대체</b>합니다. (이 탭은 클룹/스프린트 공통 영역) <b>TAM은 콘텐츠마케터 파트장</b>, 그 외(매체·합성·제품·스킴 등)는 <b>퍼포먼스마케터</b>가 관리합니다. 변경 시 전 탭·전 팀원에게 즉시 반영됩니다.</p></div>
+
+      <div class="notice" style="margin-bottom:14px">
+        <b>자동 소재명</b> &nbsp;:&nbsp; <code>날짜_매체_제품코드_포맷_메시지(1-2-3)_소재명-TAM_합성코드_타게팅_1차_2차스킴_담당자</code><br>
+        <b>광고세트명</b> &nbsp;:&nbsp; <code>매체_제품코드_캠페인목표_입찰_[최적화]_타게팅_스킴_TAM_날짜</code>
+      </div>
+
+      <div class="row-flex" id="mapSubNav" style="gap:6px;margin-bottom:16px">
+        <button class="btn btn-sm" data-ms="product" onclick="mapSub('product')">🏷 제품·구분</button>
+        <button class="btn btn-sm" data-ms="media" onclick="mapSub('media')">📡 매체</button>
+        <button class="btn btn-sm" data-ms="code" onclick="mapSub('code')">🧮 캠페인 코드</button>
+        <button class="btn btn-sm" data-ms="landing" onclick="mapSub('landing')">🔗 랜딩 URL</button>
+        <button class="btn btn-sm" data-ms="scheme" onclick="mapSub('scheme')">📐 스킴·포맷</button>
+        <button class="btn btn-sm" data-ms="tam" onclick="mapSub('tam')">🎯 TAM</button>
+        <button class="btn btn-sm" data-ms="msg" onclick="mapSub('msg')">💬 메시지</button>
+        <button class="btn btn-sm" data-ms="data" onclick="mapSub('data')">🛠 데이터·동기화</button>
+      </div>
+
+      <div class="msub" data-msub="product">
+        <div class="notice" style="margin-bottom:12px">제품 코드(<code>CLXX</code>) ↔ 브랜드명, 그리고 각 제품이 속한 <b>구분(클룹/스프린트)</b>을 정의합니다. 이 구분이 상단 영역 버튼의 필터 기준입니다. (메인·서브 계정 모두 같은 제품을 쓸 수 있어 계정이 아닌 클룹/스프린트로 묶음) <span style="color:var(--text3)">· 관리: 퍼포먼스마케터</span></div>
+        <div class="panel">
+          <div class="panel-h">🏷 제품 (코드 · 브랜드 · 구분)</div>
+          <div class="tbl-wrap"><table><thead><tr><th>코드</th><th>브랜드</th><th>구분</th><th></th></tr></thead><tbody id="m_products"></tbody></table></div>
+          <div class="row-flex" style="margin-top:10px">
+            <input id="mp_code" placeholder="CLXX" style="max-width:90px" class="mono">
+            <input id="mp_brand" placeholder="브랜드명" style="max-width:130px">
+            <select id="mp_area" style="max-width:120px"><option>클룹</option><option>스프린트</option></select>
+            <button class="btn btn-ghost btn-sm" onclick="addProduct()">+ 추가</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="msub" data-msub="media" style="display:none">
+        <div class="notice" style="margin-bottom:12px">매체 코드 → <code>utm_source</code> / <code>utm_medium</code>. 광고세트명의 매체 토큰과 UTM 파라미터가 여기서 결정됩니다. <span style="color:var(--text3)">· 관리: 퍼포먼스마케터</span></div>
+        <div class="panel">
+          <div class="panel-h">📡 매체 (utm_source / medium)</div>
+          <div class="tbl-wrap"><table><thead><tr><th>코드</th><th>source</th><th>medium</th><th></th></tr></thead><tbody id="m_media"></tbody></table></div>
+          <div class="row-flex" style="margin-top:10px">
+            <input id="mm_code" placeholder="코드" style="max-width:90px" class="mono">
+            <input id="mm_src" placeholder="source" style="max-width:90px" class="mono">
+            <input id="mm_med" placeholder="medium" style="max-width:90px" class="mono">
+            <button class="btn btn-ghost btn-sm" onclick="addMedia()">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="msub" data-msub="code" style="display:none">
+        <div class="notice" style="margin-bottom:12px"><b>합성코드</b> = 캠페인목표 + 입찰유형 (예: PUR+CMX → <code>PRC</code>). <b>1차 구분</b>은 운영 성격을 3자로 압축(promo→PMO · regular→REG · dcommerce→DCM · organic→ORG). <span style="color:var(--red)">⚠️ 수식 핵심 — 임의 변경 주의</span></div>
+        <div class="panel">
+          <div class="panel-h">🧮 합성코드 <span class="hint">캠페인목표 + 입찰</span></div>
+          <div class="tbl-wrap" style="max-height:280px;overflow-y:auto"><table><thead><tr><th>목표</th><th>입찰</th><th>→ 코드</th><th></th></tr></thead><tbody id="m_composite"></tbody></table></div>
+          <div class="row-flex" style="margin-top:10px">
+            <select id="mc_goal" style="max-width:120px"></select>
+            <select id="mc_bid" style="max-width:110px"></select>
+            <input id="mc_code" placeholder="합성코드(PRX)" style="max-width:120px" class="mono">
+            <button class="btn btn-ghost btn-sm" onclick="addComposite()">+ 추가</button>
+          </div>
+          <div class="sub-h" style="margin-top:16px">1차 구분 압축</div>
+          <div class="tbl-wrap"><table><thead><tr><th>원본</th><th>의미</th><th>→ 압축</th><th></th></tr></thead><tbody id="m_firstcat"></tbody></table></div>
+          <div class="row-flex" style="margin-top:10px">
+            <input id="mfc_src" placeholder="원본(예: event)" style="max-width:120px" class="mono">
+            <input id="mfc_kr" placeholder="의미" style="max-width:120px">
+            <input id="mfc_code" placeholder="압축(EVT)" style="max-width:90px" class="mono">
+            <button class="btn btn-ghost btn-sm" onclick="addFirstcat()">+ 추가</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="msub" data-msub="landing" style="display:none">
+        <div class="notice" style="margin-bottom:12px">제품코드 + 스킴 조합 → 랜딩 URL. 소재의 UTM 완성 URL에 사용됩니다. 매핑이 없으면 해당 세트는 UTM이 생성되지 않습니다.</div>
+        <div class="panel">
+          <div class="panel-h">🔗 랜딩 URL 매핑 <span class="hint">제품코드 + 스킴 → URL</span></div>
+          <div class="tbl-wrap"><table><thead><tr><th>제품</th><th>스킴</th><th>랜딩 URL</th><th></th></tr></thead><tbody id="m_landing"></tbody></table></div>
+          <div class="row-flex" style="margin-top:10px">
+            <input id="ml_prod" placeholder="CLCL" style="max-width:80px" class="mono">
+            <input id="ml_scheme" placeholder="100DEAL" style="max-width:90px" class="mono">
+            <input id="ml_url" placeholder="https://cloop.kr/..." style="flex:1">
+            <button class="btn btn-ghost btn-sm" onclick="addLanding()">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="msub" data-msub="scheme" style="display:none">
+        <div class="notice" style="margin-bottom:12px"><b>스킴(2차)</b> = 프로모션 유형(100원딜·기본딜·네고왕 등), <b>소재 포맷</b> = I(이미지)/V(영상)/G(GIF) 등. 타게팅 코드는 빌더의 타게팅 칩에서 추가합니다.</div>
+        <div class="panel">
+          <div class="panel-h">📐 스킴 · 포맷</div>
+          <div class="sub-h">스킴 (2차)</div>
+          <div class="chips" id="m_schemes" style="margin-bottom:8px"></div>
+          <div class="row-flex" style="margin-bottom:14px"><input id="ms_new" placeholder="스킴" style="max-width:130px" class="mono"><button class="btn btn-ghost btn-xs" onclick="addScheme()">+</button></div>
+          <div class="sub-h">소재 포맷</div>
+          <div class="chips" id="m_formats" style="margin-bottom:8px"></div>
+          <div class="row-flex"><input id="mf_new" placeholder="포맷(I/V/G)" style="max-width:130px" class="mono"><button class="btn btn-ghost btn-xs" onclick="addFormat()">+</button></div>
+        </div>
+      </div>
+
+      <div class="msub" data-msub="tam" style="display:none">
+        <div class="notice" style="margin-bottom:12px"><b>TAM(타겟 메시지)</b> — 광고세트명·소재명에 들어가는 핵심 메시지 코드입니다. <span style="color:var(--accent2)">· 관리: 콘텐츠마케터 파트장</span></div>
+        <div class="panel">
+          <div class="panel-h">🎯 TAM 풀 <span class="hint">영문 코드 + 한글 의미</span></div>
+          <div class="tbl-wrap" style="max-height:340px;overflow-y:auto"><table><thead><tr><th>코드</th><th>한글 의미</th><th></th></tr></thead><tbody id="m_tams"></tbody></table></div>
+          <div class="row-flex" style="margin-top:10px"><input id="mt_new" placeholder="TAM 코드" style="max-width:140px" class="mono"><input id="mt_kr" placeholder="한글 의미" style="max-width:160px"><button class="btn btn-ghost btn-sm" onclick="addMapTam()">+ 추가</button></div>
+        </div>
+      </div>
+
+      <div class="msub" data-msub="msg" style="display:none">
+        <div class="notice" style="margin-bottom:12px">소재명 입력 시 자동완성으로 뜨는 <b>메시지 뎁스</b> 후보 목록입니다.</div>
+        <div class="panel">
+          <div class="panel-h">💬 메시지 뎁스 풀 <span class="hint">영문 코드 + 한글 의미</span></div>
+          <div class="tbl-wrap" style="max-height:360px;overflow-y:auto"><table><thead><tr><th>코드</th><th>한글 의미</th><th></th></tr></thead><tbody id="m_msgpool"></tbody></table></div>
+          <div class="row-flex" style="margin-top:10px"><input id="mmsg_new" placeholder="메시지 코드" style="max-width:140px" class="mono"><input id="mmsg_kr" placeholder="한글 의미" style="max-width:160px"><button class="btn btn-ghost btn-sm" onclick="addMsg()">+ 추가</button></div>
+        </div>
+      </div>
+
+      <div class="msub" data-msub="data" style="display:none">
+        <div class="notice" style="margin-bottom:12px">팀 공용 데이터는 <b>Firebase</b>에 실시간 저장됩니다(<code>/v2</code>). <b>Meta 동기화</b>는 광고계정에서 캠페인/세트/소재 현황을 가져옵니다(자정·정오 자동 + 수동).</div>
+        <div class="panel">
+          <div class="panel-h">🛠 데이터 관리 <span class="hint" id="syncState"></span></div>
+          <div class="row-flex" style="margin-bottom:12px">
+            <button class="btn btn-primary btn-sm" onclick="runMetaSync(this)">🔄 Meta 동기화</button>
+            <span class="cnt" id="metaStatus">Meta 동기화 데이터 없음</span>
+          </div>
+          <div class="row-flex">
+            <button class="btn btn-ghost btn-sm" onclick="exportAll()">📦 전체 백업(JSON)</button>
+            <label class="btn btn-ghost btn-sm" style="width:auto;display:inline-block">📂 백업 복원<input type="file" accept=".json" style="display:none" onchange="importAll(event)"></label>
+            <button class="btn btn-danger btn-sm" onclick="resetSeed()">🔄 기본 매핑키로 초기화</button>
+          </div>
+          <div class="notice" style="margin-top:12px">백업 복원을 하면 <b>전체 팀 데이터가 교체</b>되니 주의하세요. 본인 소유 DB로 바꾸려면 코드 상단 <code>firebaseConfig</code>만 교체하면 됩니다.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ════════════════════════ SEED DATA (시트 기반) ════════════════════════ */
+const SEED = {
+  products:[
+    {code:'CLCL',brand:'콜사비',area:'클룹'},{code:'CLAC',brand:'애사비즈',area:'클룹'},{code:'CLAP',brand:'패사비',area:'클룹'},
+    {code:'CLOH',brand:'오프아워',area:'클룹'},{code:'CLWP',brand:'원더팝',area:'클룹'},{code:'CLSO',brand:'소요일',area:'클룹'},
+    {code:'CLAF',brand:'화이바',area:'클룹'},{code:'CLTC',brand:'티카이브',area:'클룹'},{code:'CLZS',brand:'제로소다',area:'클룹'},
+    {code:'CLALL',brand:'공통',area:'클룹'},
+    {code:'SPEN',brand:'스프린트에너지',area:'스프린트'}
+  ],
+  media:[
+    {code:'FB',channel:'메타',source:'facebook',medium:'social'},
+    {code:'GDA_DGEN',channel:'구글 Demand Gen',source:'google',medium:'display'},
+    {code:'GDA_PMAX',channel:'구글 PMax',source:'google',medium:'display'},
+    {code:'GSA',channel:'구글 키워드',source:'google',medium:'cpc'},
+    {code:'KK_BIZ',channel:'카카오 비즈보드',source:'kakao',medium:'biz'},
+    {code:'NSA_브랜드_MO',channel:'네이버 브랜드검색 MO',source:'naver',medium:'nbrand_mo'},
+    {code:'NSA_브랜드_PC',channel:'네이버 브랜드검색 PC',source:'naver',medium:'nbrand_pc'},
+    {code:'NSA_파워링크',channel:'네이버 파워링크',source:'naver',medium:'cpc'},
+    {code:'NSA_쇼핑검색',channel:'네이버 쇼핑검색',source:'naver',medium:'shopping'},
+    {code:'GFA',channel:'네이버 GFA',source:'naver',medium:'display'},
+    {code:'TT',channel:'틱톡',source:'tiktok',medium:'social'},
+    {code:'TOSS',channel:'토스페이',source:'tosspay',medium:'cps'},
+    {code:'PAYCO',channel:'페이코',source:'payco',medium:'cps'}
+  ],
+  goals:[
+    {code:'PUR',kr:'구매'},{code:'PAY',kr:'결제'},{code:'AWR',kr:'인지'},{code:'TRF',kr:'트래픽'},
+    {code:'ING',kr:'참여'},{code:'CRG',kr:'회원가입'},{code:'ATC',kr:'장바구니'},{code:'CVW',kr:'콘텐츠조회'}
+  ],
+  bids:[{code:'CMX',kr:'conv'},{code:'VMX',kr:'value'}],
+  composite:[
+    {goal:'PUR',bid:'VMX',code:'PRV'},{goal:'PUR',bid:'CMX',code:'PRC'},
+    {goal:'PAY',bid:'VMX',code:'PAV'},{goal:'PAY',bid:'CMX',code:'PAC'},
+    {goal:'AWR',bid:'VMX',code:'AWV'},{goal:'AWR',bid:'CMX',code:'AWC'},
+    {goal:'TRF',bid:'VMX',code:'TRV'},{goal:'TRF',bid:'CMX',code:'TRC'},
+    {goal:'ING',bid:'VMX',code:'INV'},{goal:'ING',bid:'CMX',code:'INC'},
+    {goal:'CRG',bid:'VMX',code:'CGV'},{goal:'CRG',bid:'CMX',code:'CGC'},
+    {goal:'ATC',bid:'VMX',code:'ATV'},{goal:'ATC',bid:'CMX',code:'ACC'},
+    {goal:'CVW',bid:'CMX',code:'CVC'}
+  ],
+  firstcat:[
+    {src:'promo',kr:'프로모션(이벤트·시즌)',code:'PMO'},
+    {src:'regular',kr:'상시(일반 운영)',code:'REG'},
+    {src:'dcommerce',kr:'딜커머스(특가·딜)',code:'DCM'},
+    {src:'organic',kr:'오가닉(자연 유입)',code:'ORG'}
+  ],
+  schemes:[
+    {code:'100DEAL',kr:'100원딜'},{code:'BASIC',kr:'기본딜'},{code:'LAUNCH',kr:'출시특가'},
+    {code:'NGK',kr:'네고왕'},{code:'OYSALE',kr:'올영세일'},{code:'BKU',kr:'벌크업'}
+  ],
+  targetings:['ALL','PRE','PDE','SRE','VDE','VRE-PDE','PLAL-PDE','VRE-PLAL-PDE','VDE-PLAL','PDE-2135','PDE-3649','TROAS'],
+  tams:['BENEFIT','LOWEST','WORKOUT','DIETER','INGREDIENT','REPLACE','WINNING','BULK','NONTAM',
+        'GROGGY','MANAGE','FAMILY','MEAL','CONSTIPATION','MODERNSODA','FLAVOR','BLOODSUGAR',
+        'CONDITION','CATALOG','PAIRING','SEASONAL','SECRET','TEST'],
+  formats:[{code:'I',label:'Image'},{code:'V',label:'Video'},{code:'G',label:'GIF'},{code:'PTA',label:'파트너십'},{code:'CAT',label:'카탈로그'}],
+  landing:{
+    'CLCL+100DEAL':'https://cloop.kr/product/detail.html?product_no=445',
+    'CLAC+100DEAL':'https://cloop.kr/product/detail.html?product_no=401',
+    'CLAC+BASIC':'https://cloop.kr/product/detail.html?product_no=138',
+    'CLAC+NGK':'https://cloop.kr/product/detail.html?product_no=449',
+    'CLAP+100DEAL':'https://cloop.kr/product/detail.html?product_no=423',
+    'CLOH+100DEAL':'https://cloop.kr/product/detail.html?product_no=443',
+    'CLOH+NGK':'https://cloop.kr/product/detail.html?product_no=455',
+    'CLWP+100DEAL':'https://cloop.kr/product/detail.html?product_no=467',
+    'CLWP+LAUNCH':'https://cloop.kr/product/detail.html?product_no=390',
+    'CLSO+BASIC':'https://cloop.kr/product/detail.html?product_no=414',
+    'CLAF+BASIC':'https://cloop.kr/product/detail.html?product_no=415'
+  },
+  msgpool:['mat','season','EF','TT','TF','VV','FV','FR','TH','MM','USP','ZERO','OLV','FI','HT','GAS','ED','UNI','CV','HM','PR','SG','GD','BF','LM','OP','BP','PP','SC',
+    'cooling','replacement','fruit','diet','ppp','percent','bulky','new','zero','ingredient','lowest','limit','benefit','sound','visual','lineup','bna','motion',
+    'magazine','compare','cancelline','fizz','fun','timer','voc','tweet','reaction','function','person','tpo',
+    'FOMO','CURIOUS','EMPATHY','ANKOR','SOCIAL','GASLIGHTING','URGENCY','PAINPOINT',
+    'aggro','galdeung','nego','scale','mt','viral','drunk','condition','number','notice','sleep','sales','WORKOUT','WORK','family','morning']
+};
+
+/* ════════════════════════ STORE (로컬 캐시 + Firebase 공용 동기화) ════════════════════════ */
+const LSK='cloop_utm_v2';
+function deepClone(o){return JSON.parse(JSON.stringify(o));}
+/* TAM 영문→한글 (시트 [소재정보 매핑키] 기준; 복합 그룹뿐이던 코드는 의미로 보완 — 필요시 설정/매핑에서 수정) */
+const TAM_KR={BENEFIT:'혜택',LOWEST:'최저가',WORKOUT:'운동',DIETER:'다이어터',INGREDIENT:'성분집착',REPLACE:'대체재',WINNING:'위닝',BULK:'대량구매',NONTAM:'논탐',GROGGY:'그로기',MANAGE:'관리',FAMILY:'가족',MEAL:'식사대용',CONSTIPATION:'변비',MODERNSODA:'모던소다',FLAVOR:'맛',BLOODSUGAR:'혈당',CONDITION:'컨디션',CATALOG:'카탈로그',PAIRING:'페어링',SEASONAL:'시즈널',SECRET:'비밀링크',TEST:'테스트',OYSALE:'올영세일',COOLING:'쿨링'};
+function load(){
+  let db;
+  try{const j=JSON.parse(localStorage.getItem(LSK));if(j&&j.maps)db=j;}catch(e){}
+  if(!db) db={maps:deepClone(SEED),sets:[],archive:[]};
+  ensureMaps(db.maps);
+  if(!Array.isArray(db.changes)) db.changes=[];
+  if(!db.seen||typeof db.seen!=='object') db.seen={adsets:{},campaigns:{}};
+  if(!db.seen.adsets) db.seen.adsets={};
+  if(!db.seen.campaigns) db.seen.campaigns={};
+  if(!db.setMemo||typeof db.setMemo!=='object') db.setMemo={};
+  return db;
+}
+/* 구버전 데이터 호환 정규화 (공유 Firebase 데이터가 구형식일 수 있음) */
+function ensureMaps(m){
+  if(!m) return;
+  (m.products||[]).forEach(p=>{ if(!p.area) p.area='클룹'; });
+  const toObj=arr=>(arr||[]).map(x=>typeof x==='string'?{code:x,kr:''}:x);
+  m.tams=toObj(m.tams);
+  m.tams.forEach(t=>{ if(!t.kr && TAM_KR[t.code]) t.kr=TAM_KR[t.code]; });
+  m.msgpool=toObj(m.msgpool);
+  const oy=(m.schemes||[]).find(s=>s.code==='OYSALE'); if(oy&&oy.kr==='오야세일') oy.kr='올영세일';
+}
+let DB=load();
+const M=()=>DB.maps;
+
+/* 영역(클룹/스프린트) — 제품 구분 + 상단 스코프 버튼 */
+const AREAS=['클룹','스프린트'];
+let areaScope='클룹';
+function areaOf(productCode){const p=M().products.find(x=>x.code===productCode);return p?(p.area||'클룹'):'클룹';}
+function tamKr(code){const t=(M().tams||[]).find(x=>x.code===code);return (t&&t.kr)?t.kr:(TAM_KR[code]||code);}
+function setArea(a){
+  areaScope=a;
+  document.querySelectorAll('#areaNav [data-area]').forEach(b=>{const on=b.dataset.area===a;b.classList.toggle('btn-primary',on);b.classList.toggle('btn-ghost',!on);});
+  fillBuilderSelects(); buildPreview(); renderSetLib(); renderCreativeCampaigns(); renderCreativeSets(); renderArchive(); renderChanges();
+}
+let mapSubActive='product';
+function mapSub(name){
+  mapSubActive=name;
+  document.querySelectorAll('#mapSubNav [data-ms]').forEach(b=>{const on=b.dataset.ms===name;b.classList.toggle('btn-primary',on);b.classList.toggle('btn-ghost',!on);});
+  document.querySelectorAll('#page-map .msub').forEach(s=>{s.style.display=(s.dataset.msub===name)?'':'none';});
+}
+
+/* ── Firebase 설정 ──
+   ▸ 아래 config 는 웹 SDK 특성상 공개돼도 정상인 값입니다.
+   ▸ 본인 소유 프로젝트로 바꾸려면 console.firebase.google.com 에서
+     새 프로젝트 → 웹앱 등록 → Realtime Database 생성 후, 이 config 만 교체하세요.
+   ▸ 데이터는 모두 /v2 경로에 저장됩니다(옛 앱 데이터와 분리). */
+const firebaseConfig = {
+  apiKey: "AIzaSyCXbz8grP-KAbaGfoNKjH6sAdzcwShLJcM",
+  authDomain: "utm-builder-cloop-260617.firebaseapp.com",
+  databaseURL: "https://utm-builder-cloop-260617-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "utm-builder-cloop-260617",
+  storageBucket: "utm-builder-cloop-260617.firebasestorage.app",
+  messagingSenderId: "943544286367",
+  appId: "1:943544286367:web:11756ca67a7120559e76aa"
+};
+let DBREF=null, _syncStarted=false;
+try{ firebase.initializeApp(firebaseConfig); DBREF=firebase.database().ref('v2'); }
+catch(e){ console.warn('Firebase 초기화 실패 — 로컬 모드로 동작합니다.', e); }
+
+function setSyncUI(state){ // 'on' | 'off' | 'local'
+  const dot=document.getElementById('syncDot'), lab=document.getElementById('syncLabel'), st=document.getElementById('syncState');
+  if(!dot) return;
+  if(state==='on'){dot.className='sync-dot on';lab.textContent='팀 공용 · 실시간 동기화';if(st)st.textContent='● 연결됨';}
+  else if(state==='local'){dot.className='sync-dot off';lab.textContent='로컬 모드 (미연결)';if(st)st.textContent='○ 로컬 전용';}
+  else {dot.className='sync-dot off';lab.textContent='연결 중…';if(st)st.textContent='';}
+}
+function save(){
+  localStorage.setItem(LSK,JSON.stringify(DB));
+  updateStats();
+  if(DBREF){ DBREF.set(DB).catch(e=>{console.warn('동기화 실패',e);setSyncUI('local');}); }
+}
+function startSync(){
+  if(_syncStarted) return;
+  if(!DBREF){ setSyncUI('local'); return; }
+  _syncStarted=true;
+  DBREF.on('value', snap=>{
+    const v=snap.val();
+    setSyncUI('on');
+    if(!v || !v.maps){ DBREF.set(DB); return; }          // 원격이 비어있으면 현재 데이터 업로드
+    ensureMaps(v.maps);                                  // 구버전 형식 정규화 후 비교
+    if(JSON.stringify(v)===JSON.stringify(DB)) return;    // 내 변경 echo / 동일 → 무시
+    DB=v;
+    if(!Array.isArray(DB.changes)) DB.changes=[];
+    if(!DB.seen||typeof DB.seen!=='object') DB.seen={adsets:{},campaigns:{}};
+    if(!DB.seen.adsets) DB.seen.adsets={}; if(!DB.seen.campaigns) DB.seen.campaigns={};
+    if(!DB.setMemo||typeof DB.setMemo!=='object') DB.setMemo={};
+    localStorage.setItem(LSK,JSON.stringify(DB)); syncRerender(); applyMeta();
+  }, err=>{ console.warn('Firebase 연결 실패',err); setSyncUI('local'); });
+}
+function syncRerender(){
+  updateStats(); renderSetLib(); renderCreativeCampaigns(); renderCreativeSets();
+  const ap=document.getElementById('page-archive'); if(ap&&ap.classList.contains('active')) renderArchive();
+  const cp=document.getElementById('page-changes'); if(cp&&cp.classList.contains('active')) renderChanges();
+}
+
+/* ── Meta 실데이터 스냅샷 (서버함수 /api/sync 가 Firebase /meta_v2 에 기록) ── */
+let metaSnap=null, metaIndex={}, metaCampStatus={}, metaRefStarted=false, activeOnlyCamp=true, activeOnlySet=false;
+/* 활성 상태 헬퍼: effective_status 우선, 없으면 활성 광고수로 추정 */
+function setActiveState(s){ const m=metaIndex[s.id]; if(!m) return null; if(m.status) return m.status==='ACTIVE'; return (m.active||0)>0; }
+function campActiveState(campaignId, sets){ if(campaignId && metaCampStatus[campaignId]) return metaCampStatus[campaignId]==='ACTIVE'; if(sets){ const states=sets.map(setActiveState).filter(v=>v!==null); if(states.length) return states.some(Boolean); } return null; }
+function statusBadge(active){ if(active===null) return ''; return active?`<span class="bdg" style="background:#15331f;color:#7fd6a0">활성</span>`:`<span class="bdg" style="background:#2b2f37;color:#9aa3b2">비활성</span>`; }
+function _abtn(id,v){ const b=document.getElementById(id); if(b){b.classList.toggle('btn-primary',v);b.classList.toggle('btn-ghost',!v);b.textContent=v?'✓ 활성만':'활성만';} }
+function toggleActiveCamp(){ activeOnlyCamp=!activeOnlyCamp; _abtn('btnActiveCamp',activeOnlyCamp); renderCreativeCampaigns(); renderCreativeSets(); }
+function toggleActiveSet(){ activeOnlySet=!activeOnlySet; _abtn('btnActiveSet',activeOnlySet); renderCreativeSets(); }
+function startMetaSync(){
+  if(metaRefStarted) return;
+  try{
+    if(!window.firebase || !firebase.database) return;
+    metaRefStarted=true;
+    firebase.database().ref('meta_v2').on('value', snap=>{ metaSnap=snap.val(); applyMeta(); });
+  }catch(e){ console.warn('meta 리스너 실패',e); }
+}
+function applyMeta(){
+  metaIndex={};
+  const adsets = metaSnap && metaSnap.adsets ? (Array.isArray(metaSnap.adsets)?metaSnap.adsets:Object.values(metaSnap.adsets)) : [];
+  const byId={}, byName={}, byNoDate={};
+  const stripDate=n=>String(n||'').replace(/_\d{6}$/,'');
+  adsets.forEach(a=>{ if(a&&a.adsetId)byId[a.adsetId]=a; if(a&&a.adsetName){byName[a.adsetName]=a; const k=stripDate(a.adsetName); (byNoDate[k]=byNoDate[k]||[]).push(a);} });
+  metaCampStatus={}; adsets.forEach(a=>{ if(a&&a.campaignId&&a.campaignStatus) metaCampStatus[a.campaignId]=a.campaignStatus; });
+  let changed=false;
+  if(!Array.isArray(DB.changes)) DB.changes=[];
+  if(!DB.seen) DB.seen={adsets:{},campaigns:{}};
+  if(!DB.seen.adsets) DB.seen.adsets={}; if(!DB.seen.campaigns) DB.seen.campaigns={};
+  const seen=DB.seen, nowISO=new Date().toISOString();
+  const newId=()=>'cg'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  DB.sets.forEach(s=>{
+    let live=null, fuzzy=false;
+    if(s.adsetId && byId[s.adsetId]) live=byId[s.adsetId];
+    else if(byName[s.name]){ live=byName[s.name]; if(!s.adsetId&&live.adsetId){ s.adsetId=live.adsetId; s.campaignId=live.campaignId; changed=true; } }
+    else {
+      // 보조 매칭: 끝의 날짜(_YYMMDD)를 무시하고 비교 (실제 광고세트명에 날짜가 없는 경우)
+      const cands=byNoDate[stripDate(s.name)]||[];
+      if(cands.length){
+        cands.sort((a,b)=>((b.active||0)-(a.active||0))||((b.total||0)-(a.total||0)));
+        live=cands[0]; fuzzy=true;
+        if(live.adsetId){ s.adsetId=live.adsetId; s.campaignId=live.campaignId; changed=true; }
+      }
+    }
+    if(live){
+      if(live.campaignId && s.campaignId!==live.campaignId){ s.campaignId=live.campaignId; changed=true; }
+      metaIndex[s.id]={total:live.total,active:live.active,liveName:live.adsetName,status:live.adsetStatus||'',renamed:!!(s.adsetId&&live.adsetName&&stripDate(live.adsetName)!==stripDate(s.name)),fuzzy:fuzzy};
+      // ── 이름변경 이력 추적 (세트 ID 기준) ──
+      if(live.adsetId){
+        const prev=seen.adsets[live.adsetId];
+        if(prev!==undefined && prev!==live.adsetName){
+          DB.changes.push({id:newId(),kind:'adset',entityId:live.adsetId,setId:s.id,product:s.product||'',from:prev,to:live.adsetName,campaignName:live.campaignName||'',at:nowISO});
+          changed=true;
+        }
+        seen.adsets[live.adsetId]=live.adsetName;
+      }
+      if(live.campaignId){
+        const cprev=seen.campaigns[live.campaignId];
+        if(cprev!==undefined && cprev!==live.campaignName){
+          DB.changes.push({id:newId(),kind:'campaign',entityId:live.campaignId,product:s.product||'',from:cprev,to:live.campaignName,campaignName:live.campaignName||'',at:nowISO});
+          changed=true;
+        }
+        seen.campaigns[live.campaignId]=live.campaignName;
+      }
+    }
+  });
+  if(changed) save();
+  renderSetLib(); renderCreativeCampaigns(); renderCreativeSets(); updateMetaStatus(); renderChanges();
+}
+function metaBadge(setId){
+  const m=metaIndex[setId]; if(!m) return '';
+  const warn = m.renamed?` <span class="bdg bdg-warn" title="매체에서 이름변경됨: ${esc(m.liveName)}">⚠이름변경</span>`:'';
+  return ` <span class="bdg" style="background:#15263f;color:#5fa8ff">소재 ${m.total}·활성 ${m.active}</span>${warn}`;
+}
+function updateMetaStatus(){
+  const el=document.getElementById('metaStatus'); if(!el) return;
+  if(metaSnap&&metaSnap.syncedAt){ const d=new Date(metaSnap.syncedAt); el.textContent=`Meta 동기화: ${d.toLocaleString('ko-KR')} · 세트 ${metaSnap.adsetCount||0}·소재 ${metaSnap.adCount||0}`; }
+  else el.textContent='Meta 동기화 데이터 없음 (토큰·배포 후 동기화 필요)';
+}
+async function runMetaSync(btn){
+  const t0=btn?btn.textContent:''; if(btn){btn.disabled=true;btn.textContent='동기화 중…';}
+  try{
+    const r=await fetch('/api/sync'); const j=await r.json();
+    toast(j&&j.ok ? `Meta 동기화 완료 · 세트 ${j.adsetCount}·소재 ${j.adCount}` : '동기화 실패: '+((j&&j.error)||'서버 확인'));
+  }catch(e){ toast('동기화 호출 실패 — Vercel 배포·토큰 설정 후 사용 가능'); }
+  if(btn){btn.disabled=false;btn.textContent=t0||'🔄 Meta 동기화';}
+}
+
+/* ════════════════════════ HELPERS ════════════════════════ */
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function yymmdd(d){return (d||'').replace(/-/g,'').slice(2);}
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1800);}
+function copy(text,btn){navigator.clipboard.writeText(text).then(()=>{if(btn){const o=btn.textContent;btn.textContent='✅';btn.classList.add('ok');setTimeout(()=>{btn.textContent=o;btn.classList.remove('ok');},1400);}toast('복사되었습니다');});}
+function compositeOf(goal,bid){const c=M().composite.find(x=>x.goal===goal&&x.bid===bid);return c?c.code:'??';}
+function firstcatCode(src){const f=M().firstcat.find(x=>x.src===src);return f?f.code:src;}
+function brandOf(code){const p=M().products.find(x=>x.code===code);return p?p.brand:code;}
+function schemeKr(code){const s=M().schemes.find(x=>x.code===code);return s?s.kr:code;}
+function goalKr(code){const g=M().goals.find(x=>x.code===code);return g?g.kr:code;}
+function bidKr(code){const b=M().bids.find(x=>x.code===code);return b?b.kr:code;}
+function mediaInfo(code){return M().media.find(x=>x.code===code)||{source:code.toLowerCase(),medium:'social'};}
+function landingFor(productCode,scheme){return M().landing[productCode+'+'+scheme]||'';}
+
+/* ════════════════════════ NAV ════════════════════════ */
+function go(tab){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.tab===tab));
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+tab));
+  if(tab==='creative'){renderCreativeCampaigns();renderCreativeSets();creativePreview();}
+  if(tab==='archive')renderArchive();
+  if(tab==='changes')renderChanges();
+  if(tab==='map')renderMap();
+  if(tab==='build')renderSetLib();
+}
+
+/* ════════════════════════ INIT ════════════════════════ */
+function init(){
+  const today=new Date().toISOString().split('T')[0];
+  $('b_date').value=today; $('c_date').value=today;
+  fillBuilderSelects();
+  renderBuilderChips();
+  renderSetLib();
+  onBidChange();
+  buildPreview();
+  if(!creativeRows.length)addCreativeRow();
+  updateStats();
+  setArea(areaScope);
+  startSync();
+  startMetaSync();
+}
+function updateStats(){
+  $('stSets').textContent=DB.sets.length;
+  $('stArc').textContent=DB.archive.length;
+  $('stProd').textContent=M().products.length;
+}
+
+/* ════════════════════════ TAB1: BUILDER ════════════════════════ */
+let bTargets=new Set(), bTams=new Set(), bTokens=new Set(), bAge='';
+function fillBuilderSelects(){
+  $('b_product').innerHTML=M().products.filter(p=>(p.area||'클룹')===areaScope).map(p=>`<option value="${p.code}">${esc(p.brand)} (${p.code})</option>`).join('');
+  $('b_media').innerHTML=M().media.map(m=>`<option value="${esc(m.code)}">${esc(m.code)} · ${esc(m.channel)}</option>`).join('');
+  $('b_goal').innerHTML=M().goals.map(g=>`<option value="${g.code}">${g.code} (${esc(g.kr)})</option>`).join('');
+  $('b_bid').innerHTML=M().bids.map(b=>`<option value="${b.code}">${b.code} (${esc(b.kr)})</option>`).join('');
+  $('b_scheme').innerHTML=M().schemes.map(s=>`<option value="${esc(s.code)}">${esc(s.code)} (${esc(s.kr)})</option>`).join('');
+  $('b_firstcat').innerHTML=M().firstcat.map(f=>`<option value="${f.src}">${f.code} · ${esc(f.kr)}</option>`).join('');
+  $('b_firstcat').value='regular';
+}
+/* ── 타게팅 어휘 (소재정보 매핑키 [매핑키] 시트 기준) ── */
+const TARGET_TOKENS=[
+  {code:'RE',kr:'리타겟(일반)',prefix:'',cat:0},
+  {code:'VRE',kr:'방문자 리타겟',prefix:'V',cat:0},
+  {code:'PRE',kr:'구매자 리타겟',prefix:'P',cat:0},
+  {code:'CRE',kr:'전환 리타겟',prefix:'',cat:0},
+  {code:'LAL',kr:'유사(일반)',prefix:'',cat:1},
+  {code:'VLAL',kr:'방문자 유사',prefix:'V',cat:1},
+  {code:'PLAL',kr:'구매자 유사',prefix:'P',cat:1},
+  {code:'DE',kr:'디타겟(일반)',prefix:'',cat:2},
+  {code:'VDE',kr:'방문자 제외',prefix:'V',cat:2},
+  {code:'PDE',kr:'구매자 제외',prefix:'P',cat:2},
+  {code:'CDE',kr:'전환 디타겟',prefix:'',cat:2},
+  {code:'INT',kr:'관심사',prefix:'',cat:3},
+  {code:'MALE-O',kr:'남성 한정',prefix:'',cat:4},
+  {code:'FEMALE-O',kr:'여성 한정',prefix:'',cat:4},
+  {code:'MALE-V',kr:'남성 가중',prefix:'',cat:4},
+  {code:'FEMALE-V',kr:'여성 가중',prefix:'',cat:4},
+  {code:'NCA-V',kr:'신규고객 가중',prefix:'',cat:5},
+  {code:'NCA-O',kr:'신규고객 한정',prefix:'',cat:5},
+  {code:'ALL',kr:'전체(Broad)',prefix:'',cat:9}
+];
+const TARGET_CATS=['리타게팅','유사(Lookalike)','디타겟','관심사','성별','신규고객','','','','전체'];
+const TARGET_AGES=[{code:'',kr:'없음'},{code:'1854',kr:'18-54세'},{code:'2135',kr:'21-35세'},{code:'3649',kr:'36-49세'}];
+const TARGET_KR=Object.fromEntries(TARGET_TOKENS.map(t=>[t.code,t.kr]));
+function prefixRank(p){return p==='V'?0:(p==='P'?1:2);}
+function targetingKr(code){
+  if(!code) return '';
+  return code.split('-').reduce((acc,seg,i,arr)=>{
+    if(/^\d{4}$/.test(seg)){ const a=TARGET_AGES.find(x=>x.code===seg); return acc+(acc?' · ':'')+(a?a.kr:seg); }
+    // O/V 접미사가 직전 토큰과 합쳐지는 경우(MALE-O 등) 처리
+    if((seg==='O'||seg==='V')&&i>0){ return acc; }
+    const full=(arr[i+1]==='O'||arr[i+1]==='V')?seg+'-'+arr[i+1]:seg;
+    const kr=TARGET_KR[full]||TARGET_KR[seg]||seg;
+    return acc+(acc?' + ':'')+kr;
+  },'');
+}
+function composeTargeting(){
+  if(bTokens.has('ALL')) return 'ALL';
+  const toks=TARGET_TOKENS.filter(t=>bTokens.has(t.code)&&t.code!=='ALL')
+    .sort((a,b)=>prefixRank(a.prefix)-prefixRank(b.prefix)||a.cat-b.cat||a.code.localeCompare(b.code));
+  let code=toks.map(t=>t.code).join('-');
+  if(bAge && code) code+='-'+bAge;
+  return code;
+}
+function renderBuilderChips(){ renderTokenComposer(); renderAddedTargets();
+  $('b_tamChips').innerHTML=M().tams.map(t=>`<span class="chip ${bTams.has(t.code)?'on':''}" title="${esc(t.code)}" onclick="toggleSet(bTams,'${esc(t.code)}');renderBuilderChips();buildPreview()">${esc(t.kr||t.code)}${t.kr?` <span style="color:var(--text3);font-size:10px">${esc(t.code)}</span>`:''}</span>`).join('');
+}
+function renderTokenComposer(){
+  const groups={};
+  TARGET_TOKENS.forEach(t=>{(groups[t.cat]=groups[t.cat]||[]).push(t);});
+  $('b_tokGroups').innerHTML=Object.keys(groups).sort((a,b)=>a-b).map(c=>{
+    const chips=groups[c].map(t=>`<span class="chip tok ${bTokens.has(t.code)?'on':''}" title="${esc(t.code)}" onclick="toggleSet(bTokens,'${esc(t.code)}');renderTokenComposer();buildPreview()">${esc(t.kr)}<span style="color:var(--text3);font-size:9.5px;margin-left:4px">${esc(t.code)}</span></span>`).join('');
+    return `<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:5px"><span class="cnt" style="min-width:78px;flex:none;padding-top:5px">${esc(TARGET_CATS[c]||'기타')}</span><div class="chips" style="flex:1">${chips}</div></div>`;
+  }).join('');
+  const ageSel=$('b_tgAge'); if(ageSel&&!ageSel.options.length) ageSel.innerHTML=TARGET_AGES.map(a=>`<option value="${a.code}">${esc(a.kr)}</option>`).join('');
+  if(ageSel) bAge=ageSel.value;
+  const code=composeTargeting();
+  $('b_tgPreview').textContent=code?code:'(토큰 선택)';
+}
+function renderAddedTargets(){
+  $('b_targetingChips').innerHTML=[...bTargets].map(t=>`<span class="chip on" title="${esc(t)}" onclick="bTargets.delete('${esc(t)}');renderBuilderChips();buildPreview()">${esc(targetingKr(t))} <span style="color:var(--text3);font-size:10px">${esc(t)}</span> ✕</span>`).join('')||`<span style="color:var(--text3);font-size:12px">아직 추가된 타게팅이 없습니다 — 위에서 조합해 추가하세요</span>`;
+}
+function addComposedTargeting(){ const code=composeTargeting(); if(!code){toast('타게팅 토큰을 선택하세요');return;} bTargets.add(code); bTokens.clear(); renderBuilderChips(); buildPreview(); }
+function toggleSet(set,v){set.has(v)?set.delete(v):set.add(v);}
+function addTargeting(){const v=$('b_newTarget').value.trim().toUpperCase();if(!v)return;bTargets.add(v);$('b_newTarget').value='';renderBuilderChips();buildPreview();}
+function addTam(){const v=$('b_newTam').value.trim().toUpperCase();if(!v)return;if(!M().tams.some(t=>t.code===v)){M().tams.push({code:v,kr:''});save();}bTams.add(v);$('b_newTam').value='';renderBuilderChips();buildPreview();}
+function onBidChange(){
+  const bid=$('b_bid').value; $('b_optWrap').style.opacity='1';
+  const cur=$('b_bidopt').value.trim().toUpperCase();
+  const def= bid==='VMX'?'TROAS':(bid==='CMX'?'TCPA':'');
+  if(!cur||cur==='TROAS'||cur==='TCPA') $('b_bidopt').value=def;  // 빈 값/기본값이면 입찰유형에 맞게 자동, 커스텀 값은 유지
+  buildPreview();
+}
+
+function buildSetName(o){
+  const parts=[o.media,o.product,o.goal,o.bid];
+  if(o.bidopt) parts.push(o.bidopt);
+  parts.push(o.targeting,o.scheme,o.tam,o.date);
+  return parts.join('_');
+}
+function buildKrName(o){
+  return `${o.media}_${brandOf(o.product)}_${schemeKr(o.scheme)}_${goalKr(o.goal)}_${bidKr(o.bid)}_${tamKr(o.tam)}`;
+}
+function currentBuilder(){
+  return {
+    product:$('b_product').value, media:$('b_media').value, date:yymmdd($('b_date').value),
+    goal:$('b_goal').value, bid:$('b_bid').value, scheme:$('b_scheme').value,
+    firstcat:$('b_firstcat').value, bidopt:$('b_bidopt').value.trim().toUpperCase()
+  };
+}
+/* 추가된 타게팅 목록 + 현재 조합 중인 토큰(추가 안 눌러도 반영) */
+function effectiveTargets(){
+  const list=[...bTargets];
+  const cur=composeTargeting();
+  if(cur && !list.includes(cur)) list.push(cur);
+  return list;
+}
+function buildPreview(){
+  const b=currentBuilder();
+  const tg=effectiveTargets()[0]||'ALL', tm=[...bTams][0]||'TAM';
+  const o={...b,targeting:tg,tam:tm};
+  const valid=b.product&&b.media&&b.date&&b.goal&&b.bid&&b.scheme;
+  if(valid){
+    const name=buildSetName(o);
+    $('b_preview').innerHTML=name.split('_').map(t=>`<span class="tok">${esc(t)}</span>`).join('<span style="color:var(--text3)">_</span>');
+    $('b_previewKr').textContent=buildKrName(o);
+  }else{$('b_preview').innerHTML='<span class="ph">기본 정보를 채워주세요…</span>';$('b_previewKr').innerHTML='<span class="ph">—</span>';}
+  $('b_composite').textContent=valid?compositeOf(b.goal,b.bid):'—';
+  const cnt=(effectiveTargets().length||0)*(bTams.size||0);
+  $('b_genCount').textContent=cnt;
+  const w=[];
+  if(valid&&!landingFor(b.product,b.scheme))w.push(`⚠️ ${b.product}+${b.scheme} 랜딩 URL 매핑 없음 — 매핑키 탭에서 추가하면 UTM이 완성됩니다.`);
+  if(effectiveTargets().length===0)w.push('타게팅 토큰을 1개 이상 선택하세요.');
+  if(bTams.size===0)w.push('TAM을 1개 이상 선택하세요.');
+  const wb=$('b_warn');wb.innerHTML=w.join('<br>');wb.classList.toggle('show',w.length>0);
+}
+function generateSets(){
+  const b=currentBuilder();
+  if(!(b.product&&b.media&&b.date&&b.goal&&b.bid&&b.scheme)){toast('기본 정보를 모두 채워주세요');return;}
+  const tgs=effectiveTargets();
+  if(!tgs.length||!bTams.size){toast('타게팅·TAM을 선택하세요');return;}
+  let added=0;
+  for(const tg of tgs)for(const tm of bTams){
+    const o={...b,targeting:tg,tam:tm};
+    const name=buildSetName(o);
+    if(DB.sets.some(s=>s.name===name))continue;
+    DB.sets.push({
+      id:Date.now()+'-'+Math.random().toString(36).slice(2,6),
+      name, krName:buildKrName(o),
+      product:b.product, brand:brandOf(b.product), media:b.media,
+      goal:b.goal, bid:b.bid, composite:compositeOf(b.goal,b.bid),
+      targeting:tg, scheme:b.scheme, tam:tm, firstcat:b.firstcat, date:b.date,
+      landing:landingFor(b.product,b.scheme), createdAt:new Date().toISOString()
+    });
+    added++;
+  }
+  save();renderSetLib();
+  toast(`${added}개 광고세트 생성됨`);
+}
+let libFilter='all';
+function setLibFilter(v){ libFilter=v; ['all','active','inactive'].forEach(x=>$('ls'+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle('on',x===v)); renderSetLib(); }
+function renderSetLib(){
+  const q=($('setSearch').value||'').toLowerCase();
+  const scoped=DB.sets.filter(s=>areaOf(s.product)===areaScope);
+  let list=scoped.filter(s=>!q||s.name.toLowerCase().includes(q));
+  if(libFilter==='active') list=list.filter(s=>setActiveState(s)===true);
+  else if(libFilter==='inactive') list=list.filter(s=>setActiveState(s)!==true);
+  list=list.slice().reverse();
+  const actN=scoped.filter(s=>setActiveState(s)===true).length;
+  $('setLibCount').textContent=`${scoped.length}개 (${areaScope}) · 활성 ${actN}`;
+  if(!list.length){$('setLibBody').innerHTML=`<tr><td colspan="8"><div class="empty"><div class="ic">📦</div>${libFilter==='active'?'활성 광고세트가 없습니다':libFilter==='inactive'?'비활성 광고세트가 없습니다':areaScope+' 영역에 광고세트가 없습니다'}</div></td></tr>`;return;}
+  $('setLibBody').innerHTML=list.map(s=>`<tr>
+    <td><span class="tag">${esc(s.brand)}</span>${statusBadge(setActiveState(s))}</td>
+    <td class="t-mono">${esc(s.name)}${metaBadge(s.id)}</td>
+    <td><span class="bdg bdg-dcm">${esc(s.composite)}</span></td>
+    <td>${esc(s.targeting)}</td>
+    <td><span class="bdg bdg-${firstcatCode(s.firstcat).toLowerCase()}">${esc(firstcatCode(s.firstcat))}</span></td>
+    <td>${s.landing?'✅':'<span style="color:var(--text3)">—</span>'}</td>
+    <td style="color:var(--text3)">${esc(s.date)}</td>
+    <td><button class="iconbtn" onclick="copy('${esc(s.name)}')" title="복사">⧉</button> <button class="iconbtn" onclick="delSet('${s.id}')" title="삭제">🗑</button></td>
+  </tr>`).join('');
+}
+function delSet(id){DB.sets=DB.sets.filter(s=>s.id!==id);cSel.delete(id);save();renderSetLib();}
+function exportSets(){
+  if(!DB.sets.length){toast('세트가 없습니다');return;}
+  const rows=[['브랜드','광고세트명','합성코드','캠페인목표','입찰','타게팅','스킴','TAM','1차','날짜','랜딩URL','한글캠페인명']];
+  DB.sets.forEach(s=>rows.push([s.brand,s.name,s.composite,s.goal,s.bid,s.targeting,s.scheme,s.tam,firstcatCode(s.firstcat),s.date,s.landing,s.krName]));
+  downloadCSV(rows,'광고세트');
+}
+
+/* ════════════════════════ TAB2: CREATIVE ════════════════════════ */
+let cSel=new Set();
+let cCampKey=null;
+/* 동기화된 캠페인ID→실제 메타 캠페인명 매핑 (metaSnap 기준, 메모이즈) */
+let _camMapCache=null,_camMapSnap=undefined;
+function metaCampMap(){
+  if(_camMapSnap===metaSnap && _camMapCache) return _camMapCache;
+  const m={};
+  const adsets = metaSnap&&metaSnap.adsets?(Array.isArray(metaSnap.adsets)?metaSnap.adsets:Object.values(metaSnap.adsets)):[];
+  adsets.forEach(a=>{ if(a&&a.campaignId&&a.campaignName) m[a.campaignId]=a.campaignName; });
+  _camMapCache=m; _camMapSnap=metaSnap; return m;
+}
+function liveCampName(s){ const cmap=metaCampMap(); return (s&&s.campaignId&&cmap[s.campaignId])?cmap[s.campaignId]:''; }
+/* 실제 메타 캠페인명이 있으면 그 ID로 그룹, 없으면 빌더 속성 기반 추정 그룹 */
+function campaignKey(s){ const ln=liveCampName(s); return ln?('cid:'+s.campaignId):('syn:'+[s.media,s.product,s.goal,s.bid,s.scheme,s.date].join('_')); }
+function campaignLabel(s){ const ln=liveCampName(s); return ln?ln:`${schemeKr(s.scheme)} · ${goalKr(s.goal)}/${bidKr(s.bid)} · ${s.date} (미동기화 추정)`; }
+function campaignIsLive(s){ return !!liveCampName(s); }
+/* ── 라이브(메타) 광고세트명 → 빌더 세트 속성 역파싱 ──
+   광고세트명 규칙: 매체_제품_목표_입찰_[최적화]_타게팅_스킴_TAM_[날짜] */
+function parseLiveSet(a){
+  const toks=String(a.adsetName||'').split('_');
+  if(toks.length<7) return null;
+  let e=toks.length-1;
+  if(/^\d{4,6}$/.test(toks[e])) e--;            // 끝 날짜 토큰 제거
+  if(e<5) return null;
+  const tam=toks[e], scheme=toks[e-1], targeting=toks[e-2];
+  const media=toks[0], product=toks[1], goal=toks[2], bid=toks[3];
+  const bidopt=toks.slice(4,e-2).join('_');
+  return { id:'live:'+a.adsetId, adsetId:a.adsetId, campaignId:a.campaignId||'',
+    name:a.adsetName, brand:brandOf(product), media, product, goal, bid,
+    composite:compositeOf(goal,bid), targeting, scheme, tam, firstcat:'regular',
+    bidopt, landing:landingFor(product,scheme), _live:true };
+}
+/* 메타 라이브 광고세트 ∪ 빌더 세트 → 통합 후보 목록 (현재 영역 기준) */
+/* 소재 탭 후보 = 메타 라이브 광고세트만. 기준: 캠페인 활성(activeOnlyCamp).
+   소재 0건 신규 광고세트도 포함(adsets 엔드포인트로 수집되므로). 빌더 세트는 라이브 매칭 시 속성(랜딩·1차)만 보강. */
+function creativeCandidates(){
+  const adsets = metaSnap&&metaSnap.adsets?(Array.isArray(metaSnap.adsets)?metaSnap.adsets:Object.values(metaSnap.adsets)):[];
+  const builderByAdset={}; DB.sets.forEach(s=>{ if(s.adsetId)builderByAdset[s.adsetId]=s; });
+  const out=[];
+  adsets.forEach(a=>{
+    if(!a||!a.adsetId) return;
+    if(activeOnlyCamp && a.campaignStatus!=='ACTIVE') return;        // 캠페인 활성 기준 (토글 해제 시 전체)
+    const c=parseLiveSet(a); if(!c) return;
+    if(!M().products.find(p=>p.code===c.product)) return;            // 등록 제품코드만 → 영역 정확
+    if(areaOf(c.product)!==areaScope) return;
+    c.campName=a.campaignName||''; c.campStatus=a.campaignStatus||'';
+    c.live={total:a.total,active:a.active,status:a.adsetStatus};
+    const b=builderByAdset[a.adsetId];                              // 빌더 매칭 시 랜딩·1차 보강 (라이브 파싱 보완)
+    if(b){ if(b.landing)c.landing=b.landing; if(b.firstcat)c.firstcat=b.firstcat; c.id=b.id; }
+    out.push(c);
+  });
+  return out;
+}
+function candCampKey(c){ return c.campaignId?('cid:'+c.campaignId):('syn:'+[c.media,c.product,c.goal,c.bid,c.scheme,c.date||''].join('_')); }
+function candCampLabel(c){ return c.campName || `${schemeKr(c.scheme)} · ${goalKr(c.goal)}/${bidKr(c.bid)}${c.date?(' · '+c.date):''} (미동기화 추정)`; }
+function candActive(c){ const m=c.live; if(!m) return null; if(m.status) return m.status==='ACTIVE'; return (m.active||0)>0; }
+function candCampActive(campStatus, sets){ if(campStatus) return campStatus==='ACTIVE'; if(sets){ const st=sets.map(candActive).filter(v=>v!==null); if(st.length) return st.some(Boolean); } return null; }
+function candBadge(c){ const m=c.live; if(!m) return ` <span class="bdg" style="background:#2b2f37;color:#9aa3b2" title="Meta 미동기화">동기화전</span>`; const warn=(metaIndex[c.id]&&metaIndex[c.id].renamed)?` <span class="bdg bdg-warn" title="매체에서 이름변경됨: ${esc(metaIndex[c.id].liveName||'')}">⚠이름변경</span>`:''; return ` <span class="bdg" style="background:#15263f;color:#5fa8ff">소재 ${m.total||0}·활성 ${m.active||0}</span>${warn}`; }
+let _cands=[];
+function curSet(id){ if(!_cands.length)_cands=creativeCandidates(); return _cands.find(c=>c.id===id); }
+function renderCreativeCampaigns(){
+  _abtn('btnActiveCamp',activeOnlyCamp);
+  const q=($('cCampSearch').value||'').toLowerCase();
+  _cands=creativeCandidates();
+  const groups={};
+  _cands.forEach(c=>{ const k=candCampKey(c); (groups[k]=groups[k]||{label:candCampLabel(c),brand:c.brand,date:c.date||'',live:!!c.campName,campStatus:c.campStatus,sets:[]}).sets.push(c); });
+  let entries=Object.entries(groups);
+  if(q)entries=entries.filter(([k,g])=>g.label.toLowerCase().includes(q)||g.sets.some(s=>(s.name||'').toLowerCase().includes(q)));
+  if(activeOnlyCamp)entries=entries.filter(([k,g])=>candCampActive(g.campStatus,g.sets)===true);
+  entries.sort((a,b)=>(b[1].date||'').localeCompare(a[1].date||''));
+  $('cCampCount').textContent=`${entries.length}개 캠페인`;
+  if(!entries.length){$('cCampList').innerHTML=`<div class="empty"><div class="ic">📦</div>${activeOnlyCamp?'활성 캠페인이 없습니다 (활성만 해제 가능)':'표시할 캠페인이 없습니다 (Meta 동기화 필요)'}</div>`;return;}
+  $('cCampList').innerHTML=entries.map(([k,g])=>{
+    const tams=g.sets.map(s=>s.tam).filter((v,i,a)=>a.indexOf(v)===i).join(', ');
+    const srcBadge=g.live?`<span class="bdg" style="background:#15263f;color:#5fa8ff" title="Meta 실제 캠페인명">Meta 캠페인</span>`:`<span class="bdg" style="background:#3a2e15;color:#ffcf66" title="Meta 미매칭 — 빌더 추정">추정</span>`;
+    const actBadge=statusBadge(candCampActive(g.campStatus,g.sets));
+    const activeSets=g.sets.filter(s=>candActive(s)===true).length;
+    return `<div class="set-card ${cCampKey===k?'on':''}" onclick="selectCampaign('${k}')">
+      <div class="meta" style="margin-top:0"><span class="tag">${esc(g.brand)}</span>${srcBadge}${actBadge}<b style="color:var(--text)">${esc(g.label)}</b></div>
+      <div class="meta"><span class="cnt">광고세트 ${g.sets.length}개 (활성 ${activeSets})</span> · ${esc(tams)}</div>
+    </div>`;}).join('');
+}
+function selectCampaign(k){
+  cCampKey=(cCampKey===k)?null:k;
+  cSel.clear();   // 기본 미선택 — 광고세트는 직접 선택
+  renderCreativeCampaigns();renderCreativeSets();creativePreview();
+}
+function visibleSets(){
+  const q=($('cSetSearch').value||'').toLowerCase();
+  if(!_cands.length)_cands=creativeCandidates();
+  let list=_cands.slice();
+  if(cCampKey)list=list.filter(c=>candCampKey(c)===cCampKey);
+  if(activeOnlySet)list=list.filter(c=>candActive(c)===true);
+  if(q)list=list.filter(c=>(c.name||'').toLowerCase().includes(q));
+  return list;
+}
+function renderCreativeSets(){
+  _abtn('btnActiveSet',activeOnlySet);
+  $('cSelCount').textContent=cSel.size?`${cSel.size}개 선택`:'';
+  $('cSetHint').textContent=cCampKey?'캠페인 내 광고세트 — 직접 선택':'캠페인 미선택 — 전체 광고세트 표시';
+  const list=visibleSets();
+  if(!list.length){$('cSetList').innerHTML=`<div class="empty"><div class="ic">📦</div>${activeOnlySet?'활성 광고세트가 없습니다':'표시할 광고세트가 없습니다 (Meta 동기화 필요)'}</div>`;return;}
+  $('cSetList').innerHTML=list.map(s=>`<div class="set-card ${cSel.has(s.id)?'on':''}" onclick="toggleCSel('${esc(s.id)}')">
+    <div class="cn">${esc(s.name)}</div>
+    <div class="meta"><span class="tag">${esc(s.brand)}</span>${statusBadge(candActive(s))}<span class="bdg bdg-dcm">${esc(s.composite)}</span>${esc(s.targeting)} · ${esc(s.tam)} ${s.landing?'· 🔗':'· <span style="color:var(--yellow)">랜딩없음</span>'}${candBadge(s)}</div>
+  </div>`).join('');
+}
+function toggleCSel(id){cSel.has(id)?cSel.delete(id):cSel.add(id);renderCreativeSets();creativePreview();}
+function clearSetSel(){cSel.clear();renderCreativeSets();creativePreview();}
+
+let creativeRows=[];
+function addCreativeRow(){
+  const id='cr'+(Date.now()+Math.random()).toString(36).slice(2,7);
+  creativeRows.push(id);renderCreativeRows();
+}
+function renderCreativeRows(){
+  const fmtOpts=M().formats.map(f=>`<option value="${f.code}">${f.code}</option>`).join('');
+  $('creativeRows').innerHTML=creativeRows.map(id=>`<div class="creative-row" id="${id}">
+    <select onchange="creativePreview()"><option value="">-</option>${fmtOpts}</select>
+    <input list="msgDL" placeholder="ANKOR" oninput="creativePreview()">
+    <input list="msgDL" placeholder="(선택)" oninput="creativePreview()">
+    <input list="msgDL" placeholder="(선택)" oninput="creativePreview()">
+    <input placeholder="flyaway" oninput="creativePreview()">
+    <span></span>
+    <button class="iconbtn" onclick="rmCreativeRow('${id}')">✕</button>
+  </div>`).join('')+`<datalist id="msgDL">${M().msgpool.map(m=>`<option value="${esc(m.code)}">${esc(m.kr||'')}`).join('')}</datalist>`;
+}
+function rmCreativeRow(id){creativeRows=creativeRows.filter(x=>x!==id);renderCreativeRows();creativePreview();}
+function readCreativeRow(id){
+  const el=$(id);if(!el)return null;
+  const ins=el.querySelectorAll('input,select');
+  const fmt=ins[0].value, m1=ins[1].value.trim(), m2=ins[2].value.trim(), m3=ins[3].value.trim(), soje=ins[4].value.trim();
+  if(!fmt||!m1||!soje)return null;
+  return {fmt,msg:[m1,m2,m3].filter(Boolean).join('-'),soje};
+}
+function buildCreativeName(set,date,cr,manager){
+  const base=`${date}_${set.media}_${set.product}_${cr.fmt}_${cr.msg}_${cr.soje}-${set.tam}_${set.composite}_${set.targeting}_${firstcatCode(set.firstcat)}_${set.scheme}`;
+  return manager?`${base}_${manager}`:base;
+}
+function buildUTM(set,creativeName){
+  const landing=set.landing;if(!landing)return '';
+  const mi=mediaInfo(set.media);
+  const sep=landing.includes('?')?'&':'?';
+  return `${landing}${sep}utm_source=${mi.source}&utm_medium=${mi.medium}&utm_campaign=${set.name}&utm_term={{ad.id}}&utm_content=${creativeName}`;
+}
+function validateName(name){
+  const segs=name.split('_');
+  if(name.includes('__')||name.includes(' '))return 'err';
+  if(/[가-힣]/.test(name))return 'warn';
+  if(segs.length<10||segs.length>12)return 'warn';
+  return 'ok';
+}
+function validateReasons(name){
+  const r=[]; const segs=(name||'').split('_');
+  if((name||'').includes('__')) r.push('빈 토큰(연속 _) — 누락된 값이 있는지 확인');
+  if(/\s/.test(name||'')) r.push('공백 포함 — 공백 제거');
+  if(/[가-힣]/.test(name||'')) r.push('한글 포함 — 영문/코드로 변경');
+  if(segs.length<10) r.push(`토큰 ${segs.length}개(정상 10~12) — 필드 누락 확인`);
+  else if(segs.length>12) r.push(`토큰 ${segs.length}개(정상 10~12) — 소재명에 _ 가 들어갔는지 확인`);
+  return r;
+}
+function arcBadge(a){
+  if(a.status==='ok') return '<span class="bdg bdg-ok">검증 OK</span>';
+  const rs=validateReasons(a.name);
+  const tip=`⚠ 검증 ${a.status==='err'?'오류':'경고'}\n사유: ${rs.join(' / ')||'-'}\n담당자: ${a.manager||'?'}`;
+  return `<span class="bdg bdg-${a.status==='err'?'err':'warn'}" style="cursor:help" title="${esc(tip)}">${a.status==='err'?'오류':'검토 필요'} ⓘ</span>`;
+}
+function creativePreview(){
+  const sets=[...cSel].map(curSet).filter(Boolean);
+  const wb=$('c_warn');
+  if(cMode==='clone'){
+    const srcs=[...cloneSources].map(id=>DB.archive.find(a=>a.id===id)).filter(Boolean);
+    $('c_genCount').textContent=sets.length*srcs.length;
+    const w=[]; if(!sets.length)w.push('대상 세트를 선택하세요 (A·B).'); if(!srcs.length)w.push('복제할 소스 소재를 선택하세요.');
+    wb.innerHTML=w.join('<br>');wb.classList.toggle('show',w.length>0);
+    if(sets.length&&srcs.length){ const s=itemPayload(srcs[0])||{}; const name=buildCreativeName(sets[0],s.date,{fmt:s.fmt,msg:s.msg,soje:s.soje},s.manager||'');
+      $('c_preview').innerHTML=name.split('_').map(t=>`<span class="tok">${esc(t)}</span>`).join('<span style="color:var(--text3)">_</span>');
+    }else{$('c_preview').innerHTML='<span class="ph">소스 소재 + 대상 세트 선택 시 표시…</span>';}
+    return;
+  }
+  const date=yymmdd($('c_date').value), mgr=$('c_manager').value.trim();
+  const crs=creativeRows.map(readCreativeRow).filter(Boolean);
+  $('c_genCount').textContent=sets.length*crs.length;
+  const w=[];
+  if(!sets.length)w.push('광고세트를 선택하세요.');
+  if(!date)w.push('날짜는 필수입니다.');
+  if(!crs.length)w.push('소재 행을 1개 이상 완성하세요 (포맷·메시지1·소재명 필수).');
+  wb.innerHTML=w.join('<br>');wb.classList.toggle('show',w.length>0);
+  if(sets.length&&crs.length&&date){
+    const name=buildCreativeName(sets[0],date,crs[0],mgr);
+    $('c_preview').innerHTML=name.split('_').map(t=>`<span class="tok">${esc(t)}</span>`).join('<span style="color:var(--text3)">_</span>');
+  }else{$('c_preview').innerHTML='<span class="ph">세트 선택 + 소재 정보 입력 시 표시…</span>';}
+}
+/* ════════════ 복제 (기존 소재 → 다른 세트 재적용) ════════════ */
+let cMode='new'; let cloneSources=new Set();
+function runCreative(){ cMode==='clone'?runClone():generateCreatives(); }
+function setCreativeMode(m){
+  cMode=m;
+  $('cmNew').classList.toggle('on',m==='new'); $('cmClone').classList.toggle('on',m==='clone');
+  $('cNewArea').style.display=m==='new'?'':'none';
+  $('cCloneArea').style.display=m==='clone'?'':'none';
+  $('cModeHint').textContent=m==='clone'?'아카이브 소재를 선택한 세트들로 복제':'행마다 1개 소재 · 행 추가로 대량 생성';
+  $('cRunBtn').textContent=m==='clone'?'📑 선택 세트로 복제':'✨ 소재명 생성';
+  if(m==='clone')renderClonePicker();
+  creativePreview();
+}
+/* 소재 페이로드: 저장값 우선, 없으면 소재명 역파싱
+   소재명 구조: 날짜_매체_제품_포맷_메시지_소재명-TAM_합성_타게팅_1차_2차_[담당자] (10~11토큰) */
+function itemPayload(a){
+  if(!a) return null;
+  if(a.fmt!=null) return {fmt:a.fmt,msg:a.msg,soje:a.soje,date:a.date,manager:a.manager||''};
+  const t=String(a.name||'').split('_');
+  if(t.length<10||t.length>11) return null;
+  if(t[5].indexOf('-')<0) return null;
+  return {fmt:t[3],msg:t[4],soje:t[5].slice(0,t[5].lastIndexOf('-')),date:t[0],manager:t.length===11?t[10]:''};
+}
+function cloneable(){ return DB.archive.filter(a=>itemPayload(a) && archiveArea(a)===areaScope); }
+function archProduct(a){ return (String(a.name||'').split('_')[2])||''; }
+function _fillSel(id,vals,label){ const s=$(id); if(!s)return; const cur=s.value; s.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join(''); s.value=vals.includes(cur)?cur:''; }
+function resetCloneFilters(){ $('cloneSearch').value=''; ['cloneFltProduct','cloneFltDate','cloneFltMgr'].forEach(id=>{const s=$(id);if(s)s.value='';}); renderClonePicker(); }
+function renderClonePicker(){
+  const all=cloneable();
+  // 필터 옵션(실제 존재값) 채우기 — 현재 선택 유지
+  _fillSel('cloneFltProduct',[...new Set(all.map(archProduct).filter(Boolean))].sort(),'제품 전체');
+  _fillSel('cloneFltDate',[...new Set(all.map(a=>(itemPayload(a)||{}).date).filter(Boolean))].sort().reverse(),'날짜 전체');
+  _fillSel('cloneFltMgr',[...new Set(all.map(a=>(itemPayload(a)||{}).manager).filter(Boolean))].sort(),'담당자 전체');
+  const q=($('cloneSearch').value||'').toLowerCase();
+  const fp=($('cloneFltProduct')||{}).value||'', fd=($('cloneFltDate')||{}).value||'', fm=($('cloneFltMgr')||{}).value||'';
+  const items=all.filter(a=>{ const p=itemPayload(a)||{};
+    if(fp&&archProduct(a)!==fp)return false;
+    if(fd&&p.date!==fd)return false;
+    if(fm&&(p.manager||'')!==fm)return false;
+    if(q&&!(a.name||'').toLowerCase().includes(q))return false;
+    return true; });
+  $('cloneSrcCount').textContent=`필터 결과 ${items.length}건 · 선택 ${cloneSources.size}건`;
+  if(!items.length){$('clonePicker').innerHTML=`<div class="empty"><div class="ic">📑</div>${all.length?'조건에 맞는 소재 없음':'복제 가능한 소재가 없습니다'}</div>`;return;}
+  $('clonePicker').innerHTML=items.map(a=>{const p=itemPayload(a);return `<div class="set-card ${cloneSources.has(a.id)?'on':''}" onclick="toggleCloneSource('${a.id}')">
+    <div class="cn">${esc(a.name)}</div>
+    <div class="meta"><span class="bdg" style="background:#15263f;color:#5fa8ff">포맷 ${esc(p.fmt)}</span> 메시지 ${esc(p.msg)} · 소재명 ${esc(p.soje)} · ${esc(p.date)}${p.manager?' · '+esc(p.manager):''}</div>
+  </div>`;}).join('');
+}
+function toggleCloneSource(id){ cloneSources.has(id)?cloneSources.delete(id):cloneSources.add(id); renderClonePicker(); creativePreview(); }
+function clearCloneSources(){ cloneSources.clear(); renderClonePicker(); creativePreview(); }
+function runClone(){
+  const sets=[...cSel].map(curSet).filter(Boolean);
+  const srcs=[...cloneSources].map(id=>DB.archive.find(a=>a.id===id)).filter(Boolean);
+  if(!sets.length){toast('대상 세트를 선택하세요 (A·B)');return;}
+  if(!srcs.length){toast('복제할 소스 소재를 선택하세요');return;}
+  lastResults=[]; let skip=0; const ts=new Date().toISOString();
+  sets.forEach(set=>srcs.forEach(src=>{
+    const p=itemPayload(src); if(!p) return;
+    const cr={fmt:p.fmt,msg:p.msg,soje:p.soje};
+    const name=buildCreativeName(set,p.date,cr,p.manager||'');
+    if(DB.archive.some(a=>a.name===name)){skip++;return;}
+    const utm=buildUTM(set,name);
+    const item={id:(Date.now()+Math.random()).toString(36).slice(2,10),ts,setId:set.id,setName:set.name,brand:set.brand,manager:p.manager||'',name,utm,status:validateName(name),done:false,
+      fmt:p.fmt,msg:p.msg,soje:p.soje,date:p.date,cloned:true};
+    lastResults.push(item);DB.archive.unshift(item);
+  }));
+  save();renderResults();
+  toast(`복제 ${lastResults.length}건 생성${skip?` · 중복 ${skip} 제외`:''}`);
+}
+function generateCreatives(){
+  const date=yymmdd($('c_date').value), mgr=$('c_manager').value.trim();
+  const sets=[...cSel].map(curSet).filter(Boolean);
+  const crs=creativeRows.map(readCreativeRow).filter(Boolean);
+  if(!sets.length){toast('광고세트를 선택하세요');return;}
+  if(!date){toast('날짜를 입력하세요');return;}
+  if(!crs.length){toast('소재 정보를 완성하세요');return;}
+  lastResults=[];
+  const ts=new Date().toISOString();
+  sets.forEach(set=>crs.forEach(cr=>{
+    const name=buildCreativeName(set,date,cr,mgr);
+    const utm=buildUTM(set,name);
+    const item={id:(Date.now()+Math.random()).toString(36).slice(2,10),ts,setId:set.id,setName:set.name,brand:set.brand,manager:mgr,name,utm,status:validateName(name),done:false,
+      fmt:cr.fmt,msg:cr.msg,soje:cr.soje,date};   // 복제용 소재 페이로드 저장
+    lastResults.push(item);DB.archive.unshift(item);
+  }));
+  save();renderResults();
+  toast(`${lastResults.length}개 소재명 생성 · 아카이브 저장됨`);
+}
+function renderResults(){
+  $('cResultsPanel').style.display=lastResults.length?'block':'none';
+  $('cResCount').textContent=`${lastResults.length}개`;
+  $('cResults').innerHTML=lastResults.map((r,i)=>`<div class="res">
+    <div class="set">📦 ${esc(r.setName)} ${badge(r.status)}</div>
+    <div class="nm" id="rn${i}">${esc(r.name)}</div>
+    ${r.utm?`<div class="ut" id="ru${i}">${esc(r.utm)}</div>`:'<div class="ut" style="color:var(--yellow)">⚠️ 랜딩 URL 매핑 없음 → UTM 미생성</div>'}
+    <div class="acts">
+      <button class="cbtn" onclick="copy(document.getElementById('rn${i}').textContent,this)">소재명</button>
+      ${r.utm?`<button class="cbtn" onclick="copy(document.getElementById('ru${i}').textContent,this)">UTM URL</button>`:''}
+    </div></div>`).join('');
+}
+function badge(st){return st==='ok'?'<span class="bdg bdg-ok">검증 OK</span>':st==='warn'?'<span class="bdg bdg-warn">검토 필요</span>':'<span class="bdg bdg-err">오류</span>';}
+function copyAllNames(){copy(lastResults.map(r=>r.name).join('\n'));}
+function copyAllUtms(){copy(lastResults.filter(r=>r.utm).map(r=>r.utm).join('\n'));}
+function exportCreatives(){
+  if(!lastResults.length){toast('결과가 없습니다');return;}
+  const rows=[['광고세트명','자동소재명','UTM URL','검증']];
+  lastResults.forEach(r=>rows.push([r.setName,r.name,r.utm,r.status]));
+  downloadCSV(rows,'소재명_UTM');
+}
+
+/* ════════════════════════ TAB3: ARCHIVE ════════════════════════ */
+let arcView='brand'; let arcProd=new Set(), arcMgr=new Set();
+function setArcView(v){arcView=v;$('avBrand').classList.toggle('on',v==='brand');$('avMgr').classList.toggle('on',v==='manager');renderArchive();}
+function toggleArcProd(v){arcProd.has(v)?arcProd.delete(v):arcProd.add(v);renderArchive();}
+function toggleArcMgr(v){arcMgr.has(v)?arcMgr.delete(v):arcMgr.add(v);renderArchive();}
+function clearArcFilters(){arcProd.clear();arcMgr.clear();renderArchive();}
+function archiveArea(a){return areaOf((a.setName||'').split('_')[1]||'');}
+function renderArchive(){
+  const q=($('arcSearch').value||'').toLowerCase();
+  const base=DB.archive.filter(a=>archiveArea(a)===areaScope);
+  $('kTotal').textContent=base.length;
+  $('kDone').textContent=base.filter(a=>a.done).length;
+  $('kSets').textContent=new Set(base.map(a=>a.setId)).size;
+  $('kErr').textContent=base.filter(a=>a.status!=='ok').length;
+  const keyFn=arcView==='manager'?(a=>a.manager||'미상'):(a=>a.brand||'미분류');
+  // ── 제품·담당자 다중 필터 (각각 여러 개 선택 가능, AND 조합) ──
+  const prods=[...new Set(base.map(a=>a.brand||'미분류'))].sort();
+  const mgrs=[...new Set(base.map(a=>a.manager||'미상'))].sort();
+  const pchips=prods.map(g=>`<span class="chip ${arcProd.has(g)?'on':''}" onclick="toggleArcProd('${esc(g)}')">${esc(g)}</span>`).join('')||'<span style="color:var(--text3);font-size:12px">—</span>';
+  const mchips=mgrs.map(g=>`<span class="chip ${arcMgr.has(g)?'on':''}" onclick="toggleArcMgr('${esc(g)}')">${esc(g)}</span>`).join('')||'<span style="color:var(--text3);font-size:12px">—</span>';
+  const anyF=arcProd.size||arcMgr.size;
+  $('arcLabelFilter').innerHTML=`<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:6px"><span class="cnt" style="min-width:48px;padding-top:5px">제품</span><div class="chips" style="flex:1">${pchips}</div></div>`+
+    `<div style="display:flex;gap:8px;align-items:flex-start"><span class="cnt" style="min-width:48px;padding-top:5px">담당자</span><div class="chips" style="flex:1">${mchips}</div>${anyF?`<button class="btn btn-ghost btn-xs" style="flex:none;align-self:center" onclick="clearArcFilters()">필터 해제</button>`:''}</div>`;
+  let items=base.filter(a=>(arcProd.size===0||arcProd.has(a.brand||'미분류'))&&(arcMgr.size===0||arcMgr.has(a.manager||'미상')));
+  if(q)items=items.filter(a=>a.name.toLowerCase().includes(q));
+  if(!items.length){$('archiveBody').innerHTML=`<div class="empty"><div class="ic">📋</div>${DB.archive.length?'검색 결과 없음':'아직 생성된 소재가 없습니다'}</div>`;return;}
+  const g1={};
+  items.forEach(a=>{const k=keyFn(a);(g1[k]=g1[k]||{})[a.setName]=(g1[k][a.setName]||[]);g1[k][a.setName].push(a);});
+  $('archiveBody').innerHTML=Object.entries(g1).map(([k,sets])=>{
+    const total=Object.values(sets).reduce((s,a)=>s+a.length,0);
+    const blocks=Object.entries(sets).map(([sn,arr])=>{
+      const allDone=arr.length>0&&arr.every(a=>a.done);
+      const snEsc=sn.replace(/'/g,"\\'");
+      const sMemo=(DB.setMemo||{})[sn]; const sMemoOpen=sMemo||openSetMemo.has(sn);
+      return `<details class="acc" open>
+      <summary><span class="ch">▶</span><span class="check ${allDone?'on':''}" title="이 세트 전체 완료 토글" onclick="event.preventDefault();event.stopPropagation();toggleSetDone('${snEsc}')">${allDone?'✓':''}</span><span class="t-mono" style="flex:1">${esc(sn)}</span><span class="cnt">${arr.filter(a=>a.done).length}/${arr.length}</span>
+        <button class="iconbtn ${sMemo?'memo-on':''}" title="세트 메모" onclick="event.preventDefault();event.stopPropagation();toggleSetMemo('${snEsc}')">📝</button>
+        <button class="btn btn-ghost btn-xs" onclick="event.preventDefault();copy('${arr.map(a=>a.name).join('\\n').replace(/'/g,"\\'")}')">전체 복사</button></summary>
+      ${sMemoOpen?`<div class="memo-row" style="padding:7px 14px;border-top:1px solid var(--border)"><span class="memo-ic">📝</span><input class="memo-in" value="${esc(sMemo||'')}" placeholder="세트 메모 입력…" onclick="event.stopPropagation()" onblur="setGroupMemo('${snEsc}',this.value)" onkeydown="if(event.key==='Enter')this.blur()"></div>`:''}
+      <div class="acc-body">${arr.map(arcItem).join('')}</div></details>`;}).join('');
+    return `<div style="margin-bottom:18px"><div class="sub-h" style="color:var(--accent2)">${esc(k)} <span style="color:var(--text3)">· ${total}개</span></div>${blocks}</div>`;
+  }).join('');
+}
+function arcItem(a){
+  const d=new Date(a.ts);const ts=`${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  const memoOpen=a.memo||openMemo.has(a.id);
+  return `<div class="arc-item ${a.done?'done':''}">
+    <span class="check ${a.done?'on':''}" onclick="toggleDone('${a.id}')">${a.done?'✓':''}</span>
+    <span class="arc-ts">${ts}</span>
+    <div class="arc-main">
+      <div class="nm" title="생성된 소재명은 수정 불가 (데이터 보호) · 삭제 후 재생성하세요">${esc(a.name)}</div>
+      ${a.utm?`<div class="ut">${esc(a.utm)}</div>`:''}
+      ${memoOpen?`<div class="memo-row"><span class="memo-ic">📝</span><input class="memo-in" value="${esc(a.memo||'')}" placeholder="메모 입력…" onblur="setItemMemo('${a.id}',this.value)" onkeydown="if(event.key==='Enter')this.blur()"></div>`:''}
+    </div>
+    <div style="display:flex;gap:5px">${arcBadge(a)}
+      <button class="iconbtn ${a.memo?'memo-on':''}" title="메모" onclick="toggleMemo('${a.id}')">📝</button>
+      ${itemPayload(a)?`<button class="iconbtn" title="이 소재를 다른 세트로 복제" onclick="cloneFromArchive('${a.id}')">📑</button>`:''}
+      <button class="cbtn" onclick="copy('${esc(a.name)}')">⧉</button>
+      <button class="iconbtn" onclick="delArc('${a.id}')">🗑</button>
+    </div></div>`;
+}
+function cloneFromArchive(id){
+  const a=DB.archive.find(x=>x.id===id); if(!a)return;
+  if(!itemPayload(a)){toast('이 소재는 복제 불가 (이름 구조가 비표준)');return;}
+  cMode='clone'; cloneSources=new Set([id]); go('creative'); setCreativeMode('clone');
+  toast('소스 선택됨 · A·B에서 대상 세트를 고르고 복제하세요');
+}
+function toggleDone(id){const a=DB.archive.find(x=>x.id===id);if(a){a.done=!a.done;save();renderArchive();}}
+/* ── 메모 (소재·세트) ── */
+let openMemo=new Set(), openSetMemo=new Set();
+function toggleMemo(id){ openMemo.has(id)?openMemo.delete(id):openMemo.add(id); renderArchive(); }
+function setItemMemo(id,v){ const a=DB.archive.find(x=>x.id===id); if(!a)return; v=v.trim(); if((a.memo||'')===v){return;} a.memo=v; if(!v)delete a.memo; save(); renderArchive(); }
+function toggleSetMemo(sn){ openSetMemo.has(sn)?openSetMemo.delete(sn):openSetMemo.add(sn); renderArchive(); }
+function setGroupMemo(sn,v){ if(!DB.setMemo)DB.setMemo={}; v=v.trim(); if((DB.setMemo[sn]||'')===v)return; if(v)DB.setMemo[sn]=v; else delete DB.setMemo[sn]; save(); renderArchive(); }
+function toggleSetDone(sn){const items=DB.archive.filter(a=>a.setName===sn&&archiveArea(a)===areaScope);if(!items.length)return;const allDone=items.every(a=>a.done);items.forEach(a=>a.done=!allDone);save();renderArchive();}
+function editArc(id,f,v){const a=DB.archive.find(x=>x.id===id);if(!a)return;v=v.trim();if(!v||v===a[f])return;a[f]=v;if(f==='name'){a.status=validateName(v);if(a.utm)a.utm=a.utm.replace(/utm_content=[^&\s]*/,'utm_content='+v);}save();renderArchive();}
+function delArc(id){DB.archive=DB.archive.filter(x=>x.id!==id);save();renderArchive();}
+function clearArchive(){if(!confirm('아카이브를 모두 삭제하시겠습니까? (팀 전체에서 삭제됩니다)'))return;DB.archive=[];save();renderArchive();}
+
+/* ════════════════════════ 변경 아카이브 (이름변경 이력) ════════════════════════ */
+let chgFilter=null;
+function setChgFilter(v){chgFilter=v;
+  $('cfAll').classList.toggle('on',v===null);$('cfSet').classList.toggle('on',v==='adset');$('cfCam').classList.toggle('on',v==='campaign');
+  renderChanges();}
+function chgArea(c){ const set=c.setId?DB.sets.find(x=>x.id===c.setId):null; const prod=(set&&set.product)||c.product||''; return prod?areaOf(prod):null; }
+function fmtTs(iso){ if(!iso)return''; const d=new Date(iso); return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+function renderChanges(){
+  const wrap=$('changesBody'); if(!wrap) return;
+  // ── 현재 규칙 불일치(매체명≠우리 저장명) 안내 ──
+  const div=$('changesDiverge');
+  const diverged=DB.sets.filter(s=>areaOf(s.product)===areaScope && metaIndex[s.id] && metaIndex[s.id].renamed);
+  if(div){
+    if(diverged.length){
+      div.innerHTML=`<div class="sub-h" style="color:#ffcf66;margin-bottom:8px">⚠ 현재 매체 이름이 우리 규칙명과 다른 광고세트 · ${diverged.length}건</div>`+
+        diverged.map(s=>`<div class="diverge-row">
+          <div style="flex:1;min-width:0">
+            <div class="t-mono" style="color:var(--text3);font-size:11px">규칙명: ${esc(s.name)}</div>
+            <div class="t-mono" style="color:#ffcf66">매체명: ${esc(metaIndex[s.id].liveName)}</div>
+          </div>
+          <button class="btn btn-ghost btn-xs" onclick="adoptLiveName('${s.id}')" title="우리 저장명을 매체의 현재 이름으로 맞춥니다">저장명 갱신</button>
+        </div>`).join('');
+      div.style.display='';
+    } else { div.innerHTML=''; div.style.display='none'; }
+  }
+  // ── 안내 노트 ──
+  const note=$('chgDivergeNote');
+  if(note){ const last=metaSnap&&metaSnap.syncedAt?fmtTs(metaSnap.syncedAt):'없음';
+    note.innerHTML=`마지막 Meta 동기화: <b>${last}</b> · 누적 변경 이력 <b>${(DB.changes||[]).length}</b>건. 이력은 동기화 시점마다 자동 기록되며 팀 전체에 공유됩니다.`; }
+  // ── 변경 이력 목록 ──
+  const q=($('chgSearch')?$('chgSearch').value:'').trim().toLowerCase();
+  let items=(DB.changes||[]).slice().filter(c=>{ const a=chgArea(c); return a===null||a===areaScope; });
+  if(chgFilter) items=items.filter(c=>c.kind===chgFilter);
+  if(q) items=items.filter(c=>((c.from||'')+' '+(c.to||'')+' '+(c.campaignName||'')).toLowerCase().includes(q));
+  items.sort((a,b)=>(b.at||'').localeCompare(a.at||''));
+  if(!items.length){ wrap.innerHTML=`<div class="empty"><div class="ic">🕓</div>${(DB.changes||[]).length?'조건에 맞는 변경 이력이 없습니다':'아직 감지된 이름 변경이 없습니다. (동기화가 누적되면 여기에 기록됩니다)'}</div>`; return; }
+  wrap.innerHTML=items.map(c=>{
+    const tag=c.kind==='campaign'?'<span class="bdg" style="background:#2a1f3f;color:#c79bff">캠페인</span>':'<span class="bdg" style="background:#15263f;color:#5fa8ff">광고세트</span>';
+    const ctx=(c.kind==='adset'&&c.campaignName)?`<div style="color:var(--text3);font-size:11px;margin-top:2px">캠페인: ${esc(c.campaignName)}</div>`:'';
+    return `<div class="chg-item">
+      <span class="chg-ts">${fmtTs(c.at)}</span>
+      <div class="chg-main">
+        <div style="margin-bottom:3px">${tag}</div>
+        <div class="t-mono" style="color:var(--text3)"><span style="color:#ff9b9b">${esc(c.from)}</span></div>
+        <div class="t-mono" style="color:#7fd6a0">↳ ${esc(c.to)}</div>
+        ${ctx}
+      </div>
+      <button class="iconbtn" title="이 이력 삭제" onclick="delChange('${c.id}')">🗑</button>
+    </div>`;
+  }).join('');
+}
+function adoptLiveName(setId){ const s=DB.sets.find(x=>x.id===setId); if(!s)return; const m=metaIndex[setId]; if(!m||!m.liveName)return;
+  if(!confirm(`이 광고세트의 저장명을 매체의 현재 이름으로 바꿉니다.\n\n${s.name}\n→ ${m.liveName}\n\n(팀 전체에 반영됩니다)`))return;
+  s.name=m.liveName; save(); applyMeta(); toast('저장명을 매체 이름으로 갱신했습니다'); }
+function delChange(id){ DB.changes=(DB.changes||[]).filter(c=>c.id!==id); save(); renderChanges(); }
+function clearChanges(){ if(!confirm('변경 이력을 모두 삭제하시겠습니까? (팀 전체에서 삭제됩니다)\n※ 다음 동기화부터 다시 기록됩니다.'))return; DB.changes=[]; save(); renderChanges(); }
+function exportChanges(){
+  if(!(DB.changes||[]).length){toast('변경 이력이 비어있습니다');return;}
+  const rows=[['감지시각','구분','이전 이름','변경된 이름','관련 캠페인','엔티티ID']];
+  DB.changes.slice().sort((a,b)=>(b.at||'').localeCompare(a.at||'')).forEach(c=>rows.push([
+    c.at||'', c.kind==='campaign'?'캠페인':'광고세트', c.from||'', c.to||'', c.campaignName||'', c.entityId||'']));
+  const csv='﻿'+rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='변경아카이브_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+}
+function exportArchive(){
+  if(!DB.archive.length){toast('아카이브가 비어있습니다');return;}
+  const rows=[['생성시각','브랜드','광고세트명','자동소재명','UTM URL','담당자','검증','완료']];
+  DB.archive.forEach(a=>rows.push([a.ts,a.brand,a.setName,a.name,a.utm,a.manager,a.status,a.done?'완료':'']));
+  downloadCSV(rows,'아카이브');
+}
+
+/* ════════════════════════ TAB4: MAP ════════════════════════ */
+function renderMap(){
+  $('m_products').innerHTML=M().products.map((p,i)=>`<tr><td class="mono">${esc(p.code)}</td><td><input value="${esc(p.brand)}" onchange="M().products[${i}].brand=this.value;save()"></td><td><select onchange="M().products[${i}].area=this.value;save();refreshAll()">${AREAS.map(a=>`<option ${(p.area||'클룹')===a?'selected':''}>${esc(a)}</option>`).join('')}</select></td><td><button class="iconbtn" onclick="rmArr('products',${i})">🗑</button></td></tr>`).join('');
+  $('m_media').innerHTML=M().media.map((m,i)=>`<tr><td class="mono">${esc(m.code)}</td><td><input class="mono" value="${esc(m.source)}" onchange="M().media[${i}].source=this.value;save()"></td><td><input class="mono" value="${esc(m.medium)}" onchange="M().media[${i}].medium=this.value;save()"></td><td><button class="iconbtn" onclick="rmArr('media',${i})">🗑</button></td></tr>`).join('');
+  $('m_landing').innerHTML=Object.entries(M().landing).map(([k,u])=>{const[p,s]=k.split('+');return `<tr><td class="mono">${esc(p)}</td><td class="mono">${esc(s)}</td><td><input value="${esc(u)}" onchange="M().landing['${esc(k)}']=this.value;save()"></td><td><button class="iconbtn" onclick="rmLanding('${esc(k)}')">🗑</button></td></tr>`;}).join('');
+  $('m_composite').innerHTML=M().composite.map((c,i)=>`<tr><td>${esc(c.goal)} (${esc(goalKr(c.goal))})</td><td>${esc(c.bid)}</td><td><span class="bdg bdg-dcm">${esc(c.code)}</span></td><td><button class="iconbtn" onclick="rmArr('composite',${i})">🗑</button></td></tr>`).join('');
+  $('m_firstcat').innerHTML=M().firstcat.map((f,i)=>`<tr><td class="mono">${esc(f.src)}</td><td><input value="${esc(f.kr)}" onchange="M().firstcat[${i}].kr=this.value;save()"></td><td><span class="bdg bdg-${f.code.toLowerCase()}">${esc(f.code)}</span></td><td><button class="iconbtn" onclick="rmArr('firstcat',${i})">🗑</button></td></tr>`).join('');
+  $('m_tams').innerHTML=M().tams.map((t,i)=>`<tr><td class="mono">${esc(t.code)}</td><td><input value="${esc(t.kr||'')}" placeholder="한글 의미" onchange="M().tams[${i}].kr=this.value;save()"></td><td><button class="iconbtn" onclick="rmArr('tams',${i})">🗑</button></td></tr>`).join('');
+  $('m_schemes').innerHTML=M().schemes.map((s,i)=>`<span class="chip">${esc(s.code)} <span style="color:var(--text3)">${esc(s.kr)}</span><span class="x" onclick="rmArr('schemes',${i})">✕</span></span>`).join('');
+  $('m_formats').innerHTML=M().formats.map((f,i)=>`<span class="chip">${esc(f.code)} <span style="color:var(--text3)">${esc(f.label)}</span><span class="x" onclick="rmArr('formats',${i})">✕</span></span>`).join('');
+  $('m_msgpool').innerHTML=M().msgpool.map((m,i)=>`<tr><td class="mono">${esc(m.code)}</td><td><input value="${esc(m.kr||'')}" placeholder="한글 의미" onchange="M().msgpool[${i}].kr=this.value;save()"></td><td><button class="iconbtn" onclick="rmArr('msgpool',${i})">🗑</button></td></tr>`).join('');
+  const gsel=$('mc_goal'); if(gsel) gsel.innerHTML=M().goals.map(g=>`<option value="${g.code}">${g.code} (${esc(g.kr)})</option>`).join('');
+  const bsel=$('mc_bid'); if(bsel) bsel.innerHTML=M().bids.map(b=>`<option value="${b.code}">${b.code} (${esc(b.kr)})</option>`).join('');
+  mapSub(mapSubActive);
+}
+function rmArr(key,i){M()[key].splice(i,1);save();refreshAll();}
+function rmLanding(k){delete M().landing[k];save();refreshAll();}
+function addProduct(){const c=$('mp_code').value.trim().toUpperCase(),b=$('mp_brand').value.trim();if(!c||!b)return;M().products.push({code:c,brand:b,area:($('mp_area')?$('mp_area').value:'클룹')});$('mp_code').value='';$('mp_brand').value='';save();refreshAll();}
+function addMedia(){const c=$('mm_code').value.trim(),s=$('mm_src').value.trim(),m=$('mm_med').value.trim();if(!c||!s||!m)return;M().media.push({code:c,channel:c,source:s,medium:m});$('mm_code').value='';$('mm_src').value='';$('mm_med').value='';save();refreshAll();}
+function addLanding(){const p=$('ml_prod').value.trim().toUpperCase(),s=$('ml_scheme').value.trim().toUpperCase(),u=$('ml_url').value.trim();if(!p||!s||!u)return;M().landing[p+'+'+s]=u;$('ml_prod').value='';$('ml_scheme').value='';$('ml_url').value='';save();refreshAll();}
+function addMapTam(){const v=$('mt_new').value.trim().toUpperCase();if(!v||M().tams.some(t=>t.code===v))return;M().tams.push({code:v,kr:($('mt_kr')?$('mt_kr').value.trim():'')});$('mt_new').value='';if($('mt_kr'))$('mt_kr').value='';save();refreshAll();}
+function addScheme(){const v=$('ms_new').value.trim().toUpperCase();if(!v||M().schemes.some(s=>s.code===v))return;M().schemes.push({code:v,kr:v});$('ms_new').value='';save();refreshAll();}
+function addFormat(){const v=$('mf_new').value.trim().toUpperCase();if(!v||M().formats.some(f=>f.code===v))return;M().formats.push({code:v,label:v});$('mf_new').value='';save();refreshAll();}
+function addMsg(){
+  const v=$('mmsg_new').value.trim(); if(!v)return;
+  const kr=($('mmsg_kr')?$('mmsg_kr').value.trim():'');
+  if(M().msgpool.some(m=>m.code.toLowerCase()===v.toLowerCase())){ alert('이미 존재하는 메시지 코드입니다: '+v+'\n(중복 코드는 추가되지 않습니다)'); return; }
+  if(kr && M().msgpool.some(m=>(m.kr||'').trim()===kr)){ alert('이미 존재하는 한글 의미입니다: '+kr+'\n(중복 의미는 추가되지 않습니다)'); return; }
+  M().msgpool.push({code:v,kr});$('mmsg_new').value='';if($('mmsg_kr'))$('mmsg_kr').value='';save();refreshAll();toast('메시지 추가됨: '+v);
+}
+function addComposite(){const g=$('mc_goal').value,b=$('mc_bid').value,c=$('mc_code').value.trim().toUpperCase();if(!g||!b||!c)return;if(M().composite.some(x=>x.goal===g&&x.bid===b)){toast('이미 있는 목표+입찰 조합');return;}M().composite.push({goal:g,bid:b,code:c});$('mc_code').value='';save();refreshAll();}
+function addFirstcat(){const s=$('mfc_src').value.trim(),k=$('mfc_kr').value.trim(),c=$('mfc_code').value.trim().toUpperCase();if(!s||!c)return;M().firstcat.push({src:s,kr:k,code:c});$('mfc_src').value='';$('mfc_kr').value='';$('mfc_code').value='';save();refreshAll();}
+function refreshAll(){fillBuilderSelects();$('b_firstcat').value='regular';renderBuilderChips();buildPreview();renderMap();renderCreativeRows();renderCreativeCampaigns();renderCreativeSets();}
+
+/* ════════════════════════ DATA MGMT ════════════════════════ */
+function downloadCSV(rows,name){
+  const csv=rows.map(r=>r.map(c=>`"${String(c==null?'':c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`${name}_${new Date().toISOString().slice(0,10)}.csv`;a.click();
+}
+function exportAll(){
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`cloop_백업_${new Date().toISOString().slice(0,10)}.json`;a.click();
+}
+function importAll(e){
+  const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const j=JSON.parse(r.result);if(!j.maps)throw 0;if(!confirm('백업으로 전체 데이터를 교체합니다.\\n(Firebase 연결 시 팀 전체에 반영됩니다) 계속할까요?'))return;DB=j;save();go('build');refreshAll();toast('백업이 복원되었습니다');}catch(err){toast('잘못된 백업 파일입니다');}};
+  r.readAsText(f);
+}
+function resetSeed(){if(!confirm('매핑키를 기본값으로 초기화합니다. 생성된 세트·아카이브는 유지됩니다.'))return;DB.maps=deepClone(SEED);save();refreshAll();toast('매핑키가 초기화되었습니다');}
+
+window.addEventListener('load',init);
+</script>
+</body>
+</html>
