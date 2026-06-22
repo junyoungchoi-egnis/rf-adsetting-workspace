@@ -1346,8 +1346,11 @@ function exportCreatives(){
 }
 
 /* ════════════════════════ TAB3: ARCHIVE ════════════════════════ */
-let arcView='brand', arcFilter=null;
-function setArcView(v){arcView=v;arcFilter=null;$('avBrand').classList.toggle('on',v==='brand');$('avMgr').classList.toggle('on',v==='manager');renderArchive();}
+let arcView='brand'; let arcProd=new Set(), arcMgr=new Set();
+function setArcView(v){arcView=v;$('avBrand').classList.toggle('on',v==='brand');$('avMgr').classList.toggle('on',v==='manager');renderArchive();}
+function toggleArcProd(v){arcProd.has(v)?arcProd.delete(v):arcProd.add(v);renderArchive();}
+function toggleArcMgr(v){arcMgr.has(v)?arcMgr.delete(v):arcMgr.add(v);renderArchive();}
+function clearArcFilters(){arcProd.clear();arcMgr.clear();renderArchive();}
 function archiveArea(a){return areaOf((a.setName||'').split('_')[1]||'');}
 function renderArchive(){
   const q=($('arcSearch').value||'').toLowerCase();
@@ -1357,11 +1360,15 @@ function renderArchive(){
   $('kSets').textContent=new Set(base.map(a=>a.setId)).size;
   $('kErr').textContent=base.filter(a=>a.status!=='ok').length;
   const keyFn=arcView==='manager'?(a=>a.manager||'미상'):(a=>a.brand||'미분류');
-  const groups=[...new Set(base.map(keyFn))];
-  $('arcLabelFilter').innerHTML=`<span class="chip ${!arcFilter?'on':''}" onclick="setArcFilter(null)">전체</span>`+
-    groups.map(g=>`<span class="chip ${arcFilter===g?'on':''}" onclick="setArcFilter('${esc(g)}')">${esc(g)}</span>`).join('');
-  let items=base;
-  if(arcFilter)items=items.filter(a=>keyFn(a)===arcFilter);
+  // ── 제품·담당자 다중 필터 (각각 여러 개 선택 가능, AND 조합) ──
+  const prods=[...new Set(base.map(a=>a.brand||'미분류'))].sort();
+  const mgrs=[...new Set(base.map(a=>a.manager||'미상'))].sort();
+  const pchips=prods.map(g=>`<span class="chip ${arcProd.has(g)?'on':''}" onclick="toggleArcProd('${esc(g)}')">${esc(g)}</span>`).join('')||'<span style="color:var(--text3);font-size:12px">—</span>';
+  const mchips=mgrs.map(g=>`<span class="chip ${arcMgr.has(g)?'on':''}" onclick="toggleArcMgr('${esc(g)}')">${esc(g)}</span>`).join('')||'<span style="color:var(--text3);font-size:12px">—</span>';
+  const anyF=arcProd.size||arcMgr.size;
+  $('arcLabelFilter').innerHTML=`<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:6px"><span class="cnt" style="min-width:48px;padding-top:5px">제품</span><div class="chips" style="flex:1">${pchips}</div></div>`+
+    `<div style="display:flex;gap:8px;align-items:flex-start"><span class="cnt" style="min-width:48px;padding-top:5px">담당자</span><div class="chips" style="flex:1">${mchips}</div>${anyF?`<button class="btn btn-ghost btn-xs" style="flex:none;align-self:center" onclick="clearArcFilters()">필터 해제</button>`:''}</div>`;
+  let items=base.filter(a=>(arcProd.size===0||arcProd.has(a.brand||'미분류'))&&(arcMgr.size===0||arcMgr.has(a.manager||'미상')));
   if(q)items=items.filter(a=>a.name.toLowerCase().includes(q));
   if(!items.length){$('archiveBody').innerHTML=`<div class="empty"><div class="ic">📋</div>${DB.archive.length?'검색 결과 없음':'아직 생성된 소재가 없습니다'}</div>`;return;}
   const g1={};
@@ -1399,7 +1406,6 @@ function cloneFromArchive(id){
   cMode='clone'; cloneSources=new Set([id]); go('creative'); setCreativeMode('clone');
   toast('소스 선택됨 · A·B에서 대상 세트를 고르고 복제하세요');
 }
-function setArcFilter(v){arcFilter=v;renderArchive();}
 function toggleDone(id){const a=DB.archive.find(x=>x.id===id);if(a){a.done=!a.done;save();renderArchive();}}
 function toggleSetDone(sn){const items=DB.archive.filter(a=>a.setName===sn&&archiveArea(a)===areaScope);if(!items.length)return;const allDone=items.every(a=>a.done);items.forEach(a=>a.done=!allDone);save();renderArchive();}
 function editArc(id,f,v){const a=DB.archive.find(x=>x.id===id);if(!a)return;v=v.trim();if(!v||v===a[f])return;a[f]=v;if(f==='name'){a.status=validateName(v);if(a.utm)a.utm=a.utm.replace(/utm_content=[^&\s]*/,'utm_content='+v);}save();renderArchive();}
