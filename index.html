@@ -715,6 +715,7 @@ function applyMeta(){
     if(s.adsetId && byId[s.adsetId]) live=byId[s.adsetId];
     else if(byName[s.name]){ live=byName[s.name]; if(!s.adsetId&&live.adsetId){ s.adsetId=live.adsetId; s.campaignId=live.campaignId; changed=true; } }
     if(live){
+      if(live.campaignId && s.campaignId!==live.campaignId){ s.campaignId=live.campaignId; changed=true; }
       metaIndex[s.id]={total:live.total,active:live.active,liveName:live.adsetName,renamed:!!(s.adsetId&&live.adsetName&&live.adsetName!==s.name)};
       // ── 이름변경 이력 추적 (세트 ID 기준) ──
       if(live.adsetId){
@@ -736,7 +737,7 @@ function applyMeta(){
     }
   });
   if(changed) save();
-  renderSetLib(); renderCreativeSets(); updateMetaStatus(); renderChanges();
+  renderSetLib(); renderCreativeCampaigns(); renderCreativeSets(); updateMetaStatus(); renderChanges();
 }
 function metaBadge(setId){
   const m=metaIndex[setId]; if(!m) return '';
@@ -909,12 +910,24 @@ function exportSets(){
 /* ════════════════════════ TAB2: CREATIVE ════════════════════════ */
 let cSel=new Set();
 let cCampKey=null;
-function campaignKey(s){return [s.media,s.product,s.goal,s.bid,s.scheme,s.date].join('_');}
-function campaignLabel(s){return `${s.brand} · ${schemeKr(s.scheme)} · ${goalKr(s.goal)}/${bidKr(s.bid)} · ${s.date}`;}
+/* 동기화된 캠페인ID→실제 메타 캠페인명 매핑 (metaSnap 기준, 메모이즈) */
+let _camMapCache=null,_camMapSnap=undefined;
+function metaCampMap(){
+  if(_camMapSnap===metaSnap && _camMapCache) return _camMapCache;
+  const m={};
+  const adsets = metaSnap&&metaSnap.adsets?(Array.isArray(metaSnap.adsets)?metaSnap.adsets:Object.values(metaSnap.adsets)):[];
+  adsets.forEach(a=>{ if(a&&a.campaignId&&a.campaignName) m[a.campaignId]=a.campaignName; });
+  _camMapCache=m; _camMapSnap=metaSnap; return m;
+}
+function liveCampName(s){ const cmap=metaCampMap(); return (s&&s.campaignId&&cmap[s.campaignId])?cmap[s.campaignId]:''; }
+/* 실제 메타 캠페인명이 있으면 그 ID로 그룹, 없으면 빌더 속성 기반 추정 그룹 */
+function campaignKey(s){ const ln=liveCampName(s); return ln?('cid:'+s.campaignId):('syn:'+[s.media,s.product,s.goal,s.bid,s.scheme,s.date].join('_')); }
+function campaignLabel(s){ const ln=liveCampName(s); return ln?ln:`${schemeKr(s.scheme)} · ${goalKr(s.goal)}/${bidKr(s.bid)} · ${s.date} (미동기화 추정)`; }
+function campaignIsLive(s){ return !!liveCampName(s); }
 function renderCreativeCampaigns(){
   const q=($('cCampSearch').value||'').toLowerCase();
   const groups={};
-  DB.sets.filter(s=>areaOf(s.product)===areaScope).forEach(s=>{const k=campaignKey(s);(groups[k]=groups[k]||{label:campaignLabel(s),brand:s.brand,date:s.date,sets:[]}).sets.push(s);});
+  DB.sets.filter(s=>areaOf(s.product)===areaScope).forEach(s=>{const k=campaignKey(s);(groups[k]=groups[k]||{label:campaignLabel(s),brand:s.brand,date:s.date,live:campaignIsLive(s),sets:[]}).sets.push(s);});
   let entries=Object.entries(groups);
   if(q)entries=entries.filter(([k,g])=>g.label.toLowerCase().includes(q)||g.sets.some(s=>s.name.toLowerCase().includes(q)));
   entries.sort((a,b)=>(b[1].date||'').localeCompare(a[1].date||''));
@@ -922,8 +935,9 @@ function renderCreativeCampaigns(){
   if(!entries.length){$('cCampList').innerHTML=`<div class="empty"><div class="ic">📦</div>먼저 빌더에서 광고세트를 생성하세요</div>`;return;}
   $('cCampList').innerHTML=entries.map(([k,g])=>{
     const tams=g.sets.map(s=>s.tam).filter((v,i,a)=>a.indexOf(v)===i).join(', ');
+    const srcBadge=g.live?`<span class="bdg" style="background:#15263f;color:#5fa8ff" title="Meta에서 동기화된 실제 캠페인명">Meta 캠페인</span>`:`<span class="bdg" style="background:#3a2e15;color:#ffcf66" title="아직 Meta에 매칭되지 않아 빌더 속성으로 추정한 이름입니다. 동기화되면 실제 캠페인명으로 바뀝니다.">추정</span>`;
     return `<div class="set-card ${cCampKey===k?'on':''}" onclick="selectCampaign('${k}')">
-      <div class="meta" style="margin-top:0"><span class="tag">${esc(g.brand)}</span><b style="color:var(--text)">${esc(g.label)}</b></div>
+      <div class="meta" style="margin-top:0"><span class="tag">${esc(g.brand)}</span>${srcBadge}<b style="color:var(--text)">${esc(g.label)}</b></div>
       <div class="meta"><span class="cnt">광고세트 ${g.sets.length}개</span> · ${esc(tams)}</div>
     </div>`;}).join('');
 }
