@@ -1254,10 +1254,13 @@ function renderArchive(){
   items.forEach(a=>{const k=keyFn(a);(g1[k]=g1[k]||{})[a.setName]=(g1[k][a.setName]||[]);g1[k][a.setName].push(a);});
   $('archiveBody').innerHTML=Object.entries(g1).map(([k,sets])=>{
     const total=Object.values(sets).reduce((s,a)=>s+a.length,0);
-    const blocks=Object.entries(sets).map(([sn,arr])=>`<details class="acc" open>
-      <summary><span class="ch">▶</span><span class="t-mono" style="flex:1">${esc(sn)}</span><span class="cnt">${arr.length}개</span>
+    const blocks=Object.entries(sets).map(([sn,arr])=>{
+      const allDone=arr.length>0&&arr.every(a=>a.done);
+      const snEsc=sn.replace(/'/g,"\\'");
+      return `<details class="acc" open>
+      <summary><span class="ch">▶</span><span class="check ${allDone?'on':''}" title="이 세트 전체 완료 토글" onclick="event.preventDefault();event.stopPropagation();toggleSetDone('${snEsc}')">${allDone?'✓':''}</span><span class="t-mono" style="flex:1">${esc(sn)}</span><span class="cnt">${arr.filter(a=>a.done).length}/${arr.length}</span>
         <button class="btn btn-ghost btn-xs" onclick="event.preventDefault();copy('${arr.map(a=>a.name).join('\\n').replace(/'/g,"\\'")}')">전체 복사</button></summary>
-      <div class="acc-body">${arr.map(arcItem).join('')}</div></details>`).join('');
+      <div class="acc-body">${arr.map(arcItem).join('')}</div></details>`;}).join('');
     return `<div style="margin-bottom:18px"><div class="sub-h" style="color:var(--accent2)">${esc(k)} <span style="color:var(--text3)">· ${total}개</span></div>${blocks}</div>`;
   }).join('');
 }
@@ -1277,6 +1280,7 @@ function arcItem(a){
 }
 function setArcFilter(v){arcFilter=v;renderArchive();}
 function toggleDone(id){const a=DB.archive.find(x=>x.id===id);if(a){a.done=!a.done;save();renderArchive();}}
+function toggleSetDone(sn){const items=DB.archive.filter(a=>a.setName===sn&&archiveArea(a)===areaScope);if(!items.length)return;const allDone=items.every(a=>a.done);items.forEach(a=>a.done=!allDone);save();renderArchive();}
 function editArc(id,f,v){const a=DB.archive.find(x=>x.id===id);if(!a)return;v=v.trim();if(!v||v===a[f])return;a[f]=v;if(f==='name'){a.status=validateName(v);if(a.utm)a.utm=a.utm.replace(/utm_content=[^&\s]*/,'utm_content='+v);}save();renderArchive();}
 function delArc(id){DB.archive=DB.archive.filter(x=>x.id!==id);save();renderArchive();}
 function clearArchive(){if(!confirm('아카이브를 모두 삭제하시겠습니까? (팀 전체에서 삭제됩니다)'))return;DB.archive=[];save();renderArchive();}
