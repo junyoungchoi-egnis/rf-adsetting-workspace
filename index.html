@@ -1197,7 +1197,7 @@ function creativePreview(){
     $('c_genCount').textContent=sets.length*srcs.length;
     const w=[]; if(!sets.length)w.push('대상 세트를 선택하세요 (A·B).'); if(!srcs.length)w.push('복제할 소스 소재를 선택하세요.');
     wb.innerHTML=w.join('<br>');wb.classList.toggle('show',w.length>0);
-    if(sets.length&&srcs.length){ const s=srcs[0]; const name=buildCreativeName(sets[0],s.date,{fmt:s.fmt,msg:s.msg,soje:s.soje},s.manager||'');
+    if(sets.length&&srcs.length){ const s=itemPayload(srcs[0])||{}; const name=buildCreativeName(sets[0],s.date,{fmt:s.fmt,msg:s.msg,soje:s.soje},s.manager||'');
       $('c_preview').innerHTML=name.split('_').map(t=>`<span class="tok">${esc(t)}</span>`).join('<span style="color:var(--text3)">_</span>');
     }else{$('c_preview').innerHTML='<span class="ph">소스 소재 + 대상 세트 선택 시 표시…</span>';}
     return;
@@ -1228,16 +1228,26 @@ function setCreativeMode(m){
   if(m==='clone')renderClonePicker();
   creativePreview();
 }
-function cloneable(){ return DB.archive.filter(a=>a.fmt!=null && archiveArea(a)===areaScope); }
+/* 소재 페이로드: 저장값 우선, 없으면 소재명 역파싱
+   소재명 구조: 날짜_매체_제품_포맷_메시지_소재명-TAM_합성_타게팅_1차_2차_[담당자] (10~11토큰) */
+function itemPayload(a){
+  if(!a) return null;
+  if(a.fmt!=null) return {fmt:a.fmt,msg:a.msg,soje:a.soje,date:a.date,manager:a.manager||''};
+  const t=String(a.name||'').split('_');
+  if(t.length<10||t.length>11) return null;
+  if(t[5].indexOf('-')<0) return null;
+  return {fmt:t[3],msg:t[4],soje:t[5].slice(0,t[5].lastIndexOf('-')),date:t[0],manager:t.length===11?t[10]:''};
+}
+function cloneable(){ return DB.archive.filter(a=>itemPayload(a) && archiveArea(a)===areaScope); }
 function renderClonePicker(){
   const q=($('cloneSearch').value||'').toLowerCase();
   let items=cloneable(); if(q)items=items.filter(a=>(a.name||'').toLowerCase().includes(q));
   $('cloneSrcCount').textContent=cloneSources.size?`${cloneSources.size}개 선택`:`복제 가능 ${cloneable().length}개`;
-  if(!items.length){$('clonePicker').innerHTML=`<div class="empty"><div class="ic">📑</div>${cloneable().length?'검색 결과 없음':'복제 가능한 소재가 없습니다 (소재명 생성 후 복제 가능)'}</div>`;return;}
-  $('clonePicker').innerHTML=items.map(a=>`<div class="set-card ${cloneSources.has(a.id)?'on':''}" onclick="toggleCloneSource('${a.id}')">
+  if(!items.length){$('clonePicker').innerHTML=`<div class="empty"><div class="ic">📑</div>${cloneable().length?'검색 결과 없음':'복제 가능한 소재가 없습니다'}</div>`;return;}
+  $('clonePicker').innerHTML=items.map(a=>{const p=itemPayload(a);return `<div class="set-card ${cloneSources.has(a.id)?'on':''}" onclick="toggleCloneSource('${a.id}')">
     <div class="cn">${esc(a.name)}</div>
-    <div class="meta"><span class="bdg" style="background:#15263f;color:#5fa8ff">포맷 ${esc(a.fmt)}</span> 메시지 ${esc(a.msg)} · 소재명 ${esc(a.soje)} · ${esc(a.date)}${a.manager?' · '+esc(a.manager):''}</div>
-  </div>`).join('');
+    <div class="meta"><span class="bdg" style="background:#15263f;color:#5fa8ff">포맷 ${esc(p.fmt)}</span> 메시지 ${esc(p.msg)} · 소재명 ${esc(p.soje)} · ${esc(p.date)}${p.manager?' · '+esc(p.manager):''}</div>
+  </div>`;}).join('');
 }
 function toggleCloneSource(id){ cloneSources.has(id)?cloneSources.delete(id):cloneSources.add(id); renderClonePicker(); creativePreview(); }
 function clearCloneSources(){ cloneSources.clear(); renderClonePicker(); creativePreview(); }
@@ -1248,12 +1258,13 @@ function runClone(){
   if(!srcs.length){toast('복제할 소스 소재를 선택하세요');return;}
   lastResults=[]; let skip=0; const ts=new Date().toISOString();
   sets.forEach(set=>srcs.forEach(src=>{
-    const cr={fmt:src.fmt,msg:src.msg,soje:src.soje};
-    const name=buildCreativeName(set,src.date,cr,src.manager||'');
+    const p=itemPayload(src); if(!p) return;
+    const cr={fmt:p.fmt,msg:p.msg,soje:p.soje};
+    const name=buildCreativeName(set,p.date,cr,p.manager||'');
     if(DB.archive.some(a=>a.name===name)){skip++;return;}
     const utm=buildUTM(set,name);
-    const item={id:(Date.now()+Math.random()).toString(36).slice(2,10),ts,setId:set.id,setName:set.name,brand:set.brand,manager:src.manager||'',name,utm,status:validateName(name),done:false,
-      fmt:src.fmt,msg:src.msg,soje:src.soje,date:src.date,cloned:true};
+    const item={id:(Date.now()+Math.random()).toString(36).slice(2,10),ts,setId:set.id,setName:set.name,brand:set.brand,manager:p.manager||'',name,utm,status:validateName(name),done:false,
+      fmt:p.fmt,msg:p.msg,soje:p.soje,date:p.date,cloned:true};
     lastResults.push(item);DB.archive.unshift(item);
   }));
   save();renderResults();
@@ -1343,14 +1354,14 @@ function arcItem(a){
       ${a.utm?`<div class="ut">${esc(a.utm)}</div>`:''}
     </div>
     <div style="display:flex;gap:5px">${arcBadge(a)}
-      ${a.fmt!=null?`<button class="iconbtn" title="이 소재를 다른 세트로 복제" onclick="cloneFromArchive('${a.id}')">📑</button>`:''}
+      ${itemPayload(a)?`<button class="iconbtn" title="이 소재를 다른 세트로 복제" onclick="cloneFromArchive('${a.id}')">📑</button>`:''}
       <button class="cbtn" onclick="copy('${esc(a.name)}')">⧉</button>
       <button class="iconbtn" onclick="delArc('${a.id}')">🗑</button>
     </div></div>`;
 }
 function cloneFromArchive(id){
   const a=DB.archive.find(x=>x.id===id); if(!a)return;
-  if(a.fmt==null){toast('구버전 항목은 복제 불가 — 다시 생성 후 이용하세요');return;}
+  if(!itemPayload(a)){toast('이 소재는 복제 불가 (이름 구조가 비표준)');return;}
   cMode='clone'; cloneSources=new Set([id]); go('creative'); setCreativeMode('clone');
   toast('소스 선택됨 · A·B에서 대상 세트를 고르고 복제하세요');
 }
