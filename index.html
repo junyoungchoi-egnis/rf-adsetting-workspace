@@ -704,13 +704,13 @@ function syncRerender(){
 }
 
 /* ── Meta 실데이터 스냅샷 (서버함수 /api/sync 가 Firebase /meta_v2 에 기록) ── */
-let metaSnap=null, metaIndex={}, metaCampStatus={}, metaRefStarted=false, activeOnlyCamp=false, activeOnlySet=false;
+let metaSnap=null, metaIndex={}, metaCampStatus={}, metaRefStarted=false, activeOnlyCamp=true, activeOnlySet=false;
 /* 활성 상태 헬퍼: effective_status 우선, 없으면 활성 광고수로 추정 */
 function setActiveState(s){ const m=metaIndex[s.id]; if(!m) return null; if(m.status) return m.status==='ACTIVE'; return (m.active||0)>0; }
 function campActiveState(campaignId, sets){ if(campaignId && metaCampStatus[campaignId]) return metaCampStatus[campaignId]==='ACTIVE'; if(sets){ const states=sets.map(setActiveState).filter(v=>v!==null); if(states.length) return states.some(Boolean); } return null; }
 function statusBadge(active){ if(active===null) return ''; return active?`<span class="bdg" style="background:#15331f;color:#7fd6a0">활성</span>`:`<span class="bdg" style="background:#2b2f37;color:#9aa3b2">비활성</span>`; }
 function _abtn(id,v){ const b=document.getElementById(id); if(b){b.classList.toggle('btn-primary',v);b.classList.toggle('btn-ghost',!v);b.textContent=v?'✓ 활성만':'활성만';} }
-function toggleActiveCamp(){ activeOnlyCamp=!activeOnlyCamp; _abtn('btnActiveCamp',activeOnlyCamp); renderCreativeCampaigns(); }
+function toggleActiveCamp(){ activeOnlyCamp=!activeOnlyCamp; _abtn('btnActiveCamp',activeOnlyCamp); renderCreativeCampaigns(); renderCreativeSets(); }
 function toggleActiveSet(){ activeOnlySet=!activeOnlySet; _abtn('btnActiveSet',activeOnlySet); renderCreativeSets(); }
 function startMetaSync(){
   if(metaRefStarted) return;
@@ -1039,29 +1039,22 @@ function parseLiveSet(a){
     bidopt, landing:landingFor(product,scheme), _live:true };
 }
 /* 메타 라이브 광고세트 ∪ 빌더 세트 → 통합 후보 목록 (현재 영역 기준) */
+/* 소재 탭 후보 = 메타 라이브 광고세트만. 기준: 캠페인 활성(activeOnlyCamp).
+   소재 0건 신규 광고세트도 포함(adsets 엔드포인트로 수집되므로). 빌더 세트는 라이브 매칭 시 속성(랜딩·1차)만 보강. */
 function creativeCandidates(){
   const adsets = metaSnap&&metaSnap.adsets?(Array.isArray(metaSnap.adsets)?metaSnap.adsets:Object.values(metaSnap.adsets)):[];
-  const byAdsetId={}; adsets.forEach(a=>{ if(a&&a.adsetId)byAdsetId[a.adsetId]=a; });
-  const used=new Set(); const out=[];
-  // 1) 빌더 세트 (속성 신뢰) — 메타에 있으면 상태/카운트 부착
-  DB.sets.forEach(s=>{
-    if(areaOf(s.product)!==areaScope) return;
-    const a=s.adsetId?byAdsetId[s.adsetId]:null; if(a)used.add(s.adsetId);
-    const mi=metaIndex[s.id];
-    out.push(Object.assign({},s,{
-      campaignId:(a?a.campaignId:s.campaignId)||'',
-      campName:a?a.campaignName:liveCampName(s),
-      campStatus:a?a.campaignStatus:(metaCampStatus[s.campaignId]||''),
-      live:a?{total:a.total,active:a.active,status:a.adsetStatus}:(mi?{total:mi.total,active:mi.active,status:mi.status}:null),
-      _live:false }));
-  });
-  // 2) 빌더에 없는 라이브 광고세트 — 이름 파싱으로 후보화 (등록된 제품코드만 → 영역 정확)
+  const builderByAdset={}; DB.sets.forEach(s=>{ if(s.adsetId)builderByAdset[s.adsetId]=s; });
+  const out=[];
   adsets.forEach(a=>{
-    if(!a||!a.adsetId||used.has(a.adsetId)) return;
+    if(!a||!a.adsetId) return;
+    if(activeOnlyCamp && a.campaignStatus!=='ACTIVE') return;        // 캠페인 활성 기준 (토글 해제 시 전체)
     const c=parseLiveSet(a); if(!c) return;
-    if(!M().products.find(p=>p.code===c.product)) return;   // 미등록 제품코드 제외
+    if(!M().products.find(p=>p.code===c.product)) return;            // 등록 제품코드만 → 영역 정확
     if(areaOf(c.product)!==areaScope) return;
-    c.campName=a.campaignName||''; c.campStatus=a.campaignStatus||''; c.live={total:a.total,active:a.active,status:a.adsetStatus};
+    c.campName=a.campaignName||''; c.campStatus=a.campaignStatus||'';
+    c.live={total:a.total,active:a.active,status:a.adsetStatus};
+    const b=builderByAdset[a.adsetId];                              // 빌더 매칭 시 랜딩·1차 보강 (라이브 파싱 보완)
+    if(b){ if(b.landing)c.landing=b.landing; if(b.firstcat)c.firstcat=b.firstcat; c.id=b.id; }
     out.push(c);
   });
   return out;
@@ -1074,6 +1067,7 @@ function candBadge(c){ const m=c.live; if(!m) return ` <span class="bdg" style="
 let _cands=[];
 function curSet(id){ if(!_cands.length)_cands=creativeCandidates(); return _cands.find(c=>c.id===id); }
 function renderCreativeCampaigns(){
+  _abtn('btnActiveCamp',activeOnlyCamp);
   const q=($('cCampSearch').value||'').toLowerCase();
   _cands=creativeCandidates();
   const groups={};
@@ -1110,6 +1104,7 @@ function visibleSets(){
   return list;
 }
 function renderCreativeSets(){
+  _abtn('btnActiveSet',activeOnlySet);
   $('cSelCount').textContent=cSel.size?`${cSel.size}개 선택`:'';
   $('cSetHint').textContent=cCampKey?'캠페인 내 광고세트 (자동 선택됨 · 조정 가능)':'캠페인 미선택 — 전체 광고세트 표시';
   const list=visibleSets();
