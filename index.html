@@ -702,8 +702,9 @@ function startMetaSync(){
 function applyMeta(){
   metaIndex={};
   const adsets = metaSnap && metaSnap.adsets ? (Array.isArray(metaSnap.adsets)?metaSnap.adsets:Object.values(metaSnap.adsets)) : [];
-  const byId={}, byName={};
-  adsets.forEach(a=>{ if(a&&a.adsetId)byId[a.adsetId]=a; if(a&&a.adsetName)byName[a.adsetName]=a; });
+  const byId={}, byName={}, byNoDate={};
+  const stripDate=n=>String(n||'').replace(/_\d{6}$/,'');
+  adsets.forEach(a=>{ if(a&&a.adsetId)byId[a.adsetId]=a; if(a&&a.adsetName){byName[a.adsetName]=a; const k=stripDate(a.adsetName); (byNoDate[k]=byNoDate[k]||[]).push(a);} });
   let changed=false;
   if(!Array.isArray(DB.changes)) DB.changes=[];
   if(!DB.seen) DB.seen={adsets:{},campaigns:{}};
@@ -711,12 +712,21 @@ function applyMeta(){
   const seen=DB.seen, nowISO=new Date().toISOString();
   const newId=()=>'cg'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   DB.sets.forEach(s=>{
-    let live=null;
+    let live=null, fuzzy=false;
     if(s.adsetId && byId[s.adsetId]) live=byId[s.adsetId];
     else if(byName[s.name]){ live=byName[s.name]; if(!s.adsetId&&live.adsetId){ s.adsetId=live.adsetId; s.campaignId=live.campaignId; changed=true; } }
+    else {
+      // 보조 매칭: 끝의 날짜(_YYMMDD)를 무시하고 비교 (실제 광고세트명에 날짜가 없는 경우)
+      const cands=byNoDate[stripDate(s.name)]||[];
+      if(cands.length){
+        cands.sort((a,b)=>((b.active||0)-(a.active||0))||((b.total||0)-(a.total||0)));
+        live=cands[0]; fuzzy=true;
+        if(live.adsetId){ s.adsetId=live.adsetId; s.campaignId=live.campaignId; changed=true; }
+      }
+    }
     if(live){
       if(live.campaignId && s.campaignId!==live.campaignId){ s.campaignId=live.campaignId; changed=true; }
-      metaIndex[s.id]={total:live.total,active:live.active,liveName:live.adsetName,renamed:!!(s.adsetId&&live.adsetName&&live.adsetName!==s.name)};
+      metaIndex[s.id]={total:live.total,active:live.active,liveName:live.adsetName,renamed:!!(s.adsetId&&live.adsetName&&stripDate(live.adsetName)!==stripDate(s.name)),fuzzy:fuzzy};
       // ── 이름변경 이력 추적 (세트 ID 기준) ──
       if(live.adsetId){
         const prev=seen.adsets[live.adsetId];
