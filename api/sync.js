@@ -16,34 +16,61 @@
 
 const GRAPH = 'https://graph.facebook.com/v21.0';
 
-async function fetchAllAds(actId, token) {
-  const fields = 'id,name,effective_status,adset{id,name},campaign{id,name}';
-  let url = `${GRAPH}/act_${actId}/ads?fields=${encodeURIComponent(fields)}&limit=500&access_token=${encodeURIComponent(token)}`;
-  const ads = [];
+async function fetchPaged(url, actId) {
+  const out = [];
   let guard = 0;
-  while (url && guard < 60) {
+  while (url && guard < 80) {
     guard++;
     const r = await fetch(url);
     const j = await r.json();
     if (j.error) throw new Error(`[act_${actId}] ${j.error.message || 'graph error'}`);
-    (j.data || []).forEach(a => ads.push(a));
+    (j.data || []).forEach(x => out.push(x));
     url = (j.paging && j.paging.next) ? j.paging.next : null;
   }
-  return ads;
+  return out;
 }
 
-function aggregate(ads) {
+async function fetchAllAds(actId, token) {
+  // effective_status: 캠페인·광고세트의 실제 켜짐/꺼짐 상태까지 함께 가져온다.
+  const fields = 'id,effective_status,adset{id,name,effective_status},campaign{id,name,effective_status}';
+  const url = `${GRAPH}/act_${actId}/ads?fields=${encodeURIComponent(fields)}&limit=500&access_token=${encodeURIComponent(token)}`;
+  return fetchPaged(url, actId);
+}
+
+// 광고가 0개인 광고세트도 잡기 위해 adset 목록을 별도로 읽어 상태/이름을 보강한다.
+async function fetchAllAdsets(actId, token) {
+  const fields = 'id,name,effective_status,campaign{id,name,effective_status}';
+  const url = `${GRAPH}/act_${actId}/adsets?fields=${encodeURIComponent(fields)}&limit=500&access_token=${encodeURIComponent(token)}`;
+  return fetchPaged(url, actId);
+}
+
+function aggregate(ads, adsetList) {
   const byAdset = {};
+  function ensure(key) {
+    if (!byAdset[key]) byAdset[key] = {
+      adsetId: '', adsetName: '', adsetStatus: '',
+      campaignId: '', campaignName: '', campaignStatus: '',
+      total: 0, active: 0
+    };
+    return byAdset[key];
+  }
+  // 1) adset 목록으로 기본 골격(상태 포함) 구성 — 광고 0개여도 포함됨
+  (adsetList || []).forEach(as => {
+    if (!as || !as.id) return;
+    const cp = as.campaign || {};
+    const o = ensure(as.id);
+    o.adsetId = as.id; o.adsetName = as.name || ''; o.adsetStatus = as.effective_status || '';
+    o.campaignId = cp.id || ''; o.campaignName = cp.name || ''; o.campaignStatus = cp.effective_status || '';
+  });
+  // 2) 광고를 세어 total/active 채우고, 누락된 adset은 광고의 nested 데이터로 보강
   ads.forEach(a => {
     const as = a.adset || {}, cp = a.campaign || {};
     const key = as.id || ('noadset_' + (a.id || Math.random()));
-    if (!byAdset[key]) byAdset[key] = {
-      adsetId: as.id || '', adsetName: as.name || '',
-      campaignId: cp.id || '', campaignName: cp.name || '',
-      total: 0, active: 0
-    };
-    byAdset[key].total++;
-    if (String(a.effective_status || '').toUpperCase() === 'ACTIVE') byAdset[key].active++;
+    const o = ensure(key);
+    if (!o.adsetId && as.id) { o.adsetId = as.id; o.adsetName = as.name || ''; o.adsetStatus = as.effective_status || ''; }
+    if (!o.campaignId && cp.id) { o.campaignId = cp.id; o.campaignName = cp.name || ''; o.campaignStatus = cp.effective_status || ''; }
+    o.total++;
+    if (String(a.effective_status || '').toUpperCase() === 'ACTIVE') o.active++;
   });
   return Object.values(byAdset);
 }
@@ -64,14 +91,17 @@ module.exports = async (req, res) => {
     }
 
     let all = [];
+    let allAdsets = [];
     const perAccount = {};
     for (const act of accounts) {
       const ads = await fetchAllAds(act, token);
+      const adsetList = await fetchAllAdsets(act, token);
       perAccount[act] = ads.length;
       all = all.concat(ads);
+      allAdsets = allAdsets.concat(adsetList);
     }
 
-    const adsets = aggregate(all);
+    const adsets = aggregate(all, allAdsets);
     const snapshot = {
       syncedAt: new Date().toISOString(),
       accounts: perAccount,
