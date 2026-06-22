@@ -1339,7 +1339,7 @@ function arcItem(a){
     <span class="check ${a.done?'on':''}" onclick="toggleDone('${a.id}')">${a.done?'✓':''}</span>
     <span class="arc-ts">${ts}</span>
     <div class="arc-main">
-      <div class="nm" contenteditable="true" onblur="editArc('${a.id}','name',this.textContent)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${esc(a.name)}</div>
+      <div class="nm" title="생성된 소재명은 수정 불가 (데이터 보호) · 삭제 후 재생성하세요">${esc(a.name)}</div>
       ${a.utm?`<div class="ut">${esc(a.utm)}</div>`:''}
     </div>
     <div style="display:flex;gap:5px">${arcBadge(a)}
