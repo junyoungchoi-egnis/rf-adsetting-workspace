@@ -186,8 +186,6 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
       <span class="cnt" style="margin-right:2px">영역</span>
       <button class="btn btn-sm" data-area="클룹" onclick="setArea('클룹')">클룹</button>
       <button class="btn btn-sm" data-area="스프린트" onclick="setArea('스프린트')">스프린트</button>
-      <span style="width:1px;height:18px;background:var(--border);margin:0 4px"></span>
-      <button id="btnActiveOnly" class="btn btn-ghost btn-sm" onclick="setActiveOnly(!activeOnly)" title="Meta에서 현재 활성(ACTIVE)인 캠페인·광고세트만 표시">활성만</button>
     </div>
     <!-- ══════════ TAB 1: BUILDER ══════════ -->
     <section class="page active" id="page-build">
@@ -282,6 +280,8 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
             <div class="row-flex" style="margin-bottom:10px">
               <input id="cCampSearch" placeholder="🔍 캠페인 검색" style="max-width:240px" oninput="renderCreativeCampaigns()">
               <span class="cnt" id="cCampCount"></span>
+              <div class="spacer"></div>
+              <button id="btnActiveCamp" class="btn btn-ghost btn-sm" onclick="toggleActiveCamp()" title="Meta에서 현재 활성(ACTIVE)인 캠페인만 표시">활성만</button>
             </div>
             <div id="cCampList" style="max-height:230px;overflow-y:auto"></div>
           </div>
@@ -290,9 +290,9 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
             <div class="panel-h"><span class="step">B</span>광고세트 선택 <span class="hint" id="cSetHint">캠페인을 먼저 선택하세요</span></div>
             <div class="row-flex" style="margin-bottom:10px">
               <input id="cSetSearch" placeholder="🔍 세트 검색" style="max-width:220px" oninput="renderCreativeSets()">
-              <button class="btn btn-ghost btn-xs" onclick="selectAllSets()">전체 선택</button>
-              <button class="btn btn-ghost btn-xs" onclick="clearSetSel()">해제</button>
               <span class="cnt" id="cSelCount"></span>
+              <div class="spacer"></div>
+              <button id="btnActiveSet" class="btn btn-ghost btn-sm" onclick="toggleActiveSet()" title="Meta에서 현재 활성(ACTIVE)인 광고세트만 표시">활성만</button>
             </div>
             <div id="cSetList" style="max-height:260px;overflow-y:auto"></div>
           </div>
@@ -301,7 +301,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
             <div class="panel-h"><span class="step">C</span>공통 정보</div>
             <div class="grid g2">
               <div class="field"><label>날짜 <span class="req">*</span></label><input type="date" id="c_date" onchange="creativePreview()"></div>
-              <div class="field"><label>담당자 <span class="req">*</span> <span class="opt">(3글자 권장)</span></label><input id="c_manager" placeholder="cmj" oninput="creativePreview()"></div>
+              <div class="field"><label>담당자 <span class="opt">(선택 · 3글자 권장)</span></label><input id="c_manager" placeholder="cmj" oninput="creativePreview()"></div>
             </div>
           </div>
 
@@ -692,12 +692,14 @@ function syncRerender(){
 }
 
 /* ── Meta 실데이터 스냅샷 (서버함수 /api/sync 가 Firebase /meta_v2 에 기록) ── */
-let metaSnap=null, metaIndex={}, metaCampStatus={}, metaRefStarted=false, activeOnly=false;
+let metaSnap=null, metaIndex={}, metaCampStatus={}, metaRefStarted=false, activeOnlyCamp=false, activeOnlySet=false;
 /* 활성 상태 헬퍼: effective_status 우선, 없으면 활성 광고수로 추정 */
 function setActiveState(s){ const m=metaIndex[s.id]; if(!m) return null; if(m.status) return m.status==='ACTIVE'; return (m.active||0)>0; }
 function campActiveState(campaignId, sets){ if(campaignId && metaCampStatus[campaignId]) return metaCampStatus[campaignId]==='ACTIVE'; if(sets){ const states=sets.map(setActiveState).filter(v=>v!==null); if(states.length) return states.some(Boolean); } return null; }
 function statusBadge(active){ if(active===null) return ''; return active?`<span class="bdg" style="background:#15331f;color:#7fd6a0">활성</span>`:`<span class="bdg" style="background:#2b2f37;color:#9aa3b2">비활성</span>`; }
-function setActiveOnly(v){ activeOnly=v; const b=document.getElementById('btnActiveOnly'); if(b){b.classList.toggle('btn-primary',v);b.classList.toggle('btn-ghost',!v);b.textContent=v?'✓ 활성만':'활성만';} renderSetLib(); renderCreativeCampaigns(); renderCreativeSets(); }
+function _abtn(id,v){ const b=document.getElementById(id); if(b){b.classList.toggle('btn-primary',v);b.classList.toggle('btn-ghost',!v);b.textContent=v?'✓ 활성만':'활성만';} }
+function toggleActiveCamp(){ activeOnlyCamp=!activeOnlyCamp; _abtn('btnActiveCamp',activeOnlyCamp); renderCreativeCampaigns(); }
+function toggleActiveSet(){ activeOnlySet=!activeOnlySet; _abtn('btnActiveSet',activeOnlySet); renderCreativeSets(); }
 function startMetaSync(){
   if(metaRefStarted) return;
   try{
@@ -903,11 +905,9 @@ function generateSets(){
 function renderSetLib(){
   const q=($('setSearch').value||'').toLowerCase();
   const scoped=DB.sets.filter(s=>areaOf(s.product)===areaScope);
-  let list=scoped.filter(s=>!q||s.name.toLowerCase().includes(q));
-  if(activeOnly)list=list.filter(s=>setActiveState(s)===true);
-  list=list.slice().reverse();
+  const list=scoped.filter(s=>!q||s.name.toLowerCase().includes(q)).slice().reverse();
   $('setLibCount').textContent=`${scoped.length}개 (${areaScope})`;
-  if(!list.length){$('setLibBody').innerHTML=`<tr><td colspan="8"><div class="empty"><div class="ic">📦</div>${activeOnly?'활성 광고세트가 없습니다':areaScope+' 영역에 광고세트가 없습니다'}</div></td></tr>`;return;}
+  if(!list.length){$('setLibBody').innerHTML=`<tr><td colspan="8"><div class="empty"><div class="ic">📦</div>${areaScope} 영역에 광고세트가 없습니다</div></td></tr>`;return;}
   $('setLibBody').innerHTML=list.map(s=>`<tr>
     <td><span class="tag">${esc(s.brand)}</span>${statusBadge(setActiveState(s))}</td>
     <td class="t-mono">${esc(s.name)}${metaBadge(s.id)}</td>
@@ -950,10 +950,10 @@ function renderCreativeCampaigns(){
   DB.sets.filter(s=>areaOf(s.product)===areaScope).forEach(s=>{const k=campaignKey(s);(groups[k]=groups[k]||{label:campaignLabel(s),brand:s.brand,date:s.date,live:campaignIsLive(s),campId:s.campaignId||'',sets:[]}).sets.push(s);});
   let entries=Object.entries(groups);
   if(q)entries=entries.filter(([k,g])=>g.label.toLowerCase().includes(q)||g.sets.some(s=>s.name.toLowerCase().includes(q)));
-  if(activeOnly)entries=entries.filter(([k,g])=>campActiveState(g.campId,g.sets)===true);
+  if(activeOnlyCamp)entries=entries.filter(([k,g])=>campActiveState(g.campId,g.sets)===true);
   entries.sort((a,b)=>(b[1].date||'').localeCompare(a[1].date||''));
   $('cCampCount').textContent=`${entries.length}개 캠페인`;
-  if(!entries.length){$('cCampList').innerHTML=`<div class="empty"><div class="ic">📦</div>${activeOnly?'활성 캠페인이 없습니다 (활성만 필터 해제 가능)':'먼저 빌더에서 광고세트를 생성하세요'}</div>`;return;}
+  if(!entries.length){$('cCampList').innerHTML=`<div class="empty"><div class="ic">📦</div>${activeOnlyCamp?'활성 캠페인이 없습니다 (활성만 해제 가능)':'먼저 빌더에서 광고세트를 생성하세요'}</div>`;return;}
   $('cCampList').innerHTML=entries.map(([k,g])=>{
     const tams=g.sets.map(s=>s.tam).filter((v,i,a)=>a.indexOf(v)===i).join(', ');
     const srcBadge=g.live?`<span class="bdg" style="background:#15263f;color:#5fa8ff" title="Meta에서 동기화된 실제 캠페인명">Meta 캠페인</span>`:`<span class="bdg" style="background:#3a2e15;color:#ffcf66" title="아직 Meta에 매칭되지 않아 빌더 속성으로 추정한 이름입니다. 동기화되면 실제 캠페인명으로 바뀝니다.">추정</span>`;
@@ -974,7 +974,7 @@ function visibleSets(){
   const q=($('cSetSearch').value||'').toLowerCase();
   let list=DB.sets.filter(s=>areaOf(s.product)===areaScope);
   if(cCampKey)list=list.filter(s=>campaignKey(s)===cCampKey);
-  if(activeOnly)list=list.filter(s=>setActiveState(s)===true);
+  if(activeOnlySet)list=list.filter(s=>setActiveState(s)===true);
   if(q)list=list.filter(s=>s.name.toLowerCase().includes(q));
   return list.reverse();
 }
@@ -1018,7 +1018,8 @@ function readCreativeRow(id){
   return {fmt,msg:[m1,m2,m3].filter(Boolean).join('-'),soje};
 }
 function buildCreativeName(set,date,cr,manager){
-  return `${date}_${set.media}_${set.product}_${cr.fmt}_${cr.msg}_${cr.soje}-${set.tam}_${set.composite}_${set.targeting}_${firstcatCode(set.firstcat)}_${set.scheme}_${manager}`;
+  const base=`${date}_${set.media}_${set.product}_${cr.fmt}_${cr.msg}_${cr.soje}-${set.tam}_${set.composite}_${set.targeting}_${firstcatCode(set.firstcat)}_${set.scheme}`;
+  return manager?`${base}_${manager}`:base;
 }
 function buildUTM(set,creativeName){
   const landing=set.landing;if(!landing)return '';
@@ -1056,10 +1057,10 @@ function creativePreview(){
   $('c_genCount').textContent=cnt;
   const w=[];
   if(!sets.length)w.push('광고세트를 선택하세요.');
-  if(!date||!mgr)w.push('날짜·담당자는 필수입니다.');
+  if(!date)w.push('날짜는 필수입니다.');
   if(!crs.length)w.push('소재 행을 1개 이상 완성하세요 (포맷·메시지1·소재명 필수).');
   const wb=$('c_warn');wb.innerHTML=w.join('<br>');wb.classList.toggle('show',w.length>0);
-  if(sets.length&&crs.length&&date&&mgr){
+  if(sets.length&&crs.length&&date){
     const name=buildCreativeName(sets[0],date,crs[0],mgr);
     $('c_preview').innerHTML=name.split('_').map(t=>`<span class="tok">${esc(t)}</span>`).join('<span style="color:var(--text3)">_</span>');
   }else{$('c_preview').innerHTML='<span class="ph">세트 선택 + 소재 정보 입력 시 표시…</span>';}
@@ -1070,7 +1071,7 @@ function generateCreatives(){
   const sets=DB.sets.filter(s=>cSel.has(s.id));
   const crs=creativeRows.map(readCreativeRow).filter(Boolean);
   if(!sets.length){toast('광고세트를 선택하세요');return;}
-  if(!date||!mgr){toast('날짜·담당자를 입력하세요');return;}
+  if(!date){toast('날짜를 입력하세요');return;}
   if(!crs.length){toast('소재 정보를 완성하세요');return;}
   lastResults=[];
   const ts=new Date().toISOString();
