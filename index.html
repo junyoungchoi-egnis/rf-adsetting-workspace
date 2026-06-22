@@ -220,7 +220,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
             <div id="b_tokGroups" style="margin-bottom:8px"></div>
             <div class="row-flex" style="align-items:center;margin-bottom:10px">
               <span class="cnt">연령대</span>
-              <select id="b_tgAge" onchange="renderTokenComposer()" style="max-width:130px"></select>
+              <select id="b_tgAge" onchange="renderTokenComposer();buildPreview()" style="max-width:130px"></select>
               <div class="spacer"></div>
               <span class="t-mono" id="b_tgPreview" style="color:var(--accent2);font-weight:600"></span>
               <button class="btn btn-primary btn-sm" onclick="addComposedTargeting()">+ 타게팅 추가</button>
@@ -915,7 +915,7 @@ function renderTokenComposer(){
   const groups={};
   TARGET_TOKENS.forEach(t=>{(groups[t.cat]=groups[t.cat]||[]).push(t);});
   $('b_tokGroups').innerHTML=Object.keys(groups).sort((a,b)=>a-b).map(c=>{
-    const chips=groups[c].map(t=>`<span class="chip tok ${bTokens.has(t.code)?'on':''}" title="${esc(t.code)}" onclick="toggleSet(bTokens,'${esc(t.code)}');renderTokenComposer()">${esc(t.kr)}<span style="color:var(--text3);font-size:9.5px;margin-left:4px">${esc(t.code)}</span></span>`).join('');
+    const chips=groups[c].map(t=>`<span class="chip tok ${bTokens.has(t.code)?'on':''}" title="${esc(t.code)}" onclick="toggleSet(bTokens,'${esc(t.code)}');renderTokenComposer();buildPreview()">${esc(t.kr)}<span style="color:var(--text3);font-size:9.5px;margin-left:4px">${esc(t.code)}</span></span>`).join('');
     return `<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:5px"><span class="cnt" style="min-width:78px;flex:none;padding-top:5px">${esc(TARGET_CATS[c]||'기타')}</span><div class="chips" style="flex:1">${chips}</div></div>`;
   }).join('');
   const ageSel=$('b_tgAge'); if(ageSel&&!ageSel.options.length) ageSel.innerHTML=TARGET_AGES.map(a=>`<option value="${a.code}">${esc(a.kr)}</option>`).join('');
@@ -954,9 +954,16 @@ function currentBuilder(){
     firstcat:$('b_firstcat').value, bidopt:$('b_bidopt').value.trim().toUpperCase()
   };
 }
+/* 추가된 타게팅 목록 + 현재 조합 중인 토큰(추가 안 눌러도 반영) */
+function effectiveTargets(){
+  const list=[...bTargets];
+  const cur=composeTargeting();
+  if(cur && !list.includes(cur)) list.push(cur);
+  return list;
+}
 function buildPreview(){
   const b=currentBuilder();
-  const tg=[...bTargets][0]||'ALL', tm=[...bTams][0]||'TAM';
+  const tg=effectiveTargets()[0]||'ALL', tm=[...bTams][0]||'TAM';
   const o={...b,targeting:tg,tam:tm};
   const valid=b.product&&b.media&&b.date&&b.goal&&b.bid&&b.scheme;
   if(valid){
@@ -965,20 +972,21 @@ function buildPreview(){
     $('b_previewKr').textContent=buildKrName(o);
   }else{$('b_preview').innerHTML='<span class="ph">기본 정보를 채워주세요…</span>';$('b_previewKr').innerHTML='<span class="ph">—</span>';}
   $('b_composite').textContent=valid?compositeOf(b.goal,b.bid):'—';
-  const cnt=(bTargets.size||0)*(bTams.size||0);
+  const cnt=(effectiveTargets().length||0)*(bTams.size||0);
   $('b_genCount').textContent=cnt;
   const w=[];
   if(valid&&!landingFor(b.product,b.scheme))w.push(`⚠️ ${b.product}+${b.scheme} 랜딩 URL 매핑 없음 — 매핑키 탭에서 추가하면 UTM이 완성됩니다.`);
-  if(bTargets.size===0)w.push('타게팅을 1개 이상 선택하세요.');
+  if(effectiveTargets().length===0)w.push('타게팅 토큰을 1개 이상 선택하세요.');
   if(bTams.size===0)w.push('TAM을 1개 이상 선택하세요.');
   const wb=$('b_warn');wb.innerHTML=w.join('<br>');wb.classList.toggle('show',w.length>0);
 }
 function generateSets(){
   const b=currentBuilder();
   if(!(b.product&&b.media&&b.date&&b.goal&&b.bid&&b.scheme)){toast('기본 정보를 모두 채워주세요');return;}
-  if(!bTargets.size||!bTams.size){toast('타게팅·TAM을 선택하세요');return;}
+  const tgs=effectiveTargets();
+  if(!tgs.length||!bTams.size){toast('타게팅·TAM을 선택하세요');return;}
   let added=0;
-  for(const tg of bTargets)for(const tm of bTams){
+  for(const tg of tgs)for(const tm of bTams){
     const o={...b,targeting:tg,tam:tm};
     const name=buildSetName(o);
     if(DB.sets.some(s=>s.name===name))continue;
