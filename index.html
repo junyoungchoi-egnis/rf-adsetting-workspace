@@ -331,10 +331,16 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
             </div>
             <div id="cCloneArea" style="display:none">
               <div class="notice" style="margin-bottom:9px">생성 아카이브의 소재를 골라 <b>위 A·B에서 선택한 세트들</b>로 복제합니다. 콘텐츠(포맷·메시지·소재명·날짜·담당자)는 그대로, 타게팅·TAM·합성코드·랜딩·UTM은 대상 세트 기준으로 자동 치환됩니다.</div>
+              <div class="row-flex" style="margin-bottom:7px;gap:6px">
+                <input id="cloneSearch" placeholder="🔍 소재명 검색" style="max-width:190px" oninput="renderClonePicker()">
+                <select id="cloneFltProduct" onchange="renderClonePicker()" style="max-width:140px"></select>
+                <select id="cloneFltDate" onchange="renderClonePicker()" style="max-width:120px"></select>
+                <select id="cloneFltMgr" onchange="renderClonePicker()" style="max-width:120px"></select>
+              </div>
               <div class="row-flex" style="margin-bottom:8px">
-                <input id="cloneSearch" placeholder="🔍 소스 소재 검색" style="max-width:240px" oninput="renderClonePicker()">
                 <span class="cnt" id="cloneSrcCount"></span>
                 <div class="spacer"></div>
+                <button class="btn btn-ghost btn-xs" onclick="resetCloneFilters()">필터 초기화</button>
                 <button class="btn btn-ghost btn-xs" onclick="clearCloneSources()">선택 해제</button>
               </div>
               <div id="clonePicker" style="max-height:240px;overflow-y:auto"></div>
@@ -1246,11 +1252,25 @@ function itemPayload(a){
   return {fmt:t[3],msg:t[4],soje:t[5].slice(0,t[5].lastIndexOf('-')),date:t[0],manager:t.length===11?t[10]:''};
 }
 function cloneable(){ return DB.archive.filter(a=>itemPayload(a) && archiveArea(a)===areaScope); }
+function archProduct(a){ return (String(a.name||'').split('_')[2])||''; }
+function _fillSel(id,vals,label){ const s=$(id); if(!s)return; const cur=s.value; s.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join(''); s.value=vals.includes(cur)?cur:''; }
+function resetCloneFilters(){ $('cloneSearch').value=''; ['cloneFltProduct','cloneFltDate','cloneFltMgr'].forEach(id=>{const s=$(id);if(s)s.value='';}); renderClonePicker(); }
 function renderClonePicker(){
+  const all=cloneable();
+  // 필터 옵션(실제 존재값) 채우기 — 현재 선택 유지
+  _fillSel('cloneFltProduct',[...new Set(all.map(archProduct).filter(Boolean))].sort(),'제품 전체');
+  _fillSel('cloneFltDate',[...new Set(all.map(a=>(itemPayload(a)||{}).date).filter(Boolean))].sort().reverse(),'날짜 전체');
+  _fillSel('cloneFltMgr',[...new Set(all.map(a=>(itemPayload(a)||{}).manager).filter(Boolean))].sort(),'담당자 전체');
   const q=($('cloneSearch').value||'').toLowerCase();
-  let items=cloneable(); if(q)items=items.filter(a=>(a.name||'').toLowerCase().includes(q));
-  $('cloneSrcCount').textContent=cloneSources.size?`${cloneSources.size}개 선택`:`복제 가능 ${cloneable().length}개`;
-  if(!items.length){$('clonePicker').innerHTML=`<div class="empty"><div class="ic">📑</div>${cloneable().length?'검색 결과 없음':'복제 가능한 소재가 없습니다'}</div>`;return;}
+  const fp=($('cloneFltProduct')||{}).value||'', fd=($('cloneFltDate')||{}).value||'', fm=($('cloneFltMgr')||{}).value||'';
+  const items=all.filter(a=>{ const p=itemPayload(a)||{};
+    if(fp&&archProduct(a)!==fp)return false;
+    if(fd&&p.date!==fd)return false;
+    if(fm&&(p.manager||'')!==fm)return false;
+    if(q&&!(a.name||'').toLowerCase().includes(q))return false;
+    return true; });
+  $('cloneSrcCount').textContent=`필터 결과 ${items.length}건 · 선택 ${cloneSources.size}건`;
+  if(!items.length){$('clonePicker').innerHTML=`<div class="empty"><div class="ic">📑</div>${all.length?'조건에 맞는 소재 없음':'복제 가능한 소재가 없습니다'}</div>`;return;}
   $('clonePicker').innerHTML=items.map(a=>{const p=itemPayload(a);return `<div class="set-card ${cloneSources.has(a.id)?'on':''}" onclick="toggleCloneSource('${a.id}')">
     <div class="cn">${esc(a.name)}</div>
     <div class="meta"><span class="bdg" style="background:#15263f;color:#5fa8ff">포맷 ${esc(p.fmt)}</span> 메시지 ${esc(p.msg)} · 소재명 ${esc(p.soje)} · ${esc(p.date)}${p.manager?' · '+esc(p.manager):''}</div>
