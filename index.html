@@ -1611,7 +1611,13 @@ function renderMetaCreate(){
   document.querySelectorAll('#page-metacreate .mcsub').forEach(s=>{s.style.display=(s.dataset.mcsub===mcCur)?'':'none';});
   // 빌더에서 넘어온 경우 배너
   const hb=document.getElementById('mcHandoffBar');
-  if(hb){ if(mcHandoff&&mcHandoff.setIds&&mcHandoff.setIds.length){ hb.style.display=''; hb.innerHTML=`🔗 빌더에서 <b>광고세트 ${mcHandoff.setIds.length}개</b>가 생성되어 이어집니다. ① 캠페인을 만든 뒤 ②에서 <b>일괄 미리보기</b>로 진행하세요. <button class="btn btn-ghost btn-xs" style="margin-left:6px" onclick="mcHandoff=null;renderMetaCreate()">연동 해제</button>`; } else hb.style.display='none'; }
+  if(hb){ if(mcHandoff&&mcHandoff.setIds&&mcHandoff.setIds.length){ hb.style.display='';
+      const names=mcHandoff.setIds.map(id=>{const s=DB.sets.find(x=>x.id===id);return s?s.name:'';}).filter(Boolean);
+      hb.innerHTML=`🔗 <b>빌더에서 잡은 이름이 그대로 적용됩니다.</b>
+        <div style="margin-top:6px"><span class="cnt">캠페인명</span> <span class="t-mono" style="color:var(--accent2)">${esc(mcHandoff.campaignName||'')}</span></div>
+        <div style="margin-top:4px"><span class="cnt">광고세트 ${names.length}개</span><div class="t-mono" style="font-size:11px;color:var(--text2);margin-top:2px">${names.map(esc).join('<br>')}</div></div>
+        <button class="btn btn-ghost btn-xs" style="margin-top:8px" onclick="mcHandoff=null;renderMetaCreate()">연동 해제</button>`;
+    } else hb.style.display='none'; }
   if(mcCur==='campaign'){
     const ps=M().products.filter(p=>(p.area||'클룹')===areaScope);
     if($('mcc_product'))$('mcc_product').innerHTML=ps.map(p=>_opt(p.code,`${p.brand} (${p.code})`)).join('');
