@@ -4,7 +4,7 @@
 //
 //  Meta 광고 데이터(캠페인/세트/광고 ID·이름·상태·소재수)를 읽어
 //  Firebase Realtime DB의 /meta_v2 에 스냅샷으로 저장한다.
-//  + 계정별 "애셋 라이브러리"(크리에이티브·이미지·영상 + 썸네일)도 함께 수집해
+//  + 계정별 "애셋 라이브러리"(이미지·영상·크리에이티브 + 썸네일/재생소스)도 수집해
 //    소재 세팅 탭에서 바로 선택·미리보기할 수 있게 한다.
 //  토큰은 절대 클라이언트로 나가지 않고, 이 함수의 환경변수에서만 읽는다.
 //
@@ -64,22 +64,22 @@ async function fetchCreatives(actId, token) {
   }));
 }
 async function fetchImages(actId, token) {
-  const fields = 'hash,name,url_128,permalink_url,width,height';
+  const fields = 'hash,name,url,url_128,permalink_url,width,height';
   const url = GRAPH + '/act_' + actId + '/adimages?fields=' + enc(fields) + '&limit=50&access_token=' + enc(token);
   const raw = await fetchOne(url, actId);
-  return raw.map(i => ({ hash: i.hash, name: i.name || '', thumb: i.url_128 || i.permalink_url || '', w: i.width || 0, h: i.height || 0 }));
+  return raw.map(i => ({ hash: i.hash, name: i.name || '', thumb: i.url_128 || '', full: i.url || i.permalink_url || i.url_128 || '', w: i.width || 0, h: i.height || 0 }));
 }
 async function fetchVideos(actId, token) {
-  const fields = 'id,title,thumbnails{uri,is_preferred},created_time';
+  const fields = 'id,title,source,picture,thumbnails{uri,is_preferred},created_time';
   const url = GRAPH + '/act_' + actId + '/advideos?fields=' + enc(fields) + '&limit=40&access_token=' + enc(token);
   const raw = await fetchOne(url, actId);
   return raw.map(v => {
-    let thumb = '';
-    if (v.thumbnails && v.thumbnails.data && v.thumbnails.data.length) {
+    let thumb = v.picture || '';
+    if (!thumb && v.thumbnails && v.thumbnails.data && v.thumbnails.data.length) {
       const pref = v.thumbnails.data.find(t => t.is_preferred) || v.thumbnails.data[0];
       thumb = pref ? pref.uri : '';
     }
-    return { id: v.id, title: v.title || '(제목없음)', thumb: thumb };
+    return { id: v.id, title: v.title || '(제목없음)', thumb: thumb, source: v.source || '' };
   });
 }
 
@@ -142,16 +142,14 @@ module.exports = async (req, res) => {
       all = all.concat(ads);
       allAdsets = allAdsets.concat(adsetList);
     }
-    // 애셋: 전 계정 병렬 + 계정별 격리(한 계정 실패해도 전체는 진행). 각 1페이지만.
+    // 애셋: 전 계정 병렬 + 계정별/타입별 격리(하나 실패해도 전체는 진행). 각 1페이지만.
     await Promise.all(accounts.map(async (act) => {
-      try {
-        const [creatives, images, videos] = await Promise.all([
-          fetchCreatives(act, token), fetchImages(act, token), fetchVideos(act, token)
-        ]);
-        assets[act] = { creatives: creatives, images: images, videos: videos };
-      } catch (e) {
-        assets[act] = { creatives: [], images: [], videos: [], error: String((e && e.message) || e) };
-      }
+      const [creatives, images, videos] = await Promise.all([
+        fetchCreatives(act, token).catch(() => []),
+        fetchImages(act, token).catch(() => []),
+        fetchVideos(act, token).catch(() => [])
+      ]);
+      assets[act] = { creatives: creatives, images: images, videos: videos };
     }));
 
     const adsets = aggregate(all, allAdsets);
