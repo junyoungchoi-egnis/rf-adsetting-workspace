@@ -508,7 +508,8 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
             <div class="panel">
               <div class="panel-h">C. 크리에이티브 <span class="bdg bdg-warn">에셋 재사용 기반</span></div>
               <div class="field"><label>포맷</label><div class="seg-toggle" id="mcd_fmt"><button class="on" data-v="IMAGE" onclick="mcdSetFmt('IMAGE')">단일 이미지</button><button data-v="VIDEO" onclick="mcdSetFmt('VIDEO')">단일 영상</button><button data-v="CAROUSEL" onclick="mcdSetFmt('CAROUSEL')">카탈로그 캐러셀</button></div></div>
-              <div class="field"><label>에셋 소스</label><div class="seg-toggle" id="mcd_src"><button class="on" data-v="reuse" onclick="mcdSetSrc('reuse')">기존 소재 재사용</button><button data-v="story" onclick="mcdSetSrc('story')">기존 게시물</button><button data-v="hash" onclick="mcdSetSrc('hash')">이미지 해시</button></div><div class="hint">앱→메타 직접 업로드는 미지원. 메타에 올라온 소재/게시물/해시를 재사용합니다.</div></div>
+              <div class="field"><label>에셋 소스</label><div class="seg-toggle" id="mcd_src"><button class="on" data-v="reuse" onclick="mcdSetSrc('reuse')">기존 소재 재사용</button><button data-v="upload" onclick="mcdSetSrc('upload')">이미지 업로드</button><button data-v="story" onclick="mcdSetSrc('story')">기존 게시물</button><button data-v="hash" onclick="mcdSetSrc('hash')">이미지 해시</button></div><div class="hint">재사용/게시물/해시는 메타에 이미 있는 자산을, <b>이미지 업로드</b>는 새 이미지를 메타 광고 라이브러리에 올립니다.</div></div>
+              <div id="mcd_uploadWrap" class="field" style="display:none"><label>이미지 업로드 → 메타 광고 라이브러리</label><div class="grid g2"><select id="mcd_uploadAct"></select><input type="file" id="mcd_file" accept="image/*" onchange="mcdUpload()"></div><div id="mcd_uploadStatus" class="hint">JPG/PNG · 3MB 이하. 업로드하면 image_hash가 자동 연결됩니다. ※ 이미지는 선택한 광고계정에만 귀속되니, 광고가 생성될 계정과 동일해야 합니다.</div></div>
               <div id="mcd_reuseWrap" class="field"><label>소재 선택 (계정 라이브러리 · 검색)</label><input id="mcd_assetSearch" placeholder="🔎 소재명 검색 ([★최대 77%★] / 600원대 / 100won …)" oninput="mcdRenderAssets()" style="margin-bottom:8px"><div id="mcd_assets" class="mcd-assetgrid"></div></div>
               <div id="mcd_manualWrap" class="field" style="display:none"><label id="mcd_manualLbl">기존 게시물 ID (object_story_id, "pageID_postID")</label><input id="mcd_manualId" placeholder="100144576354328_913908988301052" oninput="mcdPreview()"></div>
               <div class="field"><label>기본 문구 (Primary text)</label><textarea id="mcd_body" rows="3" oninput="mcdPreview()"></textarea></div>
@@ -1626,7 +1627,8 @@ function exportChanges(){
 }
 /* ════════════════════════ TAB5: META 생성 (dry-run, 3단계 독립) ════════════════════════ */
 let lastGen=null;
-let mcdFmt='IMAGE',mcdSrc='reuse',mcdSel=null;
+let mcdFmt='IMAGE',mcdSrc='reuse',mcdSel=null,mcdUploadedHash=null;
+const META_ACCOUNTS=[{id:'1462607070849777',name:'[음료] 클룹 메인',area:'클룹'},{id:'793134085895227',name:'[음료] 클룹 서브',area:'클룹'},{id:'3342733785912061',name:'[음료] 스프린트',area:'스프린트'},{id:'539103343188615',name:'[사용X] 클룹 프로모션(테스트)',area:'클룹'}];
 // 목표·입찰 → Meta API 값 매핑 (초안 · 추후 설정/매핑으로 이관 가능)
 const META_OBJECTIVE={PUR:'OUTCOME_SALES',TRF:'OUTCOME_TRAFFIC',AWR:'OUTCOME_AWARENESS',ENG:'OUTCOME_ENGAGEMENT',LEAD:'OUTCOME_LEADS'};
 const META_BID={CMX:{optimization_goal:'OFFSITE_CONVERSIONS',bid_strategy:'LOWEST_COST_WITHOUT_CAP'},VMX:{optimization_goal:'VALUE',bid_strategy:'LOWEST_COST_WITHOUT_CAP'}};
@@ -1753,6 +1755,7 @@ function renderMetaCreate(){
   $('mcd_creative').innerHTML=arc.length?arc.map(a=>_opt(a.id,a.name)).join(''):_opt('','(아카이브 소재 없음)');
   $('mcd_cta').innerHTML=CTA_OPTS.map(c=>_opt(c[0],`${c[0]} (${c[1]})`)).join('');
   mcdRenderProfiles();
+  mcdRenderUploadAct();
   mcdSetFmt(mcdFmt,true);
   mcdSetSrc(mcdSrc,true);
   mcdSync();
@@ -1769,9 +1772,29 @@ function mcdRenderProfiles(){
 }
 function mcdSetFmt(v,silent){ mcdFmt=v; document.querySelectorAll('#mcd_fmt button').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); mcdRenderAssets(); if(!silent)mcdPreview(); }
 function mcdSetSrc(v,silent){ mcdSrc=v; document.querySelectorAll('#mcd_src button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
-  const reuse=v==='reuse'; if($('mcd_reuseWrap'))$('mcd_reuseWrap').style.display=reuse?'':'none'; if($('mcd_manualWrap'))$('mcd_manualWrap').style.display=reuse?'none':'';
+  if($('mcd_reuseWrap'))$('mcd_reuseWrap').style.display=(v==='reuse')?'':'none';
+  if($('mcd_uploadWrap'))$('mcd_uploadWrap').style.display=(v==='upload')?'':'none';
+  if($('mcd_manualWrap'))$('mcd_manualWrap').style.display=(v==='story'||v==='hash')?'':'none';
   if($('mcd_manualLbl'))$('mcd_manualLbl').textContent=(v==='story')?'기존 게시물 ID (object_story_id · "pageID_postID")':'이미지 해시 (image_hash)';
   if(!silent)mcdPreview(); }
+function mcdRenderUploadAct(){
+  if(!document.getElementById('mcd_uploadAct'))return;
+  $('mcd_uploadAct').innerHTML=META_ACCOUNTS.map(a=>_opt(a.id,a.name)).join('');
+  const m=META_ACCOUNTS.find(a=>a.area===areaScope); if(m)$('mcd_uploadAct').value=m.id;
+}
+async function mcdUpload(){
+  const f=$('mcd_file').files[0]; if(!f)return;
+  if(f.size>3*1024*1024){ $('mcd_uploadStatus').innerHTML='⚠️ 3MB 이하 이미지만 가능합니다 (서버 제한)'; return; }
+  const act=$('mcd_uploadAct').value; if(!act){ $('mcd_uploadStatus').innerHTML='⚠️ 업로드할 광고계정을 선택하세요'; return; }
+  $('mcd_uploadStatus').innerHTML='⏳ 업로드 중…';
+  try{
+    const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]);r.onerror=rej;r.readAsDataURL(f);});
+    const resp=await fetch('/api/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({act,bytes:b64,filename:f.name})});
+    const j=await resp.json();
+    if(j&&j.ok&&j.hash){ mcdUploadedHash=j.hash; $('mcd_uploadStatus').innerHTML='✅ 업로드 완료 · image_hash: <span class="mono">'+esc(j.hash)+'</span>'; mcdPreview(); mcPreviewAd(); }
+    else { $('mcd_uploadStatus').innerHTML='⚠️ 실패: '+esc((j&&j.error)||'알 수 없는 오류'); }
+  }catch(e){ $('mcd_uploadStatus').innerHTML='⚠️ 오류: '+esc(String(e)); }
+}
 function mcdRenderAssets(){
   if(!document.getElementById('mcd_assets'))return;
   if(mcdFmt==='CAROUSEL'){ $('mcd_assets').innerHTML='<div class="hint" style="grid-column:1/-1">카탈로그 캐러셀은 제품세트(product_set)에서 자동 구성됩니다. 별도 에셋 선택은 필요 없습니다.</div>'; return; }
@@ -1865,7 +1888,8 @@ function mcdCreativeSpec(){
   const igOpt=$('mcd_ig').selectedOptions[0], igId=igOpt?igOpt.value:'';
   if(mcdSrc==='reuse') return {creative_id:mcdSel||'<재사용 소재 미선택>'};
   if(mcdSrc==='story'){ const c={name:a?a.name:'creative', object_story_id:(($('mcd_manualId').value||'').trim()||'<게시물 ID 미입력>')}; if(urlTags)c.url_tags=urlTags; return c; }
-  const link={ link:landing||'<랜딩 미입력>', message:body||'<카피 미입력>', image_hash:(($('mcd_manualId').value||'').trim()||'<이미지 해시 미입력>'), call_to_action:{type:cta,value:{link:landing||'<랜딩>'}} };
+  const imgHash=(mcdSrc==='upload')?(mcdUploadedHash||'<업로드 필요>'):(($('mcd_manualId').value||'').trim()||'<이미지 해시 미입력>');
+  const link={ link:landing||'<랜딩 미입력>', message:body||'<카피 미입력>', image_hash:imgHash, call_to_action:{type:cta,value:{link:landing||'<랜딩>'}} };
   if(head)link.name=head; if(desc)link.description=desc;
   const c={ name:a?a.name:'creative', object_story_spec:{ page_id:pageId||'<페이지 미입력>', link_data:link } };
   if(igId)c.object_story_spec.instagram_actor_id=igId;
@@ -1887,9 +1911,10 @@ function mcdDiagnose(){
   let sok,sd;
   if(mcdSrc==='reuse'){ sok=!!mcdSel; const c=META_CREATIVES.find(x=>x.id===mcdSel); sd=sok?('재사용 소재: '+(c?c.name:mcdSel)):'재사용할 소재를 선택하세요'; }
   else if(mcdSrc==='story'){ sok=!!($('mcd_manualId').value||'').trim(); sd=sok?'기존 게시물 연결됨':'기존 게시물 ID를 입력하세요'; }
+  else if(mcdSrc==='upload'){ sok=!!mcdUploadedHash; sd=sok?('업로드 완료 · '+mcdUploadedHash):'이미지를 업로드하세요'; }
   else { sok=!!($('mcd_manualId').value||'').trim(); sd=sok?'이미지 해시 입력됨':'이미지 해시를 입력하세요'; }
   add('소재(크리에이티브)',sok,sd);
-  if(mcdSrc==='hash'){
+  if(mcdSrc==='hash'||mcdSrc==='upload'){
     add('광고 카피',!!($('mcd_body').value||'').trim(),($('mcd_body').value||'').trim()?'입력됨':'기본 문구(Primary text)를 입력하세요');
     add('랜딩 URL',!!($('mcd_landing').value||'').trim(),($('mcd_landing').value||'').trim()||'랜딩 URL을 입력하세요');
   } else {
