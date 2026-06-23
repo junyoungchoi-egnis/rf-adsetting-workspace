@@ -463,7 +463,8 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
           <div class="grid g2">
             <div class="field"><label>대상 캠페인 (Meta 라이브)</label><select id="mca_camp"></select></div>
             <div class="field"><label>기준 광고세트 (빌더)</label><select id="mca_set"></select></div>
-            <div class="field"><label>광고세트 일 예산 (원) <span class="opt">⚙️ABO 시</span></label><input id="mca_budget" type="number" placeholder="예: 50000 (CBO면 무시)"></div>
+            <div class="field" id="mca_budgetWrap"><label>광고세트 일 예산 (원) <span class="opt">⚙️ABO</span></label><input id="mca_budget" type="number" placeholder="예: 50000"></div>
+            <div class="field" id="mca_cboNote" style="display:none"><label>예산</label><div style="font-size:12px;color:var(--text3);padding-top:9px">CBO 모드 — 예산은 캠페인에서 관리</div></div>
           </div>
           <div class="notice" id="mca_batchBar" style="display:none;margin-top:10px"></div>
           <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="mcPreviewAdset()">🔎 페이로드 미리보기 (선택 1개)</button>
@@ -1632,7 +1633,7 @@ function renderMetaCreate(){
     if($('mcc_scheme'))$('mcc_scheme').innerHTML=M().schemes.map(s=>_opt(s.code,`${s.code} (${s.kr})`)).join('');
     if($('mcc_goal'))$('mcc_goal').innerHTML=M().goals.map(g=>_opt(g.code,`${g.code} (${g.kr})`)).join('');
     if($('mcc_bid'))$('mcc_bid').innerHTML=M().bids.map(b=>_opt(b.code,`${b.code} (${b.kr})`)).join('');
-    if($('mcc_tam'))$('mcc_tam').innerHTML=M().tams.map(t=>_opt(t.code,`${t.kr||t.code}`)).join('');
+    if($('mcc_tam'))$('mcc_tam').innerHTML=M().tams.map(t=>_opt(t.code,t.kr?`${t.kr} (${t.code})`:t.code)).join('');
     if(mcHandoff){ if($('mcc_product'))$('mcc_product').value=mcHandoff.product; if($('mcc_scheme'))$('mcc_scheme').value=mcHandoff.scheme; if($('mcc_goal'))$('mcc_goal').value=mcHandoff.goal; if($('mcc_bid')&&mcHandoff.bid)$('mcc_bid').value=mcHandoff.bid; if($('mcc_tam')&&mcHandoff.tam)$('mcc_tam').value=mcHandoff.tam; if($('mcc_num'))$('mcc_num').value=mcHandoff.cnum||''; }
     if(mcHandoff&&mcHandoff.campaignName){ if($('mcc_name'))$('mcc_name').value=mcHandoff.campaignName; } else mcAutoName();
     mcToggleCbo();
@@ -1641,6 +1642,7 @@ function renderMetaCreate(){
     if($('mca_camp'))$('mca_camp').innerHTML=camps.length?camps.map(c=>_opt(c.id,c.name)).join(''):_opt('','(라이브 캠페인 없음 — Meta 동기화 필요)');
     const sets=DB.sets.filter(s=>areaOf(s.product)===areaScope);
     if($('mca_set'))$('mca_set').innerHTML=sets.length?sets.map(s=>_opt(s.id,s.name)).join(''):_opt('','(빌더 세트 없음)');
+    mcToggleCbo();
     const bb=document.getElementById('mca_batchBar');
     if(bb){ if(mcHandoff&&mcHandoff.setIds&&mcHandoff.setIds.length){ bb.style.display=''; bb.innerHTML=`빌더 세트 <b>${mcHandoff.setIds.length}개</b>를 한 번에 미리보기 <button class="btn btn-primary btn-xs" style="margin-left:6px" onclick="mcPreviewAdsetBatch()">일괄 미리보기</button>`; } else bb.style.display='none'; }
   } else if(mcCur==='ad'){
@@ -1656,7 +1658,11 @@ function mcAutoName(){ if(!$('mcc_product'))return; const p=$('mcc_product').val
 function mcJson(o){return `<pre class="mc-json">${esc(JSON.stringify(o,null,2))}</pre>`;}
 function mcGapBox(g){return g.length?`<div class="notice" style="margin-top:10px"><b>생성 전 보완 필요:</b><br>${g.map(x=>'• '+esc(x)).join('<br>')}</div>`:'';}
 function mcBudgetMode(){ return (($('mcc_budgetmode')||{}).value)||'ABO'; }
-function mcToggleCbo(){ const w=$('mcc_cboBudgetWrap'); if(w)w.style.display=(mcBudgetMode()==='CBO')?'':'none'; }
+function mcToggleCbo(){ const cbo=mcBudgetMode()==='CBO';
+  const w=$('mcc_cboBudgetWrap'); if(w)w.style.display=cbo?'':'none';
+  const aw=$('mca_budgetWrap'); if(aw)aw.style.display=cbo?'none':'';
+  const an=$('mca_cboNote'); if(an)an.style.display=cbo?'':'none';
+}
 function mcPreviewCampaign(){
   const g=$('mcc_goal').value, name=($('mcc_name').value||'').trim(), mode=mcBudgetMode();
   if(!name){toast('캠페인명을 입력하세요');return;}
