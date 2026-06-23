@@ -215,9 +215,10 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
               <div class="field"><label>입찰 유형 <span class="req">*</span></label><select id="b_bid" onchange="onBidChange()"></select></div>
               <div class="field"><label>스킴 (2차) <span class="req">*</span></label><select id="b_scheme" onchange="buildPreview()"></select></div>
             </div>
-            <div class="grid g2">
+            <div class="grid g3">
               <div class="field"><label>1차 구분 <span class="req">*</span></label><select id="b_firstcat" onchange="buildPreview()"></select></div>
-              <div class="field" id="b_optWrap"><label>입찰 최적화 토큰 <span class="opt">(VMX→TROAS, CMX→TCPA · 직접수정 가능)</span></label><input id="b_bidopt" placeholder="TROAS" oninput="buildPreview()"></div>
+              <div class="field" id="b_optWrap"><label>입찰 최적화 토큰 <span class="opt">(VMX→TROAS, CMX→TCPA)</span></label><input id="b_bidopt" placeholder="TROAS" oninput="buildPreview()"></div>
+              <div class="field"><label>캠페인 넘버링 <span class="opt">(캠페인명 끝 _01)</span></label><input id="b_cnum" value="01" placeholder="01" oninput="buildPreview()"></div>
             </div>
           </div>
 
@@ -438,14 +439,19 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
         <div class="panel">
           <div class="panel-h">① 캠페인 생성 <span class="hint">독립 실행 — 캠페인만 만들기</span></div>
           <div style="font-size:11px;color:var(--text3);margin-bottom:8px">📛 <b>이름 규칙</b> 영역(제품·스킴·목표 → 캠페인명) · ⚙️ <b>설정값</b> 영역(목표→objective, 예산 방식). 이름과 실제 설정은 분리해 관리합니다.</div>
-          <div class="grid g2">
+          <div class="grid g3">
             <div class="field"><label>제품 <span class="opt">📛이름</span></label><select id="mcc_product" onchange="mcAutoName()"></select></div>
             <div class="field"><label>스킴 <span class="opt">📛이름</span></label><select id="mcc_scheme" onchange="mcAutoName()"></select></div>
             <div class="field"><label>캠페인 목표 <span class="opt">📛이름 + ⚙️objective</span></label><select id="mcc_goal" onchange="mcAutoName()"></select></div>
-            <div class="field"><label>캠페인명 <span class="opt">📛 자동 · 수정 가능</span></label><input id="mcc_name" placeholder="캠페인명"></div>
-            <div class="field"><label>예산 방식 <span class="opt">⚙️설정</span></label><select id="mcc_budgetmode" onchange="mcToggleCbo()"><option value="ABO">ABO · 광고세트 예산</option><option value="CBO">CBO · 캠페인 예산</option></select></div>
-            <div class="field" id="mcc_cboBudgetWrap" style="display:none"><label>캠페인 일 예산 (원) <span class="opt">⚙️CBO</span></label><input id="mcc_budget" type="number" placeholder="예: 100000"></div>
+            <div class="field"><label>입찰 <span class="opt">📛이름</span></label><select id="mcc_bid" onchange="mcAutoName()"></select></div>
+            <div class="field"><label>TAM <span class="opt">📛이름</span></label><select id="mcc_tam" onchange="mcAutoName()"></select></div>
+            <div class="field"><label>넘버링 <span class="opt">📛이름 끝 _01</span></label><input id="mcc_num" value="01" placeholder="01" oninput="mcAutoName()"></div>
           </div>
+          <div class="grid g3" style="margin-top:2px">
+            <div class="field" style="grid-column:span 2"><label>캠페인명 <span class="opt">📛 자동 · 수정 가능</span></label><input id="mcc_name" placeholder="캠페인명"></div>
+            <div class="field"><label>예산 방식 <span class="opt">⚙️설정</span></label><select id="mcc_budgetmode" onchange="mcToggleCbo()"><option value="ABO">ABO · 광고세트 예산</option><option value="CBO">CBO · 캠페인 예산</option></select></div>
+          </div>
+          <div class="grid g3"><div class="field" id="mcc_cboBudgetWrap" style="display:none"><label>캠페인 일 예산 (원) <span class="opt">⚙️CBO</span></label><input id="mcc_budget" type="number" placeholder="예: 100000"></div></div>
           <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="mcPreviewCampaign()">🔎 페이로드 미리보기</button>
         </div>
         <div id="mcc_out"></div>
@@ -1020,13 +1026,15 @@ function buildSetName(o){
   return parts.join('_');
 }
 function buildKrName(o){
-  return `${o.media}_${brandOf(o.product)}_${schemeKr(o.scheme)}_${goalKr(o.goal)}_${bidKr(o.bid)}_${tamKr(o.tam)}`;
+  const base=`${o.media}_${brandOf(o.product)}_${schemeKr(o.scheme)}_${goalKr(o.goal)}_${bidKr(o.bid)}_${tamKr(o.tam)}`;
+  return o.cnum?`${base}_${o.cnum}`:base;
 }
 function currentBuilder(){
   return {
     product:$('b_product').value, media:$('b_media').value, date:yymmdd($('b_date').value),
     goal:$('b_goal').value, bid:$('b_bid').value, scheme:$('b_scheme').value,
-    firstcat:$('b_firstcat').value, bidopt:$('b_bidopt').value.trim().toUpperCase()
+    firstcat:$('b_firstcat').value, bidopt:$('b_bidopt').value.trim().toUpperCase(),
+    cnum:(($('b_cnum')&&$('b_cnum').value)||'').trim()
   };
 }
 /* 추가된 타게팅 목록 + 현재 조합 중인 토큰(추가 안 눌러도 반영) */
@@ -1079,8 +1087,8 @@ function generateSets(){
   save();renderSetLib();
   // ── 빌더 → Meta 생성 플로우로 진입 (캠페인명·세트명 그대로 이어짐) ──
   const tam0=[...bTams][0];
-  const campaignName=buildKrName({...b,tam:tam0});  // 한글 캠페인명 (이름 규칙 산출물)
-  mcHandoff={product:b.product, scheme:b.scheme, goal:b.goal, media:b.media, campaignName, setIds:newIds};
+  const campaignName=buildKrName({...b,tam:tam0});  // 한글 캠페인명 (이름 규칙 산출물 · 넘버링 포함)
+  mcHandoff={product:b.product, scheme:b.scheme, goal:b.goal, media:b.media, bid:b.bid, tam:tam0, cnum:b.cnum, campaignName, setIds:newIds};
   mcCur='campaign'; go('metacreate');
   toast(`광고세트 ${added}개 생성 · Meta 생성 단계로 이동`);
 }
@@ -1623,7 +1631,9 @@ function renderMetaCreate(){
     if($('mcc_product'))$('mcc_product').innerHTML=ps.map(p=>_opt(p.code,`${p.brand} (${p.code})`)).join('');
     if($('mcc_scheme'))$('mcc_scheme').innerHTML=M().schemes.map(s=>_opt(s.code,`${s.code} (${s.kr})`)).join('');
     if($('mcc_goal'))$('mcc_goal').innerHTML=M().goals.map(g=>_opt(g.code,`${g.code} (${g.kr})`)).join('');
-    if(mcHandoff){ if($('mcc_product'))$('mcc_product').value=mcHandoff.product; if($('mcc_scheme'))$('mcc_scheme').value=mcHandoff.scheme; if($('mcc_goal'))$('mcc_goal').value=mcHandoff.goal; }
+    if($('mcc_bid'))$('mcc_bid').innerHTML=M().bids.map(b=>_opt(b.code,`${b.code} (${b.kr})`)).join('');
+    if($('mcc_tam'))$('mcc_tam').innerHTML=M().tams.map(t=>_opt(t.code,`${t.kr||t.code}`)).join('');
+    if(mcHandoff){ if($('mcc_product'))$('mcc_product').value=mcHandoff.product; if($('mcc_scheme'))$('mcc_scheme').value=mcHandoff.scheme; if($('mcc_goal'))$('mcc_goal').value=mcHandoff.goal; if($('mcc_bid')&&mcHandoff.bid)$('mcc_bid').value=mcHandoff.bid; if($('mcc_tam')&&mcHandoff.tam)$('mcc_tam').value=mcHandoff.tam; if($('mcc_num'))$('mcc_num').value=mcHandoff.cnum||''; }
     if(mcHandoff&&mcHandoff.campaignName){ if($('mcc_name'))$('mcc_name').value=mcHandoff.campaignName; } else mcAutoName();
     mcToggleCbo();
   } else if(mcCur==='adset'){
@@ -1640,7 +1650,9 @@ function renderMetaCreate(){
     if($('mcd_creative'))$('mcd_creative').innerHTML=arc.length?arc.map(a=>_opt(a.id,a.name)).join(''):_opt('','(아카이브 소재 없음)');
   }
 }
-function mcAutoName(){ if(!$('mcc_product'))return; const p=$('mcc_product').value,sc=$('mcc_scheme').value,g=$('mcc_goal').value; if($('mcc_name'))$('mcc_name').value=`FB_${brandOf(p)}_${schemeKr(sc)}_${goalKr(g)}`; }
+function mcAutoName(){ if(!$('mcc_product'))return; const p=$('mcc_product').value,sc=$('mcc_scheme').value,g=$('mcc_goal').value,bd=($('mcc_bid')||{}).value||'',tm=($('mcc_tam')||{}).value||'',num=(($('mcc_num')||{}).value||'').trim();
+  let nm=`FB_${brandOf(p)}_${schemeKr(sc)}_${goalKr(g)}`; if(bd)nm+=`_${bidKr(bd)}`; if(tm)nm+=`_${tamKr(tm)}`; if(num)nm+=`_${num}`;
+  if($('mcc_name'))$('mcc_name').value=nm; }
 function mcJson(o){return `<pre class="mc-json">${esc(JSON.stringify(o,null,2))}</pre>`;}
 function mcGapBox(g){return g.length?`<div class="notice" style="margin-top:10px"><b>생성 전 보완 필요:</b><br>${g.map(x=>'• '+esc(x)).join('<br>')}</div>`:'';}
 function mcBudgetMode(){ return (($('mcc_budgetmode')||{}).value)||'ABO'; }
