@@ -488,9 +488,10 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
             <div class="panel">
               <div class="panel-h">A. 소재명 · UTM <span class="bdg bdg-ok">규칙 자동생성</span></div>
               <div class="grid g2">
-                <div class="field"><label>대상 광고세트 (Meta 라이브)</label><select id="mcd_adset" onchange="mcdSync()"></select></div>
-                <div class="field"><label>소재 (생성 아카이브 → 이름·UTM)</label><select id="mcd_creative" onchange="mcdSync()"></select></div>
+                <div class="field"><label>① 대상 캠페인 (Meta 라이브)</label><select id="mcd_camp" onchange="mcdRenderAdsets();mcdSync()"></select></div>
+                <div class="field"><label>② 대상 광고세트</label><select id="mcd_adset" onchange="mcdSync()"></select></div>
               </div>
+              <div class="field"><label>소재 (생성 아카이브 → 이름·UTM)</label><select id="mcd_creative" onchange="mcdSync()"></select></div>
               <div class="field"><label>자동 소재명</label><div id="mcd_autoname" class="mono mcd-auto"></div></div>
               <div class="field"><label>UTM (광고 링크에 url_tags로 주입)</label><div id="mcd_utm" class="mono mcd-auto"></div></div>
             </div>
@@ -1723,10 +1724,21 @@ function renderBuildAdsetSelects(){
   mcToggleCbo();
 }
 /* ── Tab3 소재 세팅(③) ── */
+function mcLiveAdsetsOf(campId){
+  const ad=metaSnap&&metaSnap.adsets?(Array.isArray(metaSnap.adsets)?metaSnap.adsets:Object.values(metaSnap.adsets)):[];
+  return ad.filter(a=>a.adsetId && (!campId||a.campaignId===campId)).filter(a=>{const c=parseLiveSet(a);return c&&M().products.find(p=>p.code===c.product)&&areaOf(c.product)===areaScope;}).map(a=>({id:a.adsetId,name:a.adsetName||a.adsetId}));
+}
+function mcdRenderAdsets(){
+  if(!document.getElementById('mcd_adset'))return;
+  const cid=$('mcd_camp')?$('mcd_camp').value:'';
+  const ads=mcLiveAdsetsOf(cid);
+  $('mcd_adset').innerHTML=ads.length?ads.map(a=>_opt(a.id,a.name)).join(''):_opt('','(해당 캠페인 광고세트 없음)');
+}
 function renderMetaCreate(){
   if(!document.getElementById('mcd_adset'))return;
-  const ads=mcLiveAdsets();
-  $('mcd_adset').innerHTML=ads.length?ads.map(a=>_opt(a.id,a.name)).join(''):_opt('','(라이브 광고세트 없음)');
+  const camps=mcLiveCampaigns();
+  $('mcd_camp').innerHTML=camps.length?camps.map(c=>_opt(c.id,c.name)).join(''):_opt('','(라이브 캠페인 없음)');
+  mcdRenderAdsets();
   const arc=DB.archive.filter(a=>archiveArea(a)===areaScope);
   $('mcd_creative').innerHTML=arc.length?arc.map(a=>_opt(a.id,a.name)).join(''):_opt('','(아카이브 소재 없음)');
   $('mcd_cta').innerHTML=CTA_OPTS.map(c=>_opt(c[0],`${c[0]} (${c[1]})`)).join('');
@@ -1766,8 +1778,9 @@ function mcdSync(){
   $('mcd_autoname').textContent=a?a.name:'(아카이브 소재 선택)';
   $('mcd_utm').textContent=(a&&a.utm)?a.utm:'(UTM 없음)';
   if(a){ const set=DB.sets.find(x=>x.name===a.setName); const landing=set?(set.landing||''):''; if(landing&&!($('mcd_landing').value||'').trim())$('mcd_landing').value=landing; }
+  const campName=($('mcd_camp').selectedOptions[0]||{}).textContent||'(캠페인 미선택)';
   const adsetName=($('mcd_adset').selectedOptions[0]||{}).textContent||'(광고세트 미선택)';
-  $('mcd_ctxbar').innerHTML=`<span class="hint">세팅 대상</span> <span class="chip">광고세트 <b>${esc(adsetName)}</b></span>`+(a?` <span class="chip">소재 <b>${esc(a.name.length>30?a.name.slice(0,30)+'…':a.name)}</b></span>`:'');
+  $('mcd_ctxbar').innerHTML=`<span class="hint">세팅 대상</span> <span class="chip">캠페인 <b>${esc(campName)}</b></span> <span class="chip">광고세트 <b>${esc(adsetName)}</b></span>`+(a?` <span class="chip">소재 <b>${esc(a.name.length>30?a.name.slice(0,30)+'…':a.name)}</b></span>`:'');
   mcdPreview();
 }
 function mcdUrlTags(){ const a=DB.archive.find(x=>x.id===$('mcd_creative').value); if(a&&a.utm&&a.utm.indexOf('?')>=0)return a.utm.slice(a.utm.indexOf('?')+1); return ''; }
