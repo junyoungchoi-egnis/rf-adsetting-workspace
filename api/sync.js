@@ -22,44 +22,37 @@ async function fetchPaged(url, actId) {
     guard++;
     const r = await fetch(url);
     const j = await r.json();
-    if (j.error) throw new Error(`[act_${actId}] ${j.error.message || 'graph error'}`);
+    if (j.error) throw new Error('[act_' + actId + '] ' + (j.error.message || 'graph error'));
     (j.data || []).forEach(x => out.push(x));
     url = (j.paging && j.paging.next) ? j.paging.next : null;
   }
   return out;
 }
 
-// 페이지를 따라가되 최대 cap개까지만 (애셋 목록 비대화 방지)
-async function fetchCapped(url, actId, cap) {
-  const out = [];
-  let u = url, guard = 0;
-  while (u && guard < 30 && out.length < cap) {
-    guard++;
-    const r = await fetch(u);
-    const j = await r.json();
-    if (j.error) throw new Error(`[act_${actId}] ${j.error.message || 'graph error'}`);
-    (j.data || []).forEach(x => out.push(x));
-    u = (j.paging && j.paging.next && out.length < cap) ? j.paging.next : null;
-  }
-  return out.slice(0, cap);
+// 애셋은 1페이지(최신 N개)만 — 함수 타임아웃 방지를 위해 페이지네이션하지 않는다.
+async function fetchOne(url, actId) {
+  const r = await fetch(url);
+  const j = await r.json();
+  if (j.error) throw new Error('[act_' + actId + '] ' + (j.error.message || 'graph error'));
+  return j.data || [];
 }
 
 async function fetchAllAds(actId, token) {
   const fields = 'id,effective_status,adset{id,name,effective_status},campaign{id,name,effective_status}';
-  const url = `${GRAPH}/act_${actId}/ads?fields=${enc(fields)}&limit=500&access_token=${enc(token)}`;
+  const url = GRAPH + '/act_' + actId + '/ads?fields=' + enc(fields) + '&limit=500&access_token=' + enc(token);
   return fetchPaged(url, actId);
 }
 async function fetchAllAdsets(actId, token) {
   const fields = 'id,name,effective_status,campaign{id,name,effective_status}';
-  const url = `${GRAPH}/act_${actId}/adsets?fields=${enc(fields)}&limit=500&access_token=${enc(token)}`;
+  const url = GRAPH + '/act_' + actId + '/adsets?fields=' + enc(fields) + '&limit=500&access_token=' + enc(token);
   return fetchPaged(url, actId);
 }
 
 // ── 애셋 라이브러리 ──
 async function fetchCreatives(actId, token) {
   const fields = 'id,name,thumbnail_url,object_type,body,title,image_hash,video_id,object_story_id,effective_object_story_id,call_to_action_type,status';
-  const url = `${GRAPH}/act_${actId}/adcreatives?fields=${enc(fields)}&limit=100&access_token=${enc(token)}`;
-  const raw = await fetchCapped(url, actId, 120);
+  const url = GRAPH + '/act_' + actId + '/adcreatives?fields=' + enc(fields) + '&limit=50&access_token=' + enc(token);
+  const raw = await fetchOne(url, actId);
   return raw.map(c => ({
     id: c.id, name: c.name || '(이름없음)',
     type: c.video_id ? 'VIDEO' : 'IMAGE',
@@ -72,21 +65,21 @@ async function fetchCreatives(actId, token) {
 }
 async function fetchImages(actId, token) {
   const fields = 'hash,name,url_128,permalink_url,width,height';
-  const url = `${GRAPH}/act_${actId}/adimages?fields=${enc(fields)}&limit=100&access_token=${enc(token)}`;
-  const raw = await fetchCapped(url, actId, 100);
+  const url = GRAPH + '/act_' + actId + '/adimages?fields=' + enc(fields) + '&limit=50&access_token=' + enc(token);
+  const raw = await fetchOne(url, actId);
   return raw.map(i => ({ hash: i.hash, name: i.name || '', thumb: i.url_128 || i.permalink_url || '', w: i.width || 0, h: i.height || 0 }));
 }
 async function fetchVideos(actId, token) {
   const fields = 'id,title,thumbnails{uri,is_preferred},created_time';
-  const url = `${GRAPH}/act_${actId}/advideos?fields=${enc(fields)}&limit=80&access_token=${enc(token)}`;
-  const raw = await fetchCapped(url, actId, 80);
+  const url = GRAPH + '/act_' + actId + '/advideos?fields=' + enc(fields) + '&limit=40&access_token=' + enc(token);
+  const raw = await fetchOne(url, actId);
   return raw.map(v => {
     let thumb = '';
     if (v.thumbnails && v.thumbnails.data && v.thumbnails.data.length) {
       const pref = v.thumbnails.data.find(t => t.is_preferred) || v.thumbnails.data[0];
       thumb = pref ? pref.uri : '';
     }
-    return { id: v.id, title: v.title || '(제목없음)', thumb };
+    return { id: v.id, title: v.title || '(제목없음)', thumb: thumb };
   });
 }
 
@@ -148,16 +141,18 @@ module.exports = async (req, res) => {
       perAccount[act] = ads.length;
       all = all.concat(ads);
       allAdsets = allAdsets.concat(adsetList);
-      // 애셋(개별 계정 실패해도 전체 동기화는 계속)
+    }
+    // 애셋: 전 계정 병렬 + 계정별 격리(한 계정 실패해도 전체는 진행). 각 1페이지만.
+    await Promise.all(accounts.map(async (act) => {
       try {
         const [creatives, images, videos] = await Promise.all([
           fetchCreatives(act, token), fetchImages(act, token), fetchVideos(act, token)
         ]);
-        assets[act] = { creatives, images, videos };
+        assets[act] = { creatives: creatives, images: images, videos: videos };
       } catch (e) {
         assets[act] = { creatives: [], images: [], videos: [], error: String((e && e.message) || e) };
       }
-    }
+    }));
 
     const adsets = aggregate(all, allAdsets);
     const snapshot = {
@@ -165,11 +160,11 @@ module.exports = async (req, res) => {
       accounts: perAccount,
       adsetCount: adsets.length,
       adCount: all.length,
-      adsets,
-      assets
+      adsets: adsets,
+      assets: assets
     };
 
-    const w = await fetch(`${dbUrl}/meta_v2.json`, {
+    const w = await fetch(dbUrl + '/meta_v2.json', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(snapshot)
