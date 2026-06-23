@@ -520,7 +520,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
               </div>
               <div class="grid g2">
                 <div class="field"><label>CTA 버튼</label><select id="mcd_cta" onchange="mcdPreview()"></select></div>
-                <div class="field"><label>랜딩 URL (+UTM 자동결합)</label><input id="mcd_landing" oninput="mcdPreview()"></div>
+                <div class="field"><label>랜딩 URL (UTM은 자동 결합)</label><input id="mcd_landing" oninput="mcdPreview();mcdFinalUrl()"><div class="hint" style="margin-top:5px">최종 추적 URL <span class="bdg bdg-ok">UTM 자동결합</span><br><span id="mcd_finalurl" class="mono" style="color:#9fc4ff;word-break:break-all"></span></div></div>
               </div>
             </div>
           </div>
@@ -1833,10 +1833,11 @@ function mcdSync(){
   const campName=($('mcd_camp').selectedOptions[0]||{}).textContent||'(캠페인 미선택)';
   const adsetName=($('mcd_adset').selectedOptions[0]||{}).textContent||'(광고세트 미선택)';
   $('mcd_ctxbar').innerHTML=`<span class="hint">세팅 대상</span> <span class="chip">캠페인 <b>${esc(campName)}</b></span> <span class="chip">광고세트 <b>${esc(adsetName)}</b></span>`+(a?` <span class="chip">소재 <b>${esc(a.name.length>30?a.name.slice(0,30)+'…':a.name)}</b></span>`:'');
-  mcdRenderAssets(); mcdPreview();
+  mcdRenderAssets(); mcdPreview(); mcdFinalUrl();
 }
 function mcdUrlTags(){ const a=DB.archive.find(x=>x.id===$('mcd_creative').value); if(a&&a.utm&&a.utm.indexOf('?')>=0)return a.utm.slice(a.utm.indexOf('?')+1); return ''; }
-function mcdApplyLanding(){ const a=DB.archive.find(x=>x.id===$('mcd_creative').value); if(!a||!a.utm){toast('적용할 UTM URL이 없습니다');return;} const u=a.utm; const m=u.search(/[?&]utm_/); const base=m>=0?u.slice(0,m):u; if($('mcd_landing'))$('mcd_landing').value=base; mcdPreview(); if(typeof mcPreviewAd==='function')mcPreviewAd(); toast('랜딩 URL에 적용됨 · UTM은 url_tags로 자동 주입됩니다'); }
+function mcdApplyLanding(){ const a=DB.archive.find(x=>x.id===$('mcd_creative').value); if(!a||!a.utm){toast('적용할 UTM URL이 없습니다');return;} const u=a.utm; const m=u.search(/[?&]utm_/); const base=m>=0?u.slice(0,m):u; if($('mcd_landing'))$('mcd_landing').value=base; mcdFinalUrl(); mcdPreview(); if(typeof mcPreviewAd==='function')mcPreviewAd(); toast('적용 완료 · 최종 추적 URL에 UTM이 결합되어 표시됩니다'); }
+function mcdFinalUrl(){ if(!document.getElementById('mcd_finalurl'))return; const base=($('mcd_landing').value||'').trim(); const tags=mcdUrlTags(); let out=base||'(랜딩 URL 없음)'; if(base&&tags) out=base+(base.indexOf('?')>=0?'&':'?')+tags; $('mcd_finalurl').textContent=out; }
 function mcdPreview(){
   if(!document.getElementById('mcd_prev'))return;
   const pageName=($('mcd_page').selectedOptions[0]||{}).textContent||'페이지';
