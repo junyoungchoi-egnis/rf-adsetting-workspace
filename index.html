@@ -81,7 +81,8 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .mcd-assetgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-height:200px;overflow:auto;padding:2px}
 .mcd-asset{border:1px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;background:var(--surface2);position:relative}
 .mcd-asset.on{outline:2px solid var(--accent)}
-.mcd-asset .th{height:60px;background:linear-gradient(135deg,#26324a,#1a2233);display:flex;align-items:center;justify-content:center;color:#6b7a90;font-size:20px}
+.mcd-asset .th{height:64px;background:linear-gradient(135deg,#26324a,#1a2233);display:flex;align-items:center;justify-content:center;color:#6b7a90;font-size:20px;overflow:hidden}
+.mcd-asset .th img{width:100%;height:100%;object-fit:cover;display:block}
 .mcd-asset .nm{font-size:9.5px;padding:4px 5px;color:#aeb9c7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mcd-asset .tag{position:absolute;top:4px;left:4px;background:#000a;border-radius:5px;padding:1px 5px;font-size:9px;color:#cfe0ff}
 .mcd-phone{background:#000;border-radius:14px;padding:10px;border:1px solid #222}
@@ -508,8 +509,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
             <div class="panel">
               <div class="panel-h">C. 크리에이티브 <span class="bdg bdg-warn">에셋 재사용 기반</span></div>
               <div class="field"><label>포맷</label><div class="seg-toggle" id="mcd_fmt"><button class="on" data-v="IMAGE" onclick="mcdSetFmt('IMAGE')">단일 이미지</button><button data-v="VIDEO" onclick="mcdSetFmt('VIDEO')">단일 영상</button><button data-v="CAROUSEL" onclick="mcdSetFmt('CAROUSEL')">카탈로그 캐러셀</button></div></div>
-              <div class="field"><label>에셋 소스</label><div class="seg-toggle" id="mcd_src"><button class="on" data-v="reuse" onclick="mcdSetSrc('reuse')">기존 소재 재사용</button><button data-v="upload" onclick="mcdSetSrc('upload')">이미지 업로드</button><button data-v="story" onclick="mcdSetSrc('story')">기존 게시물</button><button data-v="hash" onclick="mcdSetSrc('hash')">이미지 해시</button></div><div class="hint">재사용/게시물/해시는 메타에 이미 있는 자산을, <b>이미지 업로드</b>는 새 이미지를 메타 광고 라이브러리에 올립니다.</div></div>
-              <div id="mcd_uploadWrap" class="field" style="display:none"><label>이미지 업로드 → 메타 광고 라이브러리</label><div class="grid g2"><select id="mcd_uploadAct"></select><input type="file" id="mcd_file" accept="image/*" onchange="mcdUpload()"></div><div id="mcd_uploadStatus" class="hint">JPG/PNG · 3MB 이하. 업로드하면 image_hash가 자동 연결됩니다. ※ 이미지는 선택한 광고계정에만 귀속되니, 광고가 생성될 계정과 동일해야 합니다.</div></div>
+              <div class="field"><label>에셋 소스</label><div class="seg-toggle" id="mcd_src"><button class="on" data-v="reuse" onclick="mcdSetSrc('reuse')">애셋 라이브러리</button><button data-v="story" onclick="mcdSetSrc('story')">기존 게시물</button><button data-v="hash" onclick="mcdSetSrc('hash')">이미지 해시</button></div><div class="hint">소재 업로드는 <b>메타 광고 관리자 → 애셋 라이브러리</b>에서 하고, 여기선 선택한 캠페인 계정의 소재를 골라 씁니다.</div></div>
               <div id="mcd_reuseWrap" class="field"><label>소재 선택 (계정 라이브러리 · 검색)</label><input id="mcd_assetSearch" placeholder="🔎 소재명 검색 ([★최대 77%★] / 600원대 / 100won …)" oninput="mcdRenderAssets()" style="margin-bottom:8px"><div id="mcd_assets" class="mcd-assetgrid"></div></div>
               <div id="mcd_manualWrap" class="field" style="display:none"><label id="mcd_manualLbl">기존 게시물 ID (object_story_id, "pageID_postID")</label><input id="mcd_manualId" placeholder="100144576354328_913908988301052" oninput="mcdPreview()"></div>
               <div class="field"><label>기본 문구 (Primary text)</label><textarea id="mcd_body" rows="3" oninput="mcdPreview()"></textarea></div>
@@ -1755,7 +1755,6 @@ function renderMetaCreate(){
   $('mcd_creative').innerHTML=arc.length?arc.map(a=>_opt(a.id,a.name)).join(''):_opt('','(아카이브 소재 없음)');
   $('mcd_cta').innerHTML=CTA_OPTS.map(c=>_opt(c[0],`${c[0]} (${c[1]})`)).join('');
   mcdRenderProfiles();
-  mcdRenderUploadAct();
   mcdSetFmt(mcdFmt,true);
   mcdSetSrc(mcdSrc,true);
   mcdSync();
@@ -1795,14 +1794,30 @@ async function mcdUpload(){
     else { $('mcd_uploadStatus').innerHTML='⚠️ 실패: '+esc((j&&j.error)||'알 수 없는 오류'); }
   }catch(e){ $('mcd_uploadStatus').innerHTML='⚠️ 오류: '+esc(String(e)); }
 }
+function mcdTargetAccount(){
+  const id=$('mcd_adset')?$('mcd_adset').value:'';
+  if(id&&metaSnap&&metaSnap.adsets){ const arr=Array.isArray(metaSnap.adsets)?metaSnap.adsets:Object.values(metaSnap.adsets); const ad=arr.find(a=>a.adsetId===id); if(ad&&ad.account)return ad.account; }
+  const m=META_ACCOUNTS.find(a=>a.area===areaScope); return m?m.id:'';
+}
+function mcdCreatives(){
+  const act=mcdTargetAccount();
+  const A=(metaSnap&&metaSnap.assets)?metaSnap.assets:null;
+  if(A&&act&&A[act]&&A[act].creatives&&A[act].creatives.length)return A[act].creatives;
+  return META_CREATIVES.filter(c=>c.brand===areaScope||c.brand==='공통'); // 동기화 전 폴백(시드)
+}
 function mcdRenderAssets(){
   if(!document.getElementById('mcd_assets'))return;
   if(mcdFmt==='CAROUSEL'){ $('mcd_assets').innerHTML='<div class="hint" style="grid-column:1/-1">카탈로그 캐러셀은 제품세트(product_set)에서 자동 구성됩니다. 별도 에셋 선택은 필요 없습니다.</div>'; return; }
   const q=($('mcd_assetSearch').value||'').toLowerCase();
-  const list=META_CREATIVES.filter(c=>c.type===mcdFmt).filter(c=>c.brand===areaScope||c.brand==='공통').filter(c=>!q||c.name.toLowerCase().includes(q));
-  $('mcd_assets').innerHTML=list.length?list.map(c=>`<div class="mcd-asset ${mcdSel===c.id?'on':''}" onclick="mcdPickAsset('${c.id}')"><div class="tag">${c.type==='VIDEO'?'VD':'IMG'}</div><div class="th">${c.type==='VIDEO'?'▶':'🖼'}</div><div class="nm">${esc(c.name)}</div></div>`).join(''):'<div class="hint" style="grid-column:1/-1">해당 포맷의 소재 없음 (검색어/포맷 변경)</div>';
+  const list=mcdCreatives().filter(c=>c.type===mcdFmt).filter(c=>!q||(c.name||'').toLowerCase().includes(q));
+  $('mcd_assets').innerHTML=list.length?list.map(c=>{
+    const th=c.thumb
+      ? `<div class="th" data-t="${c.type}"><img src="${esc(c.thumb)}" loading="lazy" onerror="this.parentNode.textContent=(this.parentNode.dataset.t==='VIDEO'?'▶':'🖼')"></div>`
+      : `<div class="th">${c.type==='VIDEO'?'▶':'🖼'}</div>`;
+    return `<div class="mcd-asset ${mcdSel===c.id?'on':''}" onclick="mcdPickAsset('${esc(c.id)}')"><div class="tag">${c.type==='VIDEO'?'VD':'IMG'}</div>${th}<div class="nm">${esc(c.name)}</div></div>`;
+  }).join(''):'<div class="hint" style="grid-column:1/-1">이 포맷의 소재가 없습니다 — 설정/매핑에서 🔄 Meta 동기화 실행 또는 포맷/검색 변경</div>';
 }
-function mcdPickAsset(id){ mcdSel=(mcdSel===id?null:id); const c=META_CREATIVES.find(x=>x.id===id);
+function mcdPickAsset(id){ mcdSel=(mcdSel===id?null:id); const c=mcdCreatives().find(x=>x.id===id);
   if(c&&mcdSel){ if(!($('mcd_body').value||'').trim())$('mcd_body').value=c.body||''; if(!($('mcd_headline').value||'').trim())$('mcd_headline').value=c.title||''; if(c.cta)$('mcd_cta').value=c.cta; }
   mcdRenderAssets(); mcdPreview(); }
 function mcdSync(){
@@ -1814,7 +1829,7 @@ function mcdSync(){
   const campName=($('mcd_camp').selectedOptions[0]||{}).textContent||'(캠페인 미선택)';
   const adsetName=($('mcd_adset').selectedOptions[0]||{}).textContent||'(광고세트 미선택)';
   $('mcd_ctxbar').innerHTML=`<span class="hint">세팅 대상</span> <span class="chip">캠페인 <b>${esc(campName)}</b></span> <span class="chip">광고세트 <b>${esc(adsetName)}</b></span>`+(a?` <span class="chip">소재 <b>${esc(a.name.length>30?a.name.slice(0,30)+'…':a.name)}</b></span>`:'');
-  mcdPreview();
+  mcdRenderAssets(); mcdPreview();
 }
 function mcdUrlTags(){ const a=DB.archive.find(x=>x.id===$('mcd_creative').value); if(a&&a.utm&&a.utm.indexOf('?')>=0)return a.utm.slice(a.utm.indexOf('?')+1); return ''; }
 function mcdPreview(){
@@ -1827,7 +1842,9 @@ function mcdPreview(){
   const ctaLbl=(CTA_OPTS.find(c=>c[0]===$('mcd_cta').value)||['','더 알아보기'])[1];
   let host=($('mcd_landing').value||'LANDING'); try{ host=new URL(host.match(/^https?:/)?host:'https://'+host).host.toUpperCase(); }catch(e){ host=host.toUpperCase(); }
   const mediaIcon=mcdFmt==='VIDEO'?'▶ 영상 소재':(mcdFmt==='CAROUSEL'?'🛍 카탈로그 캐러셀':'🖼 이미지 소재');
-  $('mcd_prev').innerHTML=`<div class="pt"><div class="av"></div><div><div class="nm">${esc(pageName)}</div><div class="sp">Sponsored${ig?' · IG: '+esc(ig.replace('@','')):''}</div></div></div><div class="bd">${body}</div><div class="md">${mediaIcon}</div><div class="ct"><div class="lk">${esc(host)}<br><b>${head}</b>${desc?'<br>'+desc:''}</div><div class="bt">${esc(ctaLbl)}</div></div>`;
+  const sc=mcdSel?mcdCreatives().find(x=>x.id===mcdSel):null;
+  const md=(sc&&sc.thumb)?`<div class="md" style="background-image:url('${sc.thumb.replace(/'/g,'%27')}')"></div>`:`<div class="md">${mediaIcon}</div>`;
+  $('mcd_prev').innerHTML=`<div class="pt"><div class="av"></div><div><div class="nm">${esc(pageName)}</div><div class="sp">Sponsored${ig?' · IG: '+esc(ig.replace('@','')):''}</div></div></div><div class="bd">${body}</div>${md}<div class="ct"><div class="lk">${esc(host)}<br><b>${head}</b>${desc?'<br>'+desc:''}</div><div class="bt">${esc(ctaLbl)}</div></div>`;
 }
 function mcAutoName(){ if(!$('mcc_product'))return; const p=$('mcc_product').value,sc=$('mcc_scheme').value,g=$('mcc_goal').value,bd=($('mcc_bid')||{}).value||'',tm=($('mcc_tam')||{}).value||'',num=(($('mcc_num')||{}).value||'').trim();
   let nm=`FB_${brandOf(p)}_${schemeKr(sc)}_${goalKr(g)}`; if(bd)nm+=`_${bidKr(bd)}`; if(tm)nm+=`_${tamKr(tm)}`; if(num)nm+=`_${num}`;
@@ -1909,7 +1926,7 @@ function mcdDiagnose(){
   add('대상 광고세트',!!$('mcd_adset').value,$('mcd_adset').value?(($('mcd_adset').selectedOptions[0]||{}).textContent||''):'광고세트를 선택하세요');
   add('대표 페이지',!!$('mcd_page').value,$('mcd_page').value?(($('mcd_page').selectedOptions[0]||{}).textContent||''):'Facebook 페이지를 선택하세요');
   let sok,sd;
-  if(mcdSrc==='reuse'){ sok=!!mcdSel; const c=META_CREATIVES.find(x=>x.id===mcdSel); sd=sok?('재사용 소재: '+(c?c.name:mcdSel)):'재사용할 소재를 선택하세요'; }
+  if(mcdSrc==='reuse'){ sok=!!mcdSel; const c=mcdCreatives().find(x=>x.id===mcdSel); sd=sok?('애셋 라이브러리: '+(c?c.name:mcdSel)):'애셋 라이브러리에서 소재를 선택하세요'; }
   else if(mcdSrc==='story'){ sok=!!($('mcd_manualId').value||'').trim(); sd=sok?'기존 게시물 연결됨':'기존 게시물 ID를 입력하세요'; }
   else if(mcdSrc==='upload'){ sok=!!mcdUploadedHash; sd=sok?('업로드 완료 · '+mcdUploadedHash):'이미지를 업로드하세요'; }
   else { sok=!!($('mcd_manualId').value||'').trim(); sd=sok?'이미지 해시 입력됨':'이미지 해시를 입력하세요'; }
