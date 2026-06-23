@@ -77,6 +77,23 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .memo-in{flex:1;height:30px;font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:0 9px;color:var(--text)}
 .iconbtn.memo-on{color:var(--accent2);opacity:1}
 .mc-json{background:#0d1424;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:var(--mono,monospace);font-size:11.5px;line-height:1.5;color:#bcd;white-space:pre-wrap;overflow-x:auto;margin:0}
+.mcd-auto{background:#0d1424;border:1px dashed #33405a;border-radius:8px;padding:8px 11px;font-size:11.5px;color:#9fc4ff;word-break:break-all;min-height:18px}
+.mcd-assetgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-height:200px;overflow:auto;padding:2px}
+.mcd-asset{border:1px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;background:var(--surface2);position:relative}
+.mcd-asset.on{outline:2px solid var(--accent)}
+.mcd-asset .th{height:60px;background:linear-gradient(135deg,#26324a,#1a2233);display:flex;align-items:center;justify-content:center;color:#6b7a90;font-size:20px}
+.mcd-asset .nm{font-size:9.5px;padding:4px 5px;color:#aeb9c7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mcd-asset .tag{position:absolute;top:4px;left:4px;background:#000a;border-radius:5px;padding:1px 5px;font-size:9px;color:#cfe0ff}
+.mcd-phone{background:#000;border-radius:14px;padding:10px;border:1px solid #222}
+.mcd-phone .pt{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.mcd-phone .av{width:30px;height:30px;border-radius:50%;background:#3a4a6a}
+.mcd-phone .nm{font-size:12px;font-weight:600;color:#fff}.mcd-phone .sp{font-size:10px;color:#9aa}
+.mcd-phone .bd{font-size:11.5px;margin:6px 2px;color:#dfe7f0;white-space:pre-wrap}
+.mcd-phone .md{height:180px;border-radius:8px;background:linear-gradient(135deg,#2a3a5c,#16203a);display:flex;align-items:center;justify-content:center;color:#7e8ba0;font-size:13px;background-size:cover;background-position:center}
+.mcd-phone .ct{margin-top:8px;display:flex;justify-content:space-between;align-items:center;background:#11161f;border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+.mcd-phone .ct .lk{font-size:10.5px;color:#9aa}.mcd-phone .ct .lk b{color:#cdd;font-weight:500}
+.mcd-phone .ct .bt{background:#e4e6eb;color:#111;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:600;white-space:nowrap}
+@media(max-width:900px){.mcd-grid{grid-template-columns:1fr!important}}
 .chip .x{opacity:.45;font-size:13px}.chip .x:hover{opacity:1;color:var(--red)}
 .chip.add{border-style:dashed;color:var(--text3)}
 
@@ -464,14 +481,59 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
       <div class="page-head"><h2>Meta 소재 세팅 <span style="font-size:12px;font-weight:500;color:var(--text3)">· dry-run 미리보기</span></h2><p>이미 생성된(또는 메타에 존재하는) <b>광고세트를 골라 소재를 연결</b>해, 보낼 광고 페이로드를 미리 만듭니다. 캠페인·광고세트 생성은 <b>① 캠페인·세트 생성</b> 탭에서 합니다. 실제 생성은 권한 확보 후 연결됩니다(생성 시 PAUSED).</p></div>
 
       <div class="mcsub" data-mcsub="ad">
-        <div class="panel">
-          <div class="panel-h">광고 소재 세팅 <span class="hint">대상 광고세트에 소재 연결</span></div>
-          <div class="grid g2">
-            <div class="field"><label>대상 광고세트 (Meta 라이브)</label><select id="mcd_adset"></select></div>
-            <div class="field"><label>소재 (생성 아카이브)</label><select id="mcd_creative"></select></div>
+        <div id="mcd_ctxbar" class="panel" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 12px;margin-bottom:14px"></div>
+        <div style="display:grid;grid-template-columns:1fr 320px;gap:16px" class="mcd-grid">
+          <div>
+            <!-- A. 소재명·UTM -->
+            <div class="panel">
+              <div class="panel-h">A. 소재명 · UTM <span class="bdg bdg-ok">규칙 자동생성</span></div>
+              <div class="grid g2">
+                <div class="field"><label>대상 광고세트 (Meta 라이브)</label><select id="mcd_adset" onchange="mcdSync()"></select></div>
+                <div class="field"><label>소재 (생성 아카이브 → 이름·UTM)</label><select id="mcd_creative" onchange="mcdSync()"></select></div>
+              </div>
+              <div class="field"><label>자동 소재명</label><div id="mcd_autoname" class="mono mcd-auto"></div></div>
+              <div class="field"><label>UTM (광고 링크에 url_tags로 주입)</label><div id="mcd_utm" class="mono mcd-auto"></div></div>
+            </div>
+            <!-- B. 대표 계정 -->
+            <div class="panel">
+              <div class="panel-h">B. 대표 계정 (프로필) <span class="bdg bdg-ok">Meta 동기화</span></div>
+              <div class="field"><label>Facebook 페이지 <span style="color:#ff7b72">*</span> <label style="display:inline;font-weight:400;color:var(--text3)"><input type="checkbox" id="mcd_pageAll" onchange="mcdRenderProfiles()" style="width:auto;vertical-align:middle"> 전체 페이지</label></label><select id="mcd_page" onchange="mcdPreview()"></select></div>
+              <div class="grid g2">
+                <div class="field"><label>Instagram 프로필 <span class="bdg bdg-warn">자체 sync</span></label><select id="mcd_ig" onchange="mcdPreview()"></select></div>
+                <div class="field"><label>Threads 프로필</label><select id="mcd_threads"><option value="ig">Instagram 계정 사용 (기본)</option><option value="none">게시 안 함</option></select></div>
+              </div>
+            </div>
+            <!-- C. 크리에이티브 -->
+            <div class="panel">
+              <div class="panel-h">C. 크리에이티브 <span class="bdg bdg-warn">에셋 재사용 기반</span></div>
+              <div class="field"><label>포맷</label><div class="seg-toggle" id="mcd_fmt"><button class="on" data-v="IMAGE" onclick="mcdSetFmt('IMAGE')">단일 이미지</button><button data-v="VIDEO" onclick="mcdSetFmt('VIDEO')">단일 영상</button><button data-v="CAROUSEL" onclick="mcdSetFmt('CAROUSEL')">카탈로그 캐러셀</button></div></div>
+              <div class="field"><label>에셋 소스</label><div class="seg-toggle" id="mcd_src"><button class="on" data-v="reuse" onclick="mcdSetSrc('reuse')">기존 소재 재사용</button><button data-v="story" onclick="mcdSetSrc('story')">기존 게시물</button><button data-v="hash" onclick="mcdSetSrc('hash')">이미지 해시</button></div><div class="hint">앱→메타 직접 업로드는 미지원. 메타에 올라온 소재/게시물/해시를 재사용합니다.</div></div>
+              <div id="mcd_reuseWrap" class="field"><label>소재 선택 (계정 라이브러리 · 검색)</label><input id="mcd_assetSearch" placeholder="🔎 소재명 검색 ([★최대 77%★] / 600원대 / 100won …)" oninput="mcdRenderAssets()" style="margin-bottom:8px"><div id="mcd_assets" class="mcd-assetgrid"></div></div>
+              <div id="mcd_manualWrap" class="field" style="display:none"><label id="mcd_manualLbl">기존 게시물 ID (object_story_id, "pageID_postID")</label><input id="mcd_manualId" placeholder="100144576354328_913908988301052" oninput="mcdPreview()"></div>
+              <div class="field"><label>기본 문구 (Primary text)</label><textarea id="mcd_body" rows="3" oninput="mcdPreview()"></textarea></div>
+              <div class="grid g2">
+                <div class="field"><label>제목 (Headline)</label><input id="mcd_headline" oninput="mcdPreview()"></div>
+                <div class="field"><label>설명 (Description)</label><input id="mcd_desc" placeholder="선택" oninput="mcdPreview()"></div>
+              </div>
+              <div class="grid g2">
+                <div class="field"><label>CTA 버튼</label><select id="mcd_cta" onchange="mcdPreview()"></select></div>
+                <div class="field"><label>랜딩 URL (+UTM 자동결합)</label><input id="mcd_landing" oninput="mcdPreview()"></div>
+              </div>
+            </div>
           </div>
-          <div class="notice" style="margin-top:8px">이미지/영상 에셋 업로드는 다음 단계(Phase 3)입니다. 여기선 소재명·UTM·랜딩 기준 페이로드만 미리봅니다.</div>
-          <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="mcPreviewAd()">🔎 페이로드 미리보기</button>
+          <!-- 미리보기 -->
+          <div>
+            <div class="panel" style="position:sticky;top:14px">
+              <div class="panel-h">실시간 미리보기</div>
+              <div id="mcd_prev" class="mcd-phone"></div>
+              <div class="hint" style="margin-top:8px">포맷·페이지·소재·CTA·문구 변경이 즉시 반영됩니다.</div>
+              <div style="display:flex;gap:8px;margin-top:10px">
+                <button class="btn btn-sm" style="flex:1" onclick="mcPreviewAd()">🔎 dry-run</button>
+                <button class="btn btn-primary btn-sm" style="flex:1" onclick="mcGenerateAd()">소재 생성 (PAUSED)</button>
+              </div>
+              <div class="notice" style="margin-top:8px;font-size:11px">생성물은 항상 PAUSED. dry-run으로 페이로드 확인 후 생성하세요.</div>
+            </div>
+          </div>
         </div>
         <div id="mcd_out"></div>
       </div>
@@ -726,7 +788,7 @@ function tamKr(code){const t=(M().tams||[]).find(x=>x.code===code);return (t&&t.
 function setArea(a){
   areaScope=a;
   document.querySelectorAll('#areaNav [data-area]').forEach(b=>{const on=b.dataset.area===a;b.classList.toggle('btn-primary',on);b.classList.toggle('btn-ghost',!on);});
-  fillBuilderSelects(); buildPreview(); renderSetLib(); renderCreativeCampaigns(); renderCreativeSets(); renderArchive(); renderChanges();
+  fillBuilderSelects(); buildPreview(); renderSetLib(); renderCreativeCampaigns(); renderCreativeSets(); renderArchive(); renderChanges(); renderMetaCreate();
 }
 let mapSubActive='product';
 function mapSub(name){
@@ -1563,9 +1625,39 @@ function exportChanges(){
 }
 /* ════════════════════════ TAB5: META 생성 (dry-run, 3단계 독립) ════════════════════════ */
 let lastGen=null;
+let mcdFmt='IMAGE',mcdSrc='reuse',mcdSel=null;
 // 목표·입찰 → Meta API 값 매핑 (초안 · 추후 설정/매핑으로 이관 가능)
 const META_OBJECTIVE={PUR:'OUTCOME_SALES',TRF:'OUTCOME_TRAFFIC',AWR:'OUTCOME_AWARENESS',ENG:'OUTCOME_ENGAGEMENT',LEAD:'OUTCOME_LEADS'};
 const META_BID={CMX:{optimization_goal:'OFFSITE_CONVERSIONS',bid_strategy:'LOWEST_COST_WITHOUT_CAP'},VMX:{optimization_goal:'VALUE',bid_strategy:'LOWEST_COST_WITHOUT_CAP'}};
+/* ── Meta 동기화 시드(③ 소재 세팅) — 실제 Marketing API 조회값. brand: 클룹/스프린트/공통(후킹·공용)/기타(타브랜드 전용) ── */
+const META_PAGES=[
+  {id:'104950008893382',name:'클룹 - CLOOP',brand:'클룹'},{id:'1002708606269301',name:'CLOOP 소요일',brand:'클룹'},{id:'1095619693627668',name:'Coolumung',brand:'클룹'},
+  {id:'701003076440192',name:'스프린트',brand:'스프린트'},
+  {id:'100144576354328',name:'할인정보',brand:'공통'},{id:'126617153863681',name:'급상승인기템',brand:'공통'},{id:'112262015125579',name:'리뷰신',brand:'공통'},
+  {id:'110693725465113',name:'득근 꿀템.zip',brand:'공통'},{id:'120611437808261',name:'여자 꿀팁',brand:'공통'},{id:'1018438484678156',name:'주부꿀팁',brand:'공통'},
+  {id:'765441846646574',name:'편돌맨',brand:'공통'},{id:'558158160724029',name:'머머리 꿀템',brand:'공통'},{id:'371737312698590',name:'색조의 여왕',brand:'공통'},
+  {id:'428489843677663',name:'언니의립',brand:'공통'},{id:'183862511485170',name:'저탄고지식단일기',brand:'공통'},{id:'565026980608243',name:'9년째 유지하는 프로식단러',brand:'공통'},
+  {id:'114616579908450',name:'인바디인증',brand:'공통'},{id:'1168385136663657',name:'언니들의 찐 추천템',brand:'공통'},{id:'303656430456313',name:'A-Report',brand:'공통'},
+  {id:'100167966341074',name:'162.48',brand:'공통'},{id:'757628264106152',name:'수정화장.zip',brand:'공통'},{id:'1006526892547651',name:'오늘도홈케어',brand:'공통'},
+  {id:'976458518890346',name:'리바이먼지털이',brand:'공통'},{id:'1014433288415794',name:'씹덕저장소',brand:'공통'},{id:'1150764751447318',name:'피부깨끗연구소',brand:'공통'},
+  {id:'1091241584073642',name:'Labnoshglobal',brand:'기타'},{id:'1010760872130146',name:'LabnoshHongkong',brand:'기타'},{id:'1056060957593229',name:'Ever.glow',brand:'기타'},
+  {id:'977609598770503',name:'O1 오원',brand:'기타'},{id:'974713385725502',name:'Exerapy',brand:'기타'},{id:'879509508587040',name:'Hydrobae',brand:'기타'},
+  {id:'810140908847514',name:'그로서리서울',brand:'기타'},{id:'287811208715801',name:'그로서리서울 Grocery Seoul',brand:'기타'},{id:'359304757254749',name:'Braye.jp',brand:'기타'},
+  {id:'292792133914986',name:'BRAYE 브레이',brand:'기타'},{id:'198779993313173',name:'Dr+LABNOSH',brand:'기타'},{id:'550692585388867',name:'Labnosh',brand:'기타'},
+  {id:'448178685345981',name:'랩노쉬 - Labnosh',brand:'기타'},{id:'142795103084194',name:'한끼통살',brand:'기타'},{id:'112768317730634',name:'한끼통살 - 닭가슴살 No. 1',brand:'기타'},
+  {id:'240300396840313',name:'에잇템 리얼-Review',brand:'기타'}
+];
+const META_IG=[{id:'17841400000000001',user:'jail_ssada',brand:'공통'},{id:'17841400000000002',user:'cloop.official',brand:'클룹'},{id:'17841400000000003',user:'sprint.official',brand:'스프린트'}];
+const CTA_OPTS=[['SHOP_NOW','지금 구매'],['LEARN_MORE','더 알아보기'],['ORDER_NOW','지금 주문하기'],['BUY_NOW','지금 구입하기'],['GET_OFFER','혜택 받기'],['SIGN_UP','가입하기'],['SEE_MORE','더 보기'],['GET_DETAILS','자세히 보기'],['SUBSCRIBE','구독하기']];
+/* 계정 라이브러리 재사용 크리에이티브 시드 — sync로 갱신 대상 */
+const META_CREATIVES=[
+  {id:'805139862181602',type:'VIDEO',name:'[★최대 77%★] 다신 돌아오지 않을 출시 첫 가격!',story:'100144576354328_913908988301052',cta:'SHOP_NOW',body:'🚨 클룹이 지갑을 털어가는 물가를 잡았습니다! 출시 첫 가격 그대로, 한 박스 2만 원대 프로모션 오픈!',title:'[★최대 77%★] 다신 돌아오지 않을 출시 첫 가격! >>',brand:'클룹'},
+  {id:'1848030719195517',type:'VIDEO',name:'[★온라인 최저가★] 개당 600원대 할인중 (a)',cta:'SHOP_NOW',body:'개당 600원대 최저가! 지금 클룹닷컴에서 만나보세요.',title:'[★온라인 최저가★] 개당 600원대 할인중',brand:'클룹'},
+  {id:'840218852437971',type:'VIDEO',name:'[★온라인 최저가★] 개당 600원대 할인중 (b)',cta:'SHOP_NOW',body:'개당 600원대 최저가! 지금 클룹닷컴에서 만나보세요.',title:'[★온라인 최저가★] 개당 600원대 할인중',brand:'클룹'},
+  {id:'2485685541849413',type:'IMAGE',name:'260401 CLAC apple urgency price',img:'4af7645c34ce4cc482db8c37c830e217',cta:'SHOP_NOW',body:'출시 첫 가격 마감 임박! 사과맛 클룹 지금 구매.',title:'출시 첫 가격, 곧 종료',brand:'클룹'},
+  {id:'1278195487583287',type:'IMAGE',name:'260317 100won bulky branding',img:'d6fd4b57c748d0c4aeae2a1960d1930f',cta:'SHOP_NOW',body:'단돈 100원! 벌크업 클룹으로 시작하세요.',title:'100원 딜 — 오직 여기서',brand:'클룹'}
+];
+const PAGE_BY_ID=id=>META_PAGES.find(p=>p.id===id);
 function mcDate(d){ // 260617 → ISO(KST 자정)
   if(!/^\d{6}$/.test(d||'')) return null;
   return `20${d.slice(0,2)}-${d.slice(2,4)}-${d.slice(4,6)}T00:00:00+0900`;
@@ -1637,6 +1729,59 @@ function renderMetaCreate(){
   $('mcd_adset').innerHTML=ads.length?ads.map(a=>_opt(a.id,a.name)).join(''):_opt('','(라이브 광고세트 없음)');
   const arc=DB.archive.filter(a=>archiveArea(a)===areaScope);
   $('mcd_creative').innerHTML=arc.length?arc.map(a=>_opt(a.id,a.name)).join(''):_opt('','(아카이브 소재 없음)');
+  $('mcd_cta').innerHTML=CTA_OPTS.map(c=>_opt(c[0],`${c[0]} (${c[1]})`)).join('');
+  mcdRenderProfiles();
+  mcdSetFmt(mcdFmt,true);
+  mcdSetSrc(mcdSrc,true);
+  mcdSync();
+}
+function mcdRenderProfiles(){
+  if(!document.getElementById('mcd_page'))return;
+  const all=$('mcd_pageAll')&&$('mcd_pageAll').checked;
+  const pages=META_PAGES.filter(p=>all||p.brand===areaScope||p.brand==='공통');
+  const cur=$('mcd_page').value;
+  $('mcd_page').innerHTML=(pages.length?pages:META_PAGES).map(p=>_opt(p.id,p.brand==='공통'?p.name+' · 공용':p.name)).join('');
+  if(cur&&[...$('mcd_page').options].some(o=>o.value===cur))$('mcd_page').value=cur;
+  const igs=META_IG.filter(g=>g.brand===areaScope||g.brand==='공통');
+  $('mcd_ig').innerHTML=igs.map(g=>_opt(g.id,'@'+g.user)).join('')+_opt('','FB페이지 사용 (IG 게시 안 함)');
+}
+function mcdSetFmt(v,silent){ mcdFmt=v; document.querySelectorAll('#mcd_fmt button').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); mcdRenderAssets(); if(!silent)mcdPreview(); }
+function mcdSetSrc(v,silent){ mcdSrc=v; document.querySelectorAll('#mcd_src button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  const reuse=v==='reuse'; if($('mcd_reuseWrap'))$('mcd_reuseWrap').style.display=reuse?'':'none'; if($('mcd_manualWrap'))$('mcd_manualWrap').style.display=reuse?'none':'';
+  if($('mcd_manualLbl'))$('mcd_manualLbl').textContent=(v==='story')?'기존 게시물 ID (object_story_id · "pageID_postID")':'이미지 해시 (image_hash)';
+  if(!silent)mcdPreview(); }
+function mcdRenderAssets(){
+  if(!document.getElementById('mcd_assets'))return;
+  if(mcdFmt==='CAROUSEL'){ $('mcd_assets').innerHTML='<div class="hint" style="grid-column:1/-1">카탈로그 캐러셀은 제품세트(product_set)에서 자동 구성됩니다. 별도 에셋 선택은 필요 없습니다.</div>'; return; }
+  const q=($('mcd_assetSearch').value||'').toLowerCase();
+  const list=META_CREATIVES.filter(c=>c.type===mcdFmt).filter(c=>c.brand===areaScope||c.brand==='공통').filter(c=>!q||c.name.toLowerCase().includes(q));
+  $('mcd_assets').innerHTML=list.length?list.map(c=>`<div class="mcd-asset ${mcdSel===c.id?'on':''}" onclick="mcdPickAsset('${c.id}')"><div class="tag">${c.type==='VIDEO'?'VD':'IMG'}</div><div class="th">${c.type==='VIDEO'?'▶':'🖼'}</div><div class="nm">${esc(c.name)}</div></div>`).join(''):'<div class="hint" style="grid-column:1/-1">해당 포맷의 소재 없음 (검색어/포맷 변경)</div>';
+}
+function mcdPickAsset(id){ mcdSel=(mcdSel===id?null:id); const c=META_CREATIVES.find(x=>x.id===id);
+  if(c&&mcdSel){ if(!($('mcd_body').value||'').trim())$('mcd_body').value=c.body||''; if(!($('mcd_headline').value||'').trim())$('mcd_headline').value=c.title||''; if(c.cta)$('mcd_cta').value=c.cta; }
+  mcdRenderAssets(); mcdPreview(); }
+function mcdSync(){
+  if(!document.getElementById('mcd_autoname'))return;
+  const a=DB.archive.find(x=>x.id===$('mcd_creative').value);
+  $('mcd_autoname').textContent=a?a.name:'(아카이브 소재 선택)';
+  $('mcd_utm').textContent=(a&&a.utm)?a.utm:'(UTM 없음)';
+  if(a){ const set=DB.sets.find(x=>x.name===a.setName); const landing=set?(set.landing||''):''; if(landing&&!($('mcd_landing').value||'').trim())$('mcd_landing').value=landing; }
+  const adsetName=($('mcd_adset').selectedOptions[0]||{}).textContent||'(광고세트 미선택)';
+  $('mcd_ctxbar').innerHTML=`<span class="hint">세팅 대상</span> <span class="chip">광고세트 <b>${esc(adsetName)}</b></span>`+(a?` <span class="chip">소재 <b>${esc(a.name.length>30?a.name.slice(0,30)+'…':a.name)}</b></span>`:'');
+  mcdPreview();
+}
+function mcdUrlTags(){ const a=DB.archive.find(x=>x.id===$('mcd_creative').value); if(a&&a.utm&&a.utm.indexOf('?')>=0)return a.utm.slice(a.utm.indexOf('?')+1); return ''; }
+function mcdPreview(){
+  if(!document.getElementById('mcd_prev'))return;
+  const pageName=($('mcd_page').selectedOptions[0]||{}).textContent||'페이지';
+  const igOpt=$('mcd_ig').selectedOptions[0]; const ig=(igOpt&&igOpt.value)?igOpt.textContent:'';
+  const body=esc($('mcd_body').value||'광고 카피가 여기에 표시됩니다');
+  const head=esc($('mcd_headline').value||'헤드라인');
+  const desc=esc($('mcd_desc').value||'');
+  const ctaLbl=(CTA_OPTS.find(c=>c[0]===$('mcd_cta').value)||['','더 알아보기'])[1];
+  let host=($('mcd_landing').value||'LANDING'); try{ host=new URL(host.match(/^https?:/)?host:'https://'+host).host.toUpperCase(); }catch(e){ host=host.toUpperCase(); }
+  const mediaIcon=mcdFmt==='VIDEO'?'▶ 영상 소재':(mcdFmt==='CAROUSEL'?'🛍 카탈로그 캐러셀':'🖼 이미지 소재');
+  $('mcd_prev').innerHTML=`<div class="pt"><div class="av"></div><div><div class="nm">${esc(pageName)}</div><div class="sp">Sponsored${ig?' · IG: '+esc(ig.replace('@','')):''}</div></div></div><div class="bd">${body}</div><div class="md">${mediaIcon}</div><div class="ct"><div class="lk">${esc(host)}<br><b>${head}</b>${desc?'<br>'+desc:''}</div><div class="bt">${esc(ctaLbl)}</div></div>`;
 }
 function mcAutoName(){ if(!$('mcc_product'))return; const p=$('mcc_product').value,sc=$('mcc_scheme').value,g=$('mcc_goal').value,bd=($('mcc_bid')||{}).value||'',tm=($('mcc_tam')||{}).value||'',num=(($('mcc_num')||{}).value||'').trim();
   let nm=`FB_${brandOf(p)}_${schemeKr(sc)}_${goalKr(g)}`; if(bd)nm+=`_${bidKr(bd)}`; if(tm)nm+=`_${tamKr(tm)}`; if(num)nm+=`_${num}`;
@@ -1690,16 +1835,45 @@ function mcPreviewAdsetBatch(){
   $('mca_out').innerHTML=`<div class="panel" style="margin-top:14px"><div style="font-size:11px;color:var(--text3);margin-bottom:4px">대상 캠페인: ${esc(campName)} · 광고세트 ${sets.length}개 일괄</div><div class="sub-h" style="color:var(--accent2)">POST /act_{id}/adsets ×${sets.length}</div>${blocks}${mcGapBox(gaps)}</div>`;
   toast(`광고세트 ${sets.length}개 일괄 미리보기 (실제 생성 아님)`);
 }
+function mcdCreativeSpec(){
+  const a=DB.archive.find(x=>x.id===$('mcd_creative').value);
+  const pageId=$('mcd_page').value, landing=($('mcd_landing').value||'').trim(), urlTags=mcdUrlTags();
+  const body=($('mcd_body').value||'').trim(), head=($('mcd_headline').value||'').trim(), desc=($('mcd_desc').value||'').trim(), cta=$('mcd_cta').value;
+  const igOpt=$('mcd_ig').selectedOptions[0], igId=igOpt?igOpt.value:'';
+  if(mcdSrc==='reuse') return {creative_id:mcdSel||'<재사용 소재 미선택>'};
+  if(mcdSrc==='story'){ const c={name:a?a.name:'creative', object_story_id:(($('mcd_manualId').value||'').trim()||'<게시물 ID 미입력>')}; if(urlTags)c.url_tags=urlTags; return c; }
+  const link={ link:landing||'<랜딩 미입력>', message:body||'<카피 미입력>', image_hash:(($('mcd_manualId').value||'').trim()||'<이미지 해시 미입력>'), call_to_action:{type:cta,value:{link:landing||'<랜딩>'}} };
+  if(head)link.name=head; if(desc)link.description=desc;
+  const c={ name:a?a.name:'creative', object_story_spec:{ page_id:pageId||'<페이지 미입력>', link_data:link } };
+  if(igId)c.object_story_spec.instagram_actor_id=igId;
+  if(urlTags)c.url_tags=urlTags;
+  return c;
+}
+function mcdGaps(){
+  const g=[]; if(!$('mcd_adset').value)g.push('대상 광고세트 미선택'); if(!$('mcd_page').value)g.push('Facebook 페이지 미선택');
+  if(mcdSrc==='reuse'&&!mcdSel)g.push('재사용할 소재 미선택');
+  if(mcdSrc==='story'&&!($('mcd_manualId').value||'').trim())g.push('기존 게시물 ID 미입력');
+  if(mcdSrc==='hash'){ if(!($('mcd_manualId').value||'').trim())g.push('이미지 해시 미입력'); if(!($('mcd_body').value||'').trim())g.push('광고 카피(message) 미입력'); if(!($('mcd_landing').value||'').trim())g.push('랜딩 URL 미입력'); }
+  return g;
+}
 function mcPreviewAd(){
   const adsetId=$('mcd_adset').value, adsetName=($('mcd_adset').selectedOptions[0]||{}).textContent||'';
   const a=DB.archive.find(x=>x.id===$('mcd_creative').value);
-  if(!a){toast('소재를 선택하세요');return;}
-  const set=DB.sets.find(x=>x.name===a.setName); const landing=set?set.landing:'';
-  let urlTags=''; if(a.utm&&a.utm.indexOf('?')>=0) urlTags=a.utm.slice(a.utm.indexOf('?')+1);
-  const creative={ name:a.name, object_story_spec:{ page_id:'<페이지 미입력>', link_data:{ link:landing||'<랜딩 미입력>', message:'<광고 카피 미입력>', image_hash:'<이미지 에셋 미업로드>' } }, url_tags:urlTags||'<UTM 없음>' };
-  const ad={ name:a.name, adset_id:adsetId||'<대상 광고세트 미선택>', creative:{creative_id:'<위 adcreative 생성 결과 ID>'}, status:'PAUSED' };
-  const gaps=[]; if(!adsetId)gaps.push('대상 광고세트 미선택'); gaps.push('페이지 ID 미입력','이미지/영상 에셋 업로드 필요(Phase 3)','광고 카피(message) 미입력'); if(!landing)gaps.push('랜딩 URL 없음');
-  $('mcd_out').innerHTML=`<div class="panel" style="margin-top:14px"><div style="font-size:11px;color:var(--text3);margin-bottom:4px">대상 광고세트: ${esc(adsetName)}</div><div class="sub-h" style="color:var(--accent2)">① 크리에이티브 — POST /act_{id}/adcreatives</div>${mcJson(creative)}<div class="sub-h" style="color:var(--accent2);margin-top:10px">② 광고 — POST /act_{id}/ads</div>${mcJson(ad)}${mcGapBox(gaps)}</div>`;
+  const creative=mcdCreativeSpec();
+  const ad={ name:a?a.name:'<소재명>', adset_id:adsetId||'<대상 광고세트 미선택>', creative: mcdSrc==='reuse'?creative:{creative_id:'<위 adcreative 생성 결과 ID>'}, status:'PAUSED' };
+  const gaps=mcdGaps();
+  let body=`<div class="panel" style="margin-top:14px"><div style="font-size:11px;color:var(--text3);margin-bottom:4px">대상 광고세트: ${esc(adsetName)} · 에셋소스: <b>${mcdSrc}</b> · 포맷: <b>${mcdFmt}</b></div>`;
+  if(mcdSrc==='reuse'){ body+=`<div class="sub-h" style="color:var(--accent2)">광고 — POST /act_{id}/ads (기존 creative_id 재사용)</div>${mcJson(ad)}`; }
+  else { body+=`<div class="sub-h" style="color:var(--accent2)">① 크리에이티브 — POST /act_{id}/adcreatives</div>${mcJson(creative)}<div class="sub-h" style="color:var(--accent2);margin-top:10px">② 광고 — POST /act_{id}/ads</div>${mcJson(ad)}`; }
+  body+=`${mcGapBox(gaps)}</div>`;
+  $('mcd_out').innerHTML=body;
+}
+function mcGenerateAd(){
+  const gaps=mcdGaps();
+  mcPreviewAd();
+  if(gaps.length){ toast('보완 필요: '+gaps[0]); return; }
+  $('mcd_out').insertAdjacentHTML('afterbegin',`<div class="notice" style="margin-top:14px;border-color:#2a7a4a;background:var(--greenbg);color:#bdf5cf"><b>✅ 생성 준비 완료 (PAUSED)</b><br>아래 페이로드로 광고가 생성됩니다. 실제 생성은 연결된 Meta 도구로 실행하며, 생성물은 항상 <b>PAUSED</b> 상태입니다.</div>`);
+  toast('생성 페이로드 준비 완료 (PAUSED)');
 }
 function exportArchive(){
   if(!DB.archive.length){toast('아카이브가 비어있습니다');return;}
