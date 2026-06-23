@@ -1967,4 +1967,72 @@ function mcdRenderDiag(){
   const head=ok
     ? `<div style="background:var(--greenbg);border:1px solid #2a7a4a;border-radius:8px;padding:11px 13px;color:#bdf5cf;font-weight:700;margin-bottom:10px">✅ 문제 없음 — 바로 생성할 수 있어요<div style="font-weight:400;font-size:11px;margin-top:3px;color:#9fe0b4">생성 시 항상 PAUSED(꺼짐)로 만들어지며, 사람이 메타에서 직접 켜야 노출됩니다.</div></div>`
     : `<div style="background:#2a2410;border:1px solid #5a4a16;border-radius:8px;padding:11px 13px;color:#fbbf24;font-weight:700;margin-bottom:10px">⚠️ 확인 필요 — 아래 ${bad.length}개 항목을 채워주세요</div>`;
-  const rows=it.map(x=>`<div style="display:flex;gap:9px;align-items:flex-start;padding:7px 2px;border-bottom:1px solid var(--border)"><div style="font-size:14px;
+  const rows=it.map(x=>`<div style="display:flex;gap:9px;align-items:flex-start;padding:7px 2px;border-bottom:1px solid var(--border)"><div style="font-size:14px;line-height:1.2">${x.ok?'✅':'⚠️'}</div><div><div style="font-weight:600;font-size:12px">${esc(x.label)}</div><div style="font-size:11px;color:${x.ok?'var(--text3)':'#fbbf24'}">${esc(x.detail)}</div></div></div>`).join('');
+  $('mcd_out').innerHTML=`<div class="panel" style="margin-top:14px"><div class="panel-h">상태 진단 <span class="hint">생성 전 자동 점검</span></div>${head}<div class="panel" style="padding:4px 12px;margin:0">${rows}</div>${mcdPayloadJson()}</div>`;
+  return ok;
+}
+function mcPreviewAd(){ mcdRenderDiag(); }
+function mcGenerateAd(){ const ok=mcdRenderDiag(); toast(ok?'문제 없음 — 생성 준비 완료 (PAUSED)':'확인 필요한 항목이 있어요'); }
+function exportArchive(){
+  if(!DB.archive.length){toast('아카이브가 비어있습니다');return;}
+  const rows=[['생성시각','브랜드','광고세트명','자동소재명','UTM URL','담당자','검증','완료']];
+  DB.archive.forEach(a=>rows.push([a.ts,a.brand,a.setName,a.name,a.utm,a.manager,a.status,a.done?'완료':'']));
+  downloadCSV(rows,'아카이브');
+}
+
+/* ════════════════════════ TAB4: MAP ════════════════════════ */
+function renderMap(){
+  $('m_products').innerHTML=M().products.map((p,i)=>`<tr><td class="mono">${esc(p.code)}</td><td><input value="${esc(p.brand)}" onchange="M().products[${i}].brand=this.value;save()"></td><td><select onchange="M().products[${i}].area=this.value;save();refreshAll()">${AREAS.map(a=>`<option ${(p.area||'클룹')===a?'selected':''}>${esc(a)}</option>`).join('')}</select></td><td><button class="iconbtn" onclick="rmArr('products',${i})">🗑</button></td></tr>`).join('');
+  $('m_media').innerHTML=M().media.map((m,i)=>`<tr><td class="mono">${esc(m.code)}</td><td><input class="mono" value="${esc(m.source)}" onchange="M().media[${i}].source=this.value;save()"></td><td><input class="mono" value="${esc(m.medium)}" onchange="M().media[${i}].medium=this.value;save()"></td><td><button class="iconbtn" onclick="rmArr('media',${i})">🗑</button></td></tr>`).join('');
+  $('m_landing').innerHTML=Object.entries(M().landing).map(([k,u])=>{const[p,s]=k.split('+');return `<tr><td class="mono">${esc(p)}</td><td class="mono">${esc(s)}</td><td><input value="${esc(u)}" onchange="M().landing['${esc(k)}']=this.value;save()"></td><td><button class="iconbtn" onclick="rmLanding('${esc(k)}')">🗑</button></td></tr>`;}).join('');
+  $('m_composite').innerHTML=M().composite.map((c,i)=>`<tr><td>${esc(c.goal)} (${esc(goalKr(c.goal))})</td><td>${esc(c.bid)}</td><td><span class="bdg bdg-dcm">${esc(c.code)}</span></td><td><button class="iconbtn" onclick="rmArr('composite',${i})">🗑</button></td></tr>`).join('');
+  $('m_firstcat').innerHTML=M().firstcat.map((f,i)=>`<tr><td class="mono">${esc(f.src)}</td><td><input value="${esc(f.kr)}" onchange="M().firstcat[${i}].kr=this.value;save()"></td><td><span class="bdg bdg-${f.code.toLowerCase()}">${esc(f.code)}</span></td><td><button class="iconbtn" onclick="rmArr('firstcat',${i})">🗑</button></td></tr>`).join('');
+  $('m_tams').innerHTML=M().tams.map((t,i)=>`<tr><td class="mono">${esc(t.code)}</td><td><input value="${esc(t.kr||'')}" placeholder="한글 의미" onchange="M().tams[${i}].kr=this.value;save()"></td><td><button class="iconbtn" onclick="rmArr('tams',${i})">🗑</button></td></tr>`).join('');
+  $('m_schemes').innerHTML=M().schemes.map((s,i)=>`<span class="chip">${esc(s.code)} <span style="color:var(--text3)">${esc(s.kr)}</span><span class="x" onclick="rmArr('schemes',${i})">✕</span></span>`).join('');
+  $('m_formats').innerHTML=M().formats.map((f,i)=>`<span class="chip">${esc(f.code)} <span style="color:var(--text3)">${esc(f.label)}</span><span class="x" onclick="rmArr('formats',${i})">✕</span></span>`).join('');
+  $('m_msgpool').innerHTML=M().msgpool.map((m,i)=>`<tr><td class="mono">${esc(m.code)}</td><td><input value="${esc(m.kr||'')}" placeholder="한글 의미" onchange="M().msgpool[${i}].kr=this.value;save()"></td><td><button class="iconbtn" onclick="rmArr('msgpool',${i})">🗑</button></td></tr>`).join('');
+  const gsel=$('mc_goal'); if(gsel) gsel.innerHTML=M().goals.map(g=>`<option value="${g.code}">${g.code} (${esc(g.kr)})</option>`).join('');
+  const bsel=$('mc_bid'); if(bsel) bsel.innerHTML=M().bids.map(b=>`<option value="${b.code}">${b.code} (${esc(b.kr)})</option>`).join('');
+  mapSub(mapSubActive);
+}
+function rmArr(key,i){M()[key].splice(i,1);save();refreshAll();}
+function rmLanding(k){delete M().landing[k];save();refreshAll();}
+function addProduct(){const c=$('mp_code').value.trim().toUpperCase(),b=$('mp_brand').value.trim();if(!c||!b)return;M().products.push({code:c,brand:b,area:($('mp_area')?$('mp_area').value:'클룹')});$('mp_code').value='';$('mp_brand').value='';save();refreshAll();}
+function addMedia(){const c=$('mm_code').value.trim(),s=$('mm_src').value.trim(),m=$('mm_med').value.trim();if(!c||!s||!m)return;M().media.push({code:c,channel:c,source:s,medium:m});$('mm_code').value='';$('mm_src').value='';$('mm_med').value='';save();refreshAll();}
+function addLanding(){const p=$('ml_prod').value.trim().toUpperCase(),s=$('ml_scheme').value.trim().toUpperCase(),u=$('ml_url').value.trim();if(!p||!s||!u)return;M().landing[p+'+'+s]=u;$('ml_prod').value='';$('ml_scheme').value='';$('ml_url').value='';save();refreshAll();}
+function addMapTam(){const v=$('mt_new').value.trim().toUpperCase();if(!v||M().tams.some(t=>t.code===v))return;M().tams.push({code:v,kr:($('mt_kr')?$('mt_kr').value.trim():'')});$('mt_new').value='';if($('mt_kr'))$('mt_kr').value='';save();refreshAll();}
+function addScheme(){const v=$('ms_new').value.trim().toUpperCase();if(!v||M().schemes.some(s=>s.code===v))return;M().schemes.push({code:v,kr:v});$('ms_new').value='';save();refreshAll();}
+function addFormat(){const v=$('mf_new').value.trim().toUpperCase();if(!v||M().formats.some(f=>f.code===v))return;M().formats.push({code:v,label:v});$('mf_new').value='';save();refreshAll();}
+function addMsg(){
+  const v=$('mmsg_new').value.trim(); if(!v)return;
+  const kr=($('mmsg_kr')?$('mmsg_kr').value.trim():'');
+  if(M().msgpool.some(m=>m.code.toLowerCase()===v.toLowerCase())){ alert('이미 존재하는 메시지 코드입니다: '+v+'\n(중복 코드는 추가되지 않습니다)'); return; }
+  if(kr && M().msgpool.some(m=>(m.kr||'').trim()===kr)){ alert('이미 존재하는 한글 의미입니다: '+kr+'\n(중복 의미는 추가되지 않습니다)'); return; }
+  M().msgpool.push({code:v,kr});$('mmsg_new').value='';if($('mmsg_kr'))$('mmsg_kr').value='';save();refreshAll();toast('메시지 추가됨: '+v);
+}
+function addComposite(){const g=$('mc_goal').value,b=$('mc_bid').value,c=$('mc_code').value.trim().toUpperCase();if(!g||!b||!c)return;if(M().composite.some(x=>x.goal===g&&x.bid===b)){toast('이미 있는 목표+입찰 조합');return;}M().composite.push({goal:g,bid:b,code:c});$('mc_code').value='';save();refreshAll();}
+function addFirstcat(){const s=$('mfc_src').value.trim(),k=$('mfc_kr').value.trim(),c=$('mfc_code').value.trim().toUpperCase();if(!s||!c)return;M().firstcat.push({src:s,kr:k,code:c});$('mfc_src').value='';$('mfc_kr').value='';$('mfc_code').value='';save();refreshAll();}
+function refreshAll(){fillBuilderSelects();$('b_firstcat').value='regular';renderBuilderChips();buildPreview();renderMap();renderCreativeRows();renderCreativeCampaigns();renderCreativeSets();}
+
+/* ════════════════════════ DATA MGMT ════════════════════════ */
+function downloadCSV(rows,name){
+  const csv=rows.map(r=>r.map(c=>`"${String(c==null?'':c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`${name}_${new Date().toISOString().slice(0,10)}.csv`;a.click();
+}
+function exportAll(){
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`cloop_백업_${new Date().toISOString().slice(0,10)}.json`;a.click();
+}
+function importAll(e){
+  const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const j=JSON.parse(r.result);if(!j.maps)throw 0;if(!confirm('백업으로 전체 데이터를 교체합니다.\\n(Firebase 연결 시 팀 전체에 반영됩니다) 계속할까요?'))return;DB=j;save();go('build');refreshAll();toast('백업이 복원되었습니다');}catch(err){toast('잘못된 백업 파일입니다');}};
+  r.readAsText(f);
+}
+function resetSeed(){if(!confirm('매핑키를 기본값으로 초기화합니다. 생성된 세트·아카이브는 유지됩니다.'))return;DB.maps=deepClone(SEED);save();refreshAll();toast('매핑키가 초기화되었습니다');}
+
+window.addEventListener('load',init);
+</script>
+</body>
+</html>
