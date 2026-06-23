@@ -91,7 +91,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .mcd-phone .nm{font-size:12px;font-weight:600;color:#fff}.mcd-phone .sp{font-size:10px;color:#9aa}
 .mcd-phone .bd{font-size:11.5px;margin:6px 2px;color:#dfe7f0;white-space:pre-wrap}
 .mcd-phone .md{height:180px;border-radius:8px;background:linear-gradient(135deg,#2a3a5c,#16203a);display:flex;align-items:center;justify-content:center;color:#7e8ba0;font-size:13px;background-size:cover;background-position:center}
-.mcd-phone video.md{width:100%;object-fit:cover;background:#000;display:block}
+.mcd-phone video.md{width:100%;height:auto;max-height:360px;object-fit:contain;background:#000;display:block;border-radius:8px}
 .mcd-phone .ct{margin-top:8px;display:flex;justify-content:space-between;align-items:center;background:#11161f;border:1px solid var(--border);border-radius:8px;padding:8px 10px}
 .mcd-phone .ct .lk{font-size:10.5px;color:#9aa}.mcd-phone .ct .lk b{color:#cdd;font-weight:500}
 .mcd-phone .ct .bt{background:#e4e6eb;color:#111;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:600;white-space:nowrap}
@@ -495,7 +495,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
               </div>
               <div class="field"><label>소재 (생성 아카이브 → 이름·UTM)</label><select id="mcd_creative" onchange="mcdSync()"></select></div>
               <div class="field"><label>자동 소재명</label><div id="mcd_autoname" class="mono mcd-auto"></div></div>
-              <div class="field"><label>UTM (광고 링크에 url_tags로 주입)</label><div id="mcd_utm" class="mono mcd-auto"></div></div>
+              <div class="field"><label>UTM (광고 링크에 url_tags로 주입)</label><div id="mcd_utm" class="mono mcd-auto"></div><button class="btn btn-xs" style="margin-top:6px" onclick="mcdApplyLanding()">⬇ 이 URL을 랜딩 URL에 적용</button></div>
             </div>
             <!-- B. 대표 계정 -->
             <div class="panel">
@@ -1836,6 +1836,7 @@ function mcdSync(){
   mcdRenderAssets(); mcdPreview();
 }
 function mcdUrlTags(){ const a=DB.archive.find(x=>x.id===$('mcd_creative').value); if(a&&a.utm&&a.utm.indexOf('?')>=0)return a.utm.slice(a.utm.indexOf('?')+1); return ''; }
+function mcdApplyLanding(){ const a=DB.archive.find(x=>x.id===$('mcd_creative').value); if(!a||!a.utm){toast('적용할 UTM URL이 없습니다');return;} const u=a.utm; const m=u.search(/[?&]utm_/); const base=m>=0?u.slice(0,m):u; if($('mcd_landing'))$('mcd_landing').value=base; mcdPreview(); if(typeof mcPreviewAd==='function')mcPreviewAd(); toast('랜딩 URL에 적용됨 · UTM은 url_tags로 자동 주입됩니다'); }
 function mcdPreview(){
   if(!document.getElementById('mcd_prev'))return;
   const pageName=($('mcd_page').selectedOptions[0]||{}).textContent||'페이지';
@@ -1849,7 +1850,7 @@ function mcdPreview(){
   const sa=mcdSel?mcdSelAsset():null;
   let md;
   if(sa&&sa.kind==='video'&&sa.source) md=`<video class="md" controls playsinline preload="metadata" poster="${esc(sa.thumb||'')}" src="${esc(sa.source)}"></video>`;
-  else if(sa&&sa.thumb) md=`<div class="md" style="background-image:url('${String(sa.thumb).replace(/'/g,'%27')}')"></div>`;
+  else if(sa&&sa.thumb) md=`<img src="${esc(sa.thumb)}" style="width:100%;height:auto;max-height:360px;object-fit:contain;display:block;border-radius:8px;background:#0b0f16">`;
   else md=`<div class="md">${mediaIcon}</div>`;
   $('mcd_prev').innerHTML=`<div class="pt"><div class="av"></div><div><div class="nm">${esc(pageName)}</div><div class="sp">Sponsored${ig?' · IG: '+esc(ig.replace('@','')):''}</div></div></div><div class="bd">${body}</div>${md}<div class="ct"><div class="lk">${esc(host)}<br><b>${head}</b>${desc?'<br>'+desc:''}</div><div class="bt">${esc(ctaLbl)}</div></div>`;
 }
