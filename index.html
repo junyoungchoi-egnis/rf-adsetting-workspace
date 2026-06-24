@@ -6,6 +6,7 @@
 <title>CLOOP·SPRINT 광고 네이밍 워크스페이스</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <style>
 :root{
   --bg:#0f1117; --surface:#171a23; --surface2:#1e2230; --surface3:#2a3046;
@@ -825,6 +826,13 @@ let DBREF=null, _syncStarted=false;
 try{ firebase.initializeApp(firebaseConfig); DBREF=firebase.database().ref('v2'); }
 catch(e){ console.warn('Firebase 초기화 실패 — 로컬 모드로 동작합니다.', e); }
 
+let mcUser=null;
+function mcLogActivity(action,detail){ try{ if(!window.firebase||!firebase.database)return; var who=mcUser?(mcUser.email||mcUser.displayName||'사용자'):'(비로그인)'; firebase.database().ref('v2/activity').push({who:who,action:action,detail:detail||'',at:new Date().toISOString()}); }catch(e){} }
+function mcSignIn(){ try{ var p=new firebase.auth.GoogleAuthProvider(); firebase.auth().signInWithPopup(p).then(function(){ mcLogActivity('로그인',''); }).catch(function(e){ if(window.toast)toast('로그인 설정 준비 중입니다(콘솔에서 구글 로그인 활성화 필요)'); }); }catch(e){ if(window.toast)toast('로그인 기능 준비 중'); } }
+function mcSignOut(){ try{ mcLogActivity('로그아웃',''); firebase.auth().signOut(); }catch(e){} }
+function mcRenderAuthChip(){ try{ var el=document.getElementById('mcAuthChip'); if(!el){ el=document.createElement('div'); el.id='mcAuthChip'; el.style.cssText='position:fixed;top:10px;right:14px;z-index:99999;font-size:12px;display:flex;gap:6px;align-items:center;background:#161b22;border:1px solid #2a3340;border-radius:999px;padding:5px 12px;color:#cfe0ff;box-shadow:0 2px 8px rgba(0,0,0,.4)'; document.body.appendChild(el); } if(mcUser){ el.innerHTML='\uD83D\uDC64 '+(mcUser.email||mcUser.displayName||'\uC0AC\uC6A9\uC790')+' <span id="mcLogout" style="cursor:pointer;color:#8b97a7;margin-left:4px">\uB85C\uADF8\uC544\uC6C3</span>'; var lo=document.getElementById('mcLogout'); if(lo)lo.onclick=mcSignOut; } else { el.innerHTML='<span id="mcLogin" style="cursor:pointer;color:#4f8cff;font-weight:600">\uAD6C\uAE00 \uB85C\uADF8\uC778</span>'; var li=document.getElementById('mcLogin'); if(li)li.onclick=mcSignIn; } }catch(e){} }
+function mcAuthInit(){ try{ if(window.firebase&&firebase.auth){ firebase.auth().onAuthStateChanged(function(u){ mcUser=u; mcRenderAuthChip(); }); } mcRenderAuthChip(); }catch(e){ try{mcRenderAuthChip();}catch(_){} } }
+window.addEventListener('load', mcAuthInit);
 function setSyncUI(state){ // 'on' | 'off' | 'local'
   const dot=document.getElementById('syncDot'), lab=document.getElementById('syncLabel'), st=document.getElementById('syncState');
   if(!dot) return;
