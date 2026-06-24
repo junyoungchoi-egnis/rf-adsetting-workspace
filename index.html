@@ -814,13 +814,21 @@ function mapSub(name){
      새 프로젝트 → 웹앱 등록 → Realtime Database 생성 후, 이 config 만 교체하세요.
    ▸ 데이터는 모두 /v2 경로에 저장됩니다(옛 앱 데이터와 분리). */
 const firebaseConfig = {
-  apiKey: "AIzaSyCXbz8grP-KAbaGfoNKjH6sAdzcwShLJcM",
-  authDomain: "utm-builder-cloop-260617.firebaseapp.com",
-  databaseURL: "https://utm-builder-cloop-260617-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "utm-builder-cloop-260617",
-  storageBucket: "utm-builder-cloop-260617.firebasestorage.app",
-  messagingSenderId: "943544286367",
-  appId: "1:943544286367:web:11756ca67a7120559e76aa"
+
+  apiKey: "AIzaSyCJtXrfij_0BZ5_L6zzd9EXIjc9mdYiomc",
+
+  authDomain: "cloop-sprint-adops.firebaseapp.com",
+
+  databaseURL: "https://cloop-sprint-adops-default-rtdb.asia-southeast1.firebasedatabase.app",
+
+  projectId: "cloop-sprint-adops",
+
+  storageBucket: "cloop-sprint-adops.firebasestorage.app",
+
+  messagingSenderId: "433952767581",
+
+  appId: "1:433952767581:web:610a3f56995a32f7f517b4"
+
 };
 let DBREF=null, _syncStarted=false;
 try{ firebase.initializeApp(firebaseConfig); DBREF=firebase.database().ref('v2'); }
