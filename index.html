@@ -78,10 +78,10 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .iconbtn.memo-on{color:var(--accent2);opacity:1}
 .mc-json{background:#0d1424;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:var(--mono,monospace);font-size:11.5px;line-height:1.5;color:#bcd;white-space:pre-wrap;overflow-x:auto;margin:0}
 .mcd-auto{background:#0d1424;border:1px dashed #33405a;border-radius:8px;padding:8px 11px;font-size:11.5px;color:#9fc4ff;word-break:break-all;min-height:18px}
-.mcd-assetgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-height:200px;overflow:auto;padding:2px}
+.mcd-assetgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:340px;overflow:auto;padding:2px}
 .mcd-asset{border:1px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;background:var(--surface2);position:relative}
 .mcd-asset.on{outline:2px solid var(--accent)}
-.mcd-asset .th{height:64px;background:linear-gradient(135deg,#26324a,#1a2233);display:flex;align-items:center;justify-content:center;color:#6b7a90;font-size:20px;overflow:hidden}
+.mcd-asset .th{height:104px;background:linear-gradient(135deg,#26324a,#1a2233);display:flex;align-items:center;justify-content:center;color:#6b7a90;font-size:24px;overflow:hidden}
 .mcd-asset .th img{width:100%;height:100%;object-fit:cover;display:block}
 .mcd-asset .nm{font-size:9.5px;padding:4px 5px;color:#aeb9c7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mcd-asset .tag{position:absolute;top:4px;left:4px;background:#000a;border-radius:5px;padding:1px 5px;font-size:9px;color:#cfe0ff}
@@ -498,7 +498,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
               <div class="panel-h">A. 소재명 · UTM <span class="bdg bdg-ok">규칙 자동생성</span></div>
               <div class="grid g2">
                 <div class="field"><label>① 대상 캠페인 (Meta 라이브) <label style="display:inline;font-weight:400;color:var(--text3)"><input type="checkbox" id="mcd_campActive" checked onchange="mcdRenderCamps()" style="width:auto;vertical-align:middle"> 활성만</label></label><input id="mcd_campSearch" placeholder="🔎 캠페인 검색" oninput="mcdRenderCamps()" style="margin-bottom:6px"><select id="mcd_camp" onchange="mcdRenderAdsets();mcdSync()"></select></div>
-                <div class="field"><label>② 대상 광고세트 <label style="display:inline;font-weight:400;color:var(--text3)"><input type="checkbox" id="mcd_adsetActive" checked onchange="mcdRenderAdsets()" style="width:auto;vertical-align:middle"> 활성만</label></label><input id="mcd_adsetSearch" placeholder="🔎 광고세트 검색" oninput="mcdRenderAdsets()" style="margin-bottom:6px"><select id="mcd_adset" onchange="mcdSync()"></select></div>
+                <div class="field"><label>② 대상 광고세트 <label style="display:inline;font-weight:400;color:var(--text3)"><input type="checkbox" id="mcd_adsetActive" checked onchange="mcdRenderAdsets()" style="width:auto;vertical-align:middle"> 활성만</label></label><input id="mcd_adsetSearch" placeholder="🔎 광고세트 검색" oninput="mcdRenderAdsets()" style="margin-bottom:6px"><select id="mcd_adset" onchange="mcdSync()"></select><div id="mcd_adsetDecode" class="hint" style="margin-top:4px"></div></div>
               </div>
               <div class="field"><label>소재 (생성 아카이브 → 이름·UTM)</label><select id="mcd_creative" onchange="mcdSync()"></select></div>
               <div class="field"><label>자동 소재명</label><div id="mcd_autoname" class="mono mcd-auto"></div></div>
@@ -1775,8 +1775,8 @@ function mcdRenderProfiles(){
   const cur=$('mcd_page').value;
   $('mcd_page').innerHTML=(pages.length?pages:META_PAGES).map(p=>_opt(p.id,p.brand==='공통'?p.name+' · 공용':p.name)).join('');
   if(cur&&[...$('mcd_page').options].some(o=>o.value===cur))$('mcd_page').value=cur;
-  const igs=META_IG.filter(g=>g.brand===areaScope||g.brand==='공통');
-  $('mcd_ig').innerHTML=igs.map(g=>_opt(g.id,'@'+g.user)).join('')+_opt('','FB페이지 사용 (IG 게시 안 함)');
+  let igs; { const _act=(typeof mcdTargetAccount==='function')?mcdTargetAccount():''; const _A=(metaSnap&&metaSnap.assets)?metaSnap.assets:null; if(_A&&_act&&_A[_act]&&_A[_act].ig&&_A[_act].ig.length) igs=_A[_act].ig.map(g=>({id:g.id,user:g.username})); else igs=META_IG.filter(g=>g.brand===areaScope||g.brand==='공통'); }
+  const _curIg=$('mcd_ig')?$('mcd_ig').value:''; $('mcd_ig').innerHTML=igs.map(g=>_opt(g.id,'@'+g.user)).join('')+_opt('','FB페이지 사용 (IG 게시 안 함)'); if(_curIg&&[...$('mcd_ig').options].some(o=>o.value===_curIg))$('mcd_ig').value=_curIg;
 }
 function mcdSetFmt(v,silent){ mcdFmt=v; mcdSel=null; document.querySelectorAll('#mcd_fmt button').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); mcdRenderAssets(); if(!silent)mcdPreview(); }
 function mcdSetSrc(v,silent){ mcdSrc=v; document.querySelectorAll('#mcd_src button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
@@ -1812,8 +1812,9 @@ function mcdAssets(){
   const act=mcdTargetAccount();
   const A=(metaSnap&&metaSnap.assets)?metaSnap.assets:null;
   if(A&&act&&A[act]){
-    if(mcdFmt==='VIDEO') return (A[act].videos||[]).map(v=>({key:v.id,kind:'video',name:v.title||'(제목없음)',thumb:v.thumb||'',grid:v.thumb||'',source:v.source||'',video_id:v.id}));
-    return (A[act].images||[]).map(i=>({key:i.hash,kind:'image',name:i.name||'(이름없음)',thumb:i.full||i.thumb||'',grid:i.thumb||i.full||'',image_hash:i.hash}));
+    const _by=(x,y)=>String(y.ts||'').localeCompare(String(x.ts||''));
+    if(mcdFmt==='VIDEO') return (A[act].videos||[]).map(v=>({key:v.id,kind:'video',name:v.title||'(제목없음)',thumb:v.thumb||'',grid:v.thumb||'',source:v.source||'',video_id:v.id,ts:v.ts||''})).sort(_by);
+    return (A[act].images||[]).map(i=>({key:i.hash,kind:'image',name:i.name||'(이름없음)',thumb:i.full||i.thumb||'',grid:i.thumb||i.full||'',image_hash:i.hash,ts:i.ts||''})).sort(_by);
   }
   return (META_CREATIVES||[]).filter(c=>(c.brand===areaScope||c.brand==='공통')&&c.type===mcdFmt).map(c=>({key:c.id,kind:c.type==='VIDEO'?'video':'image',name:c.name,thumb:'',grid:'',video_id:c.video_id||'',image_hash:c.img||''}));
 }
@@ -1841,7 +1842,7 @@ function mcdSync(){
   const campName=($('mcd_camp').selectedOptions[0]||{}).textContent||'(캠페인 미선택)';
   const adsetName=($('mcd_adset').selectedOptions[0]||{}).textContent||'(광고세트 미선택)';
   $('mcd_ctxbar').innerHTML=`<span class="hint">세팅 대상</span> <span class="chip">캠페인 <b>${esc(campName)}</b></span> <span class="chip">광고세트 <b>${esc(adsetName)}</b></span>`+(a?` <span class="chip">소재 <b>${esc(a.name.length>30?a.name.slice(0,30)+'…':a.name)}</b></span>`:'');
-  mcdRenderAssets(); mcdPreview(); mcdFinalUrl();
+  if(typeof mcdRenderProfiles==='function')mcdRenderProfiles(); { const dEl=document.getElementById('mcd_adsetDecode'); if(dEl){ const nm=(($('mcd_adset').selectedOptions[0]||{}).textContent||'').replace(/ · 비활성$/,''); if(nm&&nm.indexOf('FB_')===0&&typeof parseLiveSet==='function'){ const p=parseLiveSet({adsetName:nm,adsetId:'_',campaignId:'_'}); const a2=[]; if(p){ if(p.media==='FB')a2.push('페이스북'); if(p.goal)a2.push(goalKr(p.goal)); if(p.bid)a2.push(bidKr(p.bid)); if(p.targeting)a2.push('타게팅 '+p.targeting); if(p.scheme)a2.push(schemeKr(p.scheme)); if(p.tam)a2.push(tamKr(p.tam)); } dEl.textContent=a2.length?('📖 '+a2.join(' · ')):''; } else dEl.textContent=''; } } mcdRenderAssets(); mcdPreview(); mcdFinalUrl();
 }
 function mcdUrlTags(){ const a=DB.archive.find(x=>x.id===$('mcd_creative').value); if(a&&a.utm&&a.utm.indexOf('?')>=0)return a.utm.slice(a.utm.indexOf('?')+1); return ''; }
 function mcdApplyLanding(){ const a=DB.archive.find(x=>x.id===$('mcd_creative').value); if(!a||!a.utm){toast('적용할 UTM URL이 없습니다');return;} const u=a.utm; const m=u.search(/[?&]utm_/); const base=m>=0?u.slice(0,m):u; if($('mcd_landing'))$('mcd_landing').value=base; mcdFinalUrl(); mcdPreview(); if(typeof mcPreviewAd==='function')mcPreviewAd(); toast('적용 완료 · 최종 추적 URL에 UTM이 결합되어 표시됩니다'); }
