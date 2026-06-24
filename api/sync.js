@@ -64,10 +64,10 @@ async function fetchCreatives(actId, token) {
   }));
 }
 async function fetchImages(actId, token) {
-  const fields = 'hash,name,url,url_128,permalink_url,width,height';
+  const fields = 'hash,name,url,url_128,permalink_url,width,height,created_time';
   const url = GRAPH + '/act_' + actId + '/adimages?fields=' + enc(fields) + '&limit=50&access_token=' + enc(token);
   const raw = await fetchOne(url, actId);
-  return raw.map(i => ({ hash: i.hash, name: i.name || '', thumb: i.url_128 || '', full: i.url || i.permalink_url || i.url_128 || '', w: i.width || 0, h: i.height || 0 }));
+  return raw.map(i => ({ hash: i.hash, name: i.name || '', thumb: i.url_128 || '', full: i.url || i.permalink_url || i.url_128 || '', w: i.width || 0, h: i.height || 0, ts: i.created_time || '' }));
 }
 async function fetchVideos(actId, token) {
   const fields = 'id,title,source,picture,thumbnails{uri,is_preferred},created_time';
@@ -79,8 +79,13 @@ async function fetchVideos(actId, token) {
       const pref = v.thumbnails.data.find(t => t.is_preferred) || v.thumbnails.data[0];
       thumb = pref ? pref.uri : '';
     }
-    return { id: v.id, title: v.title || '(제목없음)', thumb: thumb, source: v.source || '' };
+    return { id: v.id, title: v.title || '(제목없음)', thumb: thumb, source: v.source || '', ts: v.created_time || '' };
   });
+}
+async function fetchIgAccounts(actId, token) {
+  const url = GRAPH + '/act_' + actId + '/instagram_accounts?fields=id,username&limit=50&access_token=' + enc(token);
+  const raw = await fetchOne(url, actId);
+  return raw.map(g => ({ id: g.id, username: g.username || '(unknown)' }));
 }
 
 function aggregate(ads, adsetList) {
@@ -144,12 +149,13 @@ module.exports = async (req, res) => {
     }
     // 애셋: 전 계정 병렬 + 계정별/타입별 격리(하나 실패해도 전체는 진행). 각 1페이지만.
     await Promise.all(accounts.map(async (act) => {
-      const [creatives, images, videos] = await Promise.all([
+      const [creatives, images, videos, ig] = await Promise.all([
         fetchCreatives(act, token).catch(() => []),
         fetchImages(act, token).catch(() => []),
-        fetchVideos(act, token).catch(() => [])
+        fetchVideos(act, token).catch(() => []),
+        fetchIgAccounts(act, token).catch(() => [])
       ]);
-      assets[act] = { creatives: creatives, images: images, videos: videos };
+      assets[act] = { creatives: creatives, images: images, videos: videos, ig: ig };
     }));
 
     const adsets = aggregate(all, allAdsets);
