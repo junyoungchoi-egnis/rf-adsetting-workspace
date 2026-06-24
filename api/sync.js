@@ -50,13 +50,13 @@ async function fetchAllAdsets(actId, token) {
 
 // ── 애셋 라이브러리 ──
 async function fetchCreatives(actId, token) {
-  const fields = 'id,name,thumbnail_url,object_type,body,title,image_hash,video_id,object_story_id,effective_object_story_id,call_to_action_type,status';
+  const fields = 'id,name,thumbnail_url,image_url,object_type,body,title,image_hash,video_id,object_story_id,effective_object_story_id,call_to_action_type,status';
   const url = GRAPH + '/act_' + actId + '/adcreatives?fields=' + enc(fields) + '&limit=50&access_token=' + enc(token);
   const raw = await fetchOne(url, actId);
   return raw.map(c => ({
     id: c.id, name: c.name || '(이름없음)',
     type: c.video_id ? 'VIDEO' : 'IMAGE',
-    thumb: c.thumbnail_url || '',
+    thumb: c.thumbnail_url || '', full: c.image_url || '',
     body: c.body || '', title: c.title || '', cta: c.call_to_action_type || '',
     image_hash: c.image_hash || '', video_id: c.video_id || '',
     story: c.effective_object_story_id || c.object_story_id || '',
@@ -89,12 +89,12 @@ async function fetchIgAccounts(actId, token) {
 }
 // 세팅된 활성 광고(구조화된 광고 소재명 FB_... 기준 검색용) + 그 광고의 크리에이티브
 async function fetchActiveAds(actId, token) {
-  const cfields = 'id,body,title,call_to_action_type,image_hash,video_id,object_story_id,effective_object_story_id,thumbnail_url,object_type';
+  const cfields = 'id,body,title,call_to_action_type,image_hash,image_url,video_id,object_story_id,effective_object_story_id,thumbnail_url,object_type';
   const fields = 'name,effective_status,creative{' + cfields + '}';
   const filt = '[{"field":"effective_status","operator":"IN","value":["ACTIVE"]}]';
   const url = GRAPH + '/act_' + actId + '/ads?fields=' + enc(fields) + '&filtering=' + enc(filt) + '&limit=120&access_token=' + enc(token);
   const raw = await fetchOne(url, actId);
-  return raw.map(a => { const c = a.creative || {}; return { name: a.name || '(이름없음)', cid: c.id || '', type: c.video_id ? 'VIDEO' : 'IMAGE', thumb: c.thumbnail_url || '', body: c.body || '', title: c.title || '', cta: c.call_to_action_type || '', image_hash: c.image_hash || '', video_id: c.video_id || '', story: c.effective_object_story_id || c.object_story_id || '' }; });
+  return raw.map(a => { const c = a.creative || {}; return { name: a.name || '(이름없음)', cid: c.id || '', type: c.video_id ? 'VIDEO' : 'IMAGE', thumb: c.thumbnail_url || '', full: c.image_url || '', body: c.body || '', title: c.title || '', cta: c.call_to_action_type || '', image_hash: c.image_hash || '', video_id: c.video_id || '', story: c.effective_object_story_id || c.object_story_id || '' }; });
 }
 
 function aggregate(ads, adsetList) {
