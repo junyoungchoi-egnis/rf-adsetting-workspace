@@ -92,6 +92,13 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 .mcd-phone .bd{font-size:11.5px;margin:6px 2px;color:#dfe7f0;white-space:pre-wrap}
 .mcd-phone .md{height:180px;border-radius:8px;background:linear-gradient(135deg,#2a3a5c,#16203a);display:flex;align-items:center;justify-content:center;color:#7e8ba0;font-size:13px;background-size:cover;background-position:center}
 .mcd-phone video.md{width:100%;height:auto;max-height:360px;object-fit:contain;background:#000;display:block;border-radius:8px}
+.mcd-story{position:relative;width:100%;max-width:230px;margin:0 auto;aspect-ratio:9/16;border-radius:14px;overflow:hidden;background:#000}
+.mcd-story .sm{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.mcd-story .sgrad{position:absolute;inset:0;z-index:1;background:linear-gradient(to top,rgba(0,0,0,.55),rgba(0,0,0,0) 30%,rgba(0,0,0,0) 68%,rgba(0,0,0,.4))}
+.mcd-story .stop{position:absolute;top:9px;left:9px;right:9px;z-index:2;display:flex;align-items:center;gap:6px;color:#fff;font-size:11px;text-shadow:0 1px 2px #000}
+.mcd-story .sav{width:22px;height:22px;border-radius:50%;background:#3a4a6a;border:1px solid rgba(255,255,255,.5)}
+.mcd-story .sbody{position:absolute;left:10px;right:10px;bottom:50px;z-index:2;color:#fff;font-size:11px;line-height:1.4;text-shadow:0 1px 3px #000;max-height:38%;overflow:hidden}
+.mcd-story .scta{position:absolute;left:10px;right:10px;bottom:12px;z-index:2;background:#fff;color:#111;border-radius:8px;text-align:center;padding:7px;font-size:11px;font-weight:700}
 .mcd-phone .ct{margin-top:8px;display:flex;justify-content:space-between;align-items:center;background:#11161f;border:1px solid var(--border);border-radius:8px;padding:8px 10px}
 .mcd-phone .ct .lk{font-size:10.5px;color:#9aa}.mcd-phone .ct .lk b{color:#cdd;font-weight:500}
 .mcd-phone .ct .bt{background:#e4e6eb;color:#111;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:600;white-space:nowrap}
@@ -528,7 +535,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
           <div>
             <div class="panel" style="position:sticky;top:14px">
               <div class="panel-h">실시간 미리보기</div>
-              <div id="mcd_prev" class="mcd-phone"></div>
+              <div class="seg-toggle" id="mcd_plc" style="margin-bottom:8px"><button class="on" data-v="feed" onclick="mcdSetPlc('feed')">피드</button><button data-v="story" onclick="mcdSetPlc('story')">스토리·릴스</button></div><div id="mcd_prev" class="mcd-phone"></div>
               <div class="hint" style="margin-top:8px">포맷·페이지·소재·CTA·문구 변경이 즉시 반영됩니다.</div>
               <div style="display:flex;gap:8px;margin-top:10px">
                 <button class="btn btn-sm" style="flex:1" onclick="mcPreviewAd()">🔎 dry-run</button>
@@ -1629,6 +1636,7 @@ function exportChanges(){
 /* ════════════════════════ TAB5: META 생성 (dry-run, 3단계 독립) ════════════════════════ */
 let lastGen=null;
 let mcdFmt='IMAGE',mcdSrc='reuse',mcdSel=null,mcdUploadedHash=null;
+let mcdPlc='feed';
 const META_ACCOUNTS=[{id:'1462607070849777',name:'[음료] 클룹 메인',area:'클룹'},{id:'793134085895227',name:'[음료] 클룹 서브',area:'클룹'},{id:'3342733785912061',name:'[음료] 스프린트',area:'스프린트'},{id:'539103343188615',name:'[사용X] 클룹 프로모션(테스트)',area:'클룹'}];
 // 목표·입찰 → Meta API 값 매핑 (초안 · 추후 설정/매핑으로 이관 가능)
 const META_OBJECTIVE={PUR:'OUTCOME_SALES',TRF:'OUTCOME_TRAFFIC',AWR:'OUTCOME_AWARENESS',ENG:'OUTCOME_ENGAGEMENT',LEAD:'OUTCOME_LEADS'};
@@ -1838,8 +1846,11 @@ function mcdSync(){
 function mcdUrlTags(){ const a=DB.archive.find(x=>x.id===$('mcd_creative').value); if(a&&a.utm&&a.utm.indexOf('?')>=0)return a.utm.slice(a.utm.indexOf('?')+1); return ''; }
 function mcdApplyLanding(){ const a=DB.archive.find(x=>x.id===$('mcd_creative').value); if(!a||!a.utm){toast('적용할 UTM URL이 없습니다');return;} const u=a.utm; const m=u.search(/[?&]utm_/); const base=m>=0?u.slice(0,m):u; if($('mcd_landing'))$('mcd_landing').value=base; mcdFinalUrl(); mcdPreview(); if(typeof mcPreviewAd==='function')mcPreviewAd(); toast('적용 완료 · 최종 추적 URL에 UTM이 결합되어 표시됩니다'); }
 function mcdFinalUrl(){ if(!document.getElementById('mcd_finalurl'))return; const base=($('mcd_landing').value||'').trim(); const tags=mcdUrlTags(); let out=base||'(랜딩 URL 없음)'; if(base&&tags) out=base+(base.indexOf('?')>=0?'&':'?')+tags; $('mcd_finalurl').textContent=out; }
+function mcdPreviewStory(){ const pageName=($('mcd_page').selectedOptions[0]||{}).textContent||'페이지'; const body=esc($('mcd_body').value||'광고 카피가 여기에 표시됩니다'); const ctaLbl=(CTA_OPTS.find(c=>c[0]===$('mcd_cta').value)||['','더 알아보기'])[1]; const mIcon=mcdFmt==='VIDEO'?'▶ 영상':(mcdFmt==='CAROUSEL'?'🛍 카탈로그':'🖼 이미지'); const sa=mcdSel?mcdSelAsset():null; let sm; if(sa&&sa.kind==='video'&&sa.source) sm='<video class="sm" controls playsinline muted poster="'+esc(sa.thumb||'')+'" src="'+esc(sa.source)+'"></video>'; else if(sa&&sa.thumb) sm='<img class="sm" src="'+esc(sa.thumb)+'">'; else sm='<div class="sm" style="display:flex;align-items:center;justify-content:center;color:#7e8ba0">'+mIcon+'</div>'; $('mcd_prev').innerHTML='<div class="mcd-story">'+sm+'<div class="sgrad"></div><div class="stop"><div class="sav"></div><div><b>'+esc(pageName)+'</b> · Sponsored</div></div><div class="sbody">'+body+'</div><div class="scta">'+esc(ctaLbl)+'</div></div>'; }
+function mcdSetPlc(v){ mcdPlc=v; document.querySelectorAll('#mcd_plc button').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); mcdPreview(); }
 function mcdPreview(){
   if(!document.getElementById('mcd_prev'))return;
+  if(mcdPlc==='story'){ mcdPreviewStory(); return; }
   const pageName=($('mcd_page').selectedOptions[0]||{}).textContent||'페이지';
   const igOpt=$('mcd_ig').selectedOptions[0]; const ig=(igOpt&&igOpt.value)?igOpt.textContent:'';
   const body=esc($('mcd_body').value||'광고 카피가 여기에 표시됩니다');
