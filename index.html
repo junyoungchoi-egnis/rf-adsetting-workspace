@@ -1813,7 +1813,7 @@ function mcdAssets(){
   const act=mcdTargetAccount();
   const A=(metaSnap&&metaSnap.assets)?metaSnap.assets:null;
   if(A&&act&&A[act]){
-    if(mcdSrc==='creative'){ const lst=(A[act].ads&&A[act].ads.length)?A[act].ads:(A[act].creatives||[]); return lst.filter(c=>c.type===mcdFmt).map(c=>({key:(c.cid||c.id||c.name),kind:c.type==='VIDEO'?'video':'image',name:c.name||'(이름없음)',thumb:c.thumb||'',grid:c.thumb||'',image_hash:c.image_hash||'',video_id:c.video_id||'',story:c.story||'',body:c.body||'',title:c.title||'',cta:c.cta||'',isCreative:true})); }
+    if(mcdSrc==='creative'){ const lst=(A[act].ads&&A[act].ads.length)?A[act].ads:(A[act].creatives||[]); return lst.filter(c=>c.type===mcdFmt).map(c=>({key:(c.cid||c.id||c.name),kind:c.type==='VIDEO'?'video':'image',name:c.name||'(이름없음)',thumb:(c.full||c.thumb||''),grid:(c.thumb||c.full||''),image_hash:c.image_hash||'',video_id:c.video_id||'',story:c.story||'',body:c.body||'',title:c.title||'',cta:c.cta||'',isCreative:true})); }
     const _by=(x,y)=>String(y.ts||'').localeCompare(String(x.ts||''));
     if(mcdFmt==='VIDEO') return (A[act].videos||[]).map(v=>({key:v.id,kind:'video',name:v.title||'(제목없음)',thumb:v.thumb||'',grid:v.thumb||'',source:v.source||'',video_id:v.id,ts:v.ts||''})).sort(_by);
     return (A[act].images||[]).map(i=>({key:i.hash,kind:'image',name:i.name||'(이름없음)',thumb:i.full||i.thumb||'',grid:i.thumb||i.full||'',image_hash:i.hash,ts:i.ts||''})).sort(_by);
