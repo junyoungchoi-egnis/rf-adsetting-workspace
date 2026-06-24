@@ -147,24 +147,22 @@ module.exports = async (req, res) => {
     let allAdsets = [];
     const perAccount = {};
     const assets = {};
-    for (const act of accounts) {
-      const ads = await fetchAllAds(act, token);
-      const adsetList = await fetchAllAdsets(act, token);
-      ads.forEach(a => { a._act = act; });
-      adsetList.forEach(a => { a._act = act; });
-      perAccount[act] = ads.length;
-      all = all.concat(ads);
-      allAdsets = allAdsets.concat(adsetList);
-    }
-    // 애셋: 전 계정 병렬 + 계정별/타입별 격리(하나 실패해도 전체는 진행). 각 1페이지만.
+    // 전면 병렬: 계정마다 광고/세트/애셋을 동시에. (함수 타임아웃 방지 — 순차 4계정 → 병렬)
     await Promise.all(accounts.map(async (act) => {
-      const [creatives, images, videos, ig, ads2] = await Promise.all([
+      const [ads, adsetList, creatives, images, videos, ig, ads2] = await Promise.all([
+        fetchAllAds(act, token).catch(() => []),
+        fetchAllAdsets(act, token).catch(() => []),
         fetchCreatives(act, token).catch(() => []),
         fetchImages(act, token).catch(() => []),
         fetchVideos(act, token).catch(() => []),
         fetchIgAccounts(act, token).catch(() => []),
         fetchActiveAds(act, token).catch(() => [])
       ]);
+      ads.forEach(a => { a._act = act; });
+      adsetList.forEach(a => { a._act = act; });
+      perAccount[act] = ads.length;
+      all = all.concat(ads);
+      allAdsets = allAdsets.concat(adsetList);
       assets[act] = { creatives: creatives, images: images, videos: videos, ig: ig, ads: ads2 };
     }));
 
@@ -178,7 +176,9 @@ module.exports = async (req, res) => {
       assets: assets
     };
 
-    const w = await fetch(dbUrl + '/meta_v2.json', {
+    const sec = process.env.FIREBASE_DB_SECRET || '';
+    const authQ = sec ? ('?auth=' + encodeURIComponent(sec)) : '';
+    const w = await fetch(dbUrl + '/meta_v2.json' + authQ, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(snapshot)
