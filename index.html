@@ -1775,8 +1775,8 @@ function mcdRenderProfiles(){
   const cur=$('mcd_page').value;
   $('mcd_page').innerHTML=(pages.length?pages:META_PAGES).map(p=>_opt(p.id,p.brand==='공통'?p.name+' · 공용':p.name)).join('');
   if(cur&&[...$('mcd_page').options].some(o=>o.value===cur))$('mcd_page').value=cur;
-  let igs; { const _act=(typeof mcdTargetAccount==='function')?mcdTargetAccount():''; const _A=(metaSnap&&metaSnap.assets)?metaSnap.assets:null; if(_A&&_act&&_A[_act]&&_A[_act].ig&&_A[_act].ig.length) igs=_A[_act].ig.map(g=>({id:g.id,user:g.username})); else igs=META_IG.filter(g=>g.brand===areaScope||g.brand==='공통'); }
-  const _curIg=$('mcd_ig')?$('mcd_ig').value:''; $('mcd_ig').innerHTML=igs.map(g=>_opt(g.id,'@'+g.user)).join('')+_opt('','FB페이지 사용 (IG 게시 안 함)'); if(_curIg&&[...$('mcd_ig').options].some(o=>o.value===_curIg))$('mcd_ig').value=_curIg;
+  let igs; { const _act=(typeof mcdTargetAccount==='function')?mcdTargetAccount():''; const _A=(metaSnap&&metaSnap.assets)?metaSnap.assets:null; if(_A&&_act&&_A[_act]&&_A[_act].ig&&_A[_act].ig.length) igs=_A[_act].ig.map(g=>({id:g.id,user:g.username})); else igs=[]; }
+  const _curIg=$('mcd_ig')?$('mcd_ig').value:''; $('mcd_ig').innerHTML=igs.map(g=>_opt(g.id,'@'+g.user)).join('')+_opt('','Instagram: 페이지 연결 계정 자동 사용 (권장)'); if(_curIg&&[...$('mcd_ig').options].some(o=>o.value===_curIg))$('mcd_ig').value=_curIg;
 }
 function mcdSetFmt(v,silent){ mcdFmt=v; mcdSel=null; document.querySelectorAll('#mcd_fmt button').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); mcdRenderAssets(); if(!silent)mcdPreview(); }
 function mcdSetSrc(v,silent){ mcdSrc=v; document.querySelectorAll('#mcd_src button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
