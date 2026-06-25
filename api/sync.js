@@ -43,7 +43,7 @@ async function fetchAllAds(actId, token) {
   return fetchPaged(url, actId);
 }
 async function fetchAllAdsets(actId, token) {
-  const fields = 'id,name,effective_status,campaign{id,name,effective_status}';
+  const fields = 'id,name,effective_status,daily_budget,lifetime_budget,campaign{id,name,effective_status,daily_budget,lifetime_budget}';
   const url = GRAPH + '/act_' + actId + '/adsets?fields=' + enc(fields) + '&limit=500&access_token=' + enc(token);
   return fetchPaged(url, actId);
 }
@@ -103,7 +103,7 @@ function aggregate(ads, adsetList) {
     if (!byAdset[key]) byAdset[key] = {
       adsetId: '', adsetName: '', adsetStatus: '',
       campaignId: '', campaignName: '', campaignStatus: '',
-      account: '', total: 0, active: 0
+      account: '', total: 0, active: 0, setBudget: 0, campBudget: 0
     };
     return byAdset[key];
   }
@@ -113,6 +113,8 @@ function aggregate(ads, adsetList) {
     const o = ensure(as.id);
     o.adsetId = as.id; o.adsetName = as.name || ''; o.adsetStatus = as.effective_status || '';
     o.campaignId = cp.id || ''; o.campaignName = cp.name || ''; o.campaignStatus = cp.effective_status || '';
+    o.setBudget = (+as.daily_budget || 0) + (+as.lifetime_budget || 0);
+    o.campBudget = (+cp.daily_budget || 0) + (+cp.lifetime_budget || 0);
     if (as._act) o.account = as._act;
   });
   ads.forEach(a => {
