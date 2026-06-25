@@ -402,7 +402,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
               <button class="btn btn-ghost btn-sm" style="margin-top:6px" onclick="addCreativeRow()">+ 소재 행 추가</button>
             </div>
             <div id="cCloneArea" style="display:none">
-              <div class="notice" style="margin-bottom:9px">생성 아카이브의 소재를 골라 <b>위 A·B에서 선택한 세트들</b>로 복제합니다. 콘텐츠(포맷·메시지·소재명·날짜·담당자)는 그대로, 타게팅·타겟 컨셉·합성코드·랜딩·UTM은 대상 세트 기준으로 자동 치환됩니다.</div>
+              <div class="notice" style="margin-bottom:9px">생성 아카이브의 소재를 골라 <b>위 A·B에서 선택한 세트들</b>로 복제합니다. 콘텐츠(포맷·메시지·소재명·날짜·담당자)는 그대로, 타게팅·타겟 컨셉·합성코드는 대상 세트 기준으로 치환되고, <b>랜딩 URL은 소스 그대로 유지</b>, UTM(utm_campaign·utm_content)만 대상 기준으로 갱신됩니다.</div>
               <div class="row-flex" style="margin-bottom:7px;gap:6px">
                 <input id="cloneSearch" placeholder="🔍 소재명 검색" style="max-width:190px" oninput="renderClonePicker()">
                 <select id="cloneFltProduct" onchange="renderClonePicker()" style="max-width:140px"></select>
@@ -1360,8 +1360,8 @@ function buildCreativeName(set,date,cr,manager){
   const base=`${date}_${set.media}_${set.product}_${cr.fmt}_${cr.msg}_${cr.soje}-${set.tam}_${set.composite}_${set.targeting}_${firstcatCode(set.firstcat)}_${set.scheme}`;
   return manager?`${base}_${manager}`:base;
 }
-function buildUTM(set,creativeName){
-  const landing=set.landing;if(!landing)return '';
+function buildUTM(set,creativeName,landingOverride){
+  const landing=(landingOverride||set.landing);if(!landing)return '';
   const mi=mediaInfo(set.media);
   const sep=landing.includes('?')?'&':'?';
   return `${landing}${sep}utm_source=${mi.source}&utm_medium=${mi.medium}&utm_campaign=${set.name}&utm_term={{ad.id}}&utm_content=${creativeName}`;
@@ -1475,7 +1475,8 @@ function runClone(){
     const cr={fmt:p.fmt,msg:p.msg,soje:p.soje};
     const name=buildCreativeName(set,p.date,cr,p.manager||'');
     if(DB.archive.some(a=>a.name===name)){skip++;return;}
-    const utm=buildUTM(set,name);
+    const srcLanding=((src&&src.utm)||'').split(/[?&]utm_source=/)[0]||set.landing;
+    const utm=buildUTM(set,name,srcLanding);
     const item={id:(Date.now()+Math.random()).toString(36).slice(2,10),ts,setId:set.id,setName:set.name,brand:set.brand,manager:p.manager||'',name,utm,status:validateName(name),done:false,
       fmt:p.fmt,msg:p.msg,soje:p.soje,date:p.date,cloned:true};
     lastResults.push(item);DB.archive.unshift(item);
