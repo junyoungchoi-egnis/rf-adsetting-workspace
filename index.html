@@ -403,6 +403,10 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
             </div>
             <div id="cCloneArea" style="display:none">
               <div class="notice" style="margin-bottom:9px">생성 아카이브의 소재를 골라 <b>위 A·B에서 선택한 세트들</b>로 복제합니다. 콘텐츠(포맷·메시지·소재명·날짜·담당자)는 그대로, 타게팅·타겟 컨셉·합성코드는 대상 세트 기준으로 치환되고, <b>랜딩 URL은 소스 그대로 유지</b>, UTM(utm_campaign·utm_content)만 대상 기준으로 갱신됩니다.</div>
+              <div class="seg-toggle" style="margin-bottom:8px">
+                <button id="csmArchive" class="on" onclick="setCloneSrcMode('archive')">생성 아카이브</button>
+                <button id="csmMeta" onclick="setCloneSrcMode('meta')">Meta 라이브러리</button>
+              </div>
               <div class="row-flex" style="margin-bottom:7px;gap:6px">
                 <input id="cloneSearch" placeholder="🔍 소재명 검색" style="max-width:190px" oninput="renderClonePicker()">
                 <select id="cloneFltProduct" onchange="renderClonePicker()" style="max-width:140px"></select>
@@ -1392,7 +1396,7 @@ function creativePreview(){
   const sets=[...cSel].map(curSet).filter(Boolean);
   const wb=$('c_warn');
   if(cMode==='clone'){
-    const srcs=[...cloneSources].map(id=>DB.archive.find(a=>a.id===id)).filter(Boolean);
+    const _pool=(cloneSrcMode==='meta')?metaCloneSources():DB.archive; const srcs=[...cloneSources].map(id=>_pool.find(a=>a.id===id)).filter(Boolean);
     $('c_genCount').textContent=sets.length*srcs.length;
     const w=[]; if(!sets.length)w.push('대상 세트를 선택하세요 (A·B).'); if(!srcs.length)w.push('복제할 소스 소재를 선택하세요.');
     wb.innerHTML=w.join('<br>');wb.classList.toggle('show',w.length>0);
@@ -1437,7 +1441,23 @@ function itemPayload(a){
   if(t[5].indexOf('-')<0) return null;
   return {fmt:t[3],msg:t[4],soje:t[5].slice(0,t[5].lastIndexOf('-')),date:t[0],manager:t.length===11?t[10]:''};
 }
-function cloneable(){ return DB.archive.filter(a=>itemPayload(a) && archiveArea(a)===areaScope); }
+let cloneSrcMode='archive';
+function metaCloneSources(){
+  if(!metaSnap||!metaSnap.assets) return [];
+  const out=[]; const seen={};
+  Object.values(metaSnap.assets).forEach(acct=>{ (acct&&acct.ads||[]).forEach(ad=>{
+    if(!ad||!ad.name||!itemPayload(ad)) return;
+    const prod=String(ad.name).split('_')[2]||''; if(areaOf(prod)!==areaScope) return;
+    const id='meta:'+(ad.cid||ad.name); if(seen[id]) return; seen[id]=1;
+    out.push(Object.assign({},ad,{id:id,_meta:true}));
+  }); });
+  return out;
+}
+function setCloneSrcMode(m){ cloneSrcMode=m; cloneSources.clear();
+  const a=document.getElementById('csmArchive'), b=document.getElementById('csmMeta');
+  if(a)a.classList.toggle('on',m==='archive'); if(b)b.classList.toggle('on',m==='meta');
+  renderClonePicker(); creativePreview(); }
+function cloneable(){ if(cloneSrcMode==='meta') return metaCloneSources(); return DB.archive.filter(a=>itemPayload(a) && archiveArea(a)===areaScope); }
 function archProduct(a){ return (String(a.name||'').split('_')[2])||''; }
 function _fillSel(id,vals,label){ const s=$(id); if(!s)return; const cur=s.value; s.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join(''); s.value=vals.includes(cur)?cur:''; }
 function resetCloneFilters(){ $('cloneSearch').value=''; ['cloneFltProduct','cloneFltDate','cloneFltMgr'].forEach(id=>{const s=$(id);if(s)s.value='';}); renderClonePicker(); }
@@ -1466,7 +1486,7 @@ function toggleCloneSource(id){ cloneSources.has(id)?cloneSources.delete(id):clo
 function clearCloneSources(){ cloneSources.clear(); renderClonePicker(); creativePreview(); }
 function runClone(){
   const sets=[...cSel].map(curSet).filter(Boolean);
-  const srcs=[...cloneSources].map(id=>DB.archive.find(a=>a.id===id)).filter(Boolean);
+  const _pool=(cloneSrcMode==='meta')?metaCloneSources():DB.archive; const srcs=[...cloneSources].map(id=>_pool.find(a=>a.id===id)).filter(Boolean);
   if(!sets.length){toast('대상 세트를 선택하세요 (A·B)');return;}
   if(!srcs.length){toast('복제할 소스 소재를 선택하세요');return;}
   lastResults=[]; let skip=0; const ts=new Date().toISOString();
@@ -1475,7 +1495,7 @@ function runClone(){
     const cr={fmt:p.fmt,msg:p.msg,soje:p.soje};
     const name=buildCreativeName(set,p.date,cr,p.manager||'');
     if(DB.archive.some(a=>a.name===name)){skip++;return;}
-    const srcLanding=((src&&src.utm)||'').split(/[?&]utm_source=/)[0]||set.landing;
+    const srcLanding=(src&&src.link)||((src&&src.utm)||'').split(/[?&]utm_source=/)[0]||set.landing;
     const utm=buildUTM(set,name,srcLanding);
     const item={id:(Date.now()+Math.random()).toString(36).slice(2,10),ts,setId:set.id,setName:set.name,brand:set.brand,manager:p.manager||'',name,utm,status:validateName(name),done:false,
       fmt:p.fmt,msg:p.msg,soje:p.soje,date:p.date,cloned:true};
