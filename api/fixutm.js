@@ -90,7 +90,7 @@ module.exports = async function (req, res) {
     if (spec.instagram_actor_id) clean.instagram_actor_id = spec.instagram_actor_id;
     if (spec.link_data) {
       const d = spec.link_data;
-      clean.link_data = { link: fixUtm(d.link, correctCampaign, correctContent), message: d.message, name: d.name, description: d.description, image_hash: d.image_hash, picture: d.picture, caption: d.caption };
+      clean.link_data = { link: fixUtm(d.link, correctCampaign, correctContent), message: d.message, name: d.name, description: d.description, image_hash: d.image_hash };
       if (d.call_to_action) {
         clean.link_data.call_to_action = { type: d.call_to_action.type, value: {} };
         if (d.call_to_action.value && d.call_to_action.value.link) {
@@ -100,7 +100,7 @@ module.exports = async function (req, res) {
     }
     if (spec.video_data) {
       const v = spec.video_data;
-      clean.video_data = { video_id: v.video_id, message: v.message, title: v.title, link_description: v.link_description, image_hash: v.image_hash, image_url: v.image_url };
+      clean.video_data = { video_id: v.video_id, message: v.message, title: v.title, link_description: v.link_description, image_hash: v.image_hash };
       if (v.call_to_action) {
         clean.video_data.call_to_action = { type: v.call_to_action.type, value: {} };
         if (v.call_to_action.value && v.call_to_action.value.link) {
