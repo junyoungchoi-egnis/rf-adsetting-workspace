@@ -1272,6 +1272,13 @@ function candCampActive(campStatus, sets){ if(campStatus) return campStatus==='A
 function candBadge(c){ const m=c.live; if(!m) return ` <span class="bdg" style="background:#2b2f37;color:#9aa3b2" title="Meta 미동기화">동기화전</span>`; const warn=(metaIndex[c.id]&&metaIndex[c.id].renamed)?` <span class="bdg bdg-warn" title="매체에서 이름변경됨: ${esc(metaIndex[c.id].liveName||'')}">⚠이름변경</span>`:''; return ` <span class="bdg" style="background:#15263f;color:#5fa8ff">소재 ${m.total||0}·활성 ${m.active||0}</span>${warn}`; }
 let _cands=[];
 function curSet(id){ if(!_cands.length)_cands=creativeCandidates(); return _cands.find(c=>c.id===id); }
+function campBudgetType(campaignId){
+  if(!campaignId||!metaSnap||!metaSnap.adsets) return null;
+  const rows=Array.isArray(metaSnap.adsets)?metaSnap.adsets:Object.values(metaSnap.adsets);
+  let camp=0, anySet=false;
+  rows.forEach(a=>{ if((a.campaignId||'')!==campaignId) return; if((+a.campBudget||0)>0)camp=1; if((+a.setBudget||0)>0)anySet=true; });
+  if(camp) return 'CBO'; if(anySet) return 'ABO'; return null;
+}
 function renderCreativeCampaigns(){
   _abtn('btnActiveCamp',activeOnlyCamp);
   const q=($('cCampSearch').value||'').toLowerCase();
@@ -1288,9 +1295,11 @@ function renderCreativeCampaigns(){
     const tams=g.sets.map(s=>s.tam).filter((v,i,a)=>a.indexOf(v)===i).join(', ');
     const srcBadge=g.live?`<span class="bdg" style="background:#15263f;color:#5fa8ff" title="Meta 실제 캠페인명">Meta 캠페인</span>`:`<span class="bdg" style="background:#3a2e15;color:#ffcf66" title="Meta 미매칭 — 빌더 추정">추정</span>`;
     const actBadge=statusBadge(candCampActive(g.campStatus,g.sets));
+    const _bt=campBudgetType((g.sets[0]||{}).campaignId);
+    const budBadge=_bt?('<span class="bdg" style="background:#1f2f1f;color:#7fd6a0" title="예산 위치 자동 판별 · 동기화 시점 기준">'+_bt+'</span>'):'';
     const activeSets=g.sets.filter(s=>candActive(s)===true).length;
     return `<div class="set-card ${cCampKey===k?'on':''}" onclick="selectCampaign('${k}')">
-      <div class="meta" style="margin-top:0"><span class="tag">${esc(g.brand)}</span>${srcBadge}${actBadge}<b style="color:var(--text)">${esc(g.label)}</b></div>
+      <div class="meta" style="margin-top:0"><span class="tag">${esc(g.brand)}</span>${srcBadge}${actBadge}${budBadge}<b style="color:var(--text)">${esc(g.label)}</b></div>
       <div class="meta"><span class="cnt">광고세트 ${g.sets.length}개 (활성 ${activeSets})</span> · ${esc(tams)}</div>
     </div>`;}).join('');
 }
