@@ -4,8 +4,8 @@
 //
 //  Meta 광고 데이터(캠페인/세트/광고 ID·이름·상태·소재수)를 읽어
 //  Firebase Realtime DB의 /meta_v2 에 스냅샷으로 저장한다.
-//  + 계정별 "애셋 라이브러리"(이미지·영상·크리에이티브 + 썸네일/재생소스)도 수집해
-//    소재 세팅 탭에서 바로 선택·미리보기할 수 있게 한다.
+//  + 계정별 "애셋 라이브러리"(이미지·영상·크리에이티브 + 썸네일/재생소재)도 수집해
+//    소재 세팅 탭에서 바로 선택·미리보기 수 있게 한다.
 //  토큰은 절대 클라이언트로 나가지 않고, 이 함수의 환경변수에서만 읽는다.
 //
 //  필요한 Vercel 환경변수:
@@ -143,30 +143,51 @@ module.exports = async (req, res) => {
       return res.status(500).json({ ok: false, error: '환경변수 누락 (META_TOKEN, META_ACCOUNTS, FIREBASE_DB_URL)' });
     }
 
+    const sec = process.env.FIREBASE_DB_SECRET || '';
+    const authQ = sec ? ('?auth=' + encodeURIComponent(sec)) : '';
+    // 직전 스냅샷 읽기 — 계정 동기화 실패 시 그 계정 데이터를 '빈 값'으로 덮어쓰지 않고 보존하기 위함
+    let prev = null;
+    try { prev = await fetch(dbUrl + '/meta_v2.json' + authQ).then(r => r.json()); } catch (e) { prev = null; }
+    const prevAdsets = (prev && Array.isArray(prev.adsets)) ? prev.adsets : [];
+    const prevAssets = (prev && prev.assets) ? prev.assets : {};
+    const prevAccounts = (prev && prev.accounts) ? prev.accounts : {};
+
     let all = [];
     let allAdsets = [];
     const perAccount = {};
     const assets = {};
-    // 전면 병렬: 계정마다 광고/세트/애셋을 동시에. (함수 타임아웃 방지 — 순차 4계정 → 병렬)
+    const failed = {};
     await Promise.all(accounts.map(async (act) => {
-      const [ads, adsetList, creatives, images, videos, ig, ads2] = await Promise.all([
-        fetchAllAds(act, token).catch(() => []),
-        fetchAllAdsets(act, token).catch(() => []),
-        fetchCreatives(act, token).catch(() => []),
-        fetchImages(act, token).catch(() => []),
-        fetchVideos(act, token).catch(() => []),
-        fetchIgAccounts(act, token).catch(() => []),
-        fetchActiveAds(act, token).catch(() => [])
-      ]);
+      let ads, adsetList;
+      try {
+        ads = await fetchAllAds(act, token);
+        adsetList = await fetchAllAdsets(act, token);
+      } catch (e) {
+        failed[act] = String((e && e.message) || e);
+        return;
+      }
       ads.forEach(a => { a._act = act; });
       adsetList.forEach(a => { a._act = act; });
       perAccount[act] = ads.length;
       all = all.concat(ads);
       allAdsets = allAdsets.concat(adsetList);
-      assets[act] = { creatives: creatives, images: images, videos: videos, ig: ig, ads: ads2 };
+      const aRes = await Promise.all([
+        fetchCreatives(act, token).catch(() => null),
+        fetchImages(act, token).catch(() => null),
+        fetchVideos(act, token).catch(() => null),
+        fetchIgAccounts(act, token).catch(() => null),
+        fetchActiveAds(act, token).catch(() => null)
+      ]);
+      const pa = prevAssets[act] || {};
+      assets[act] = { creatives: aRes[0] || pa.creatives || [], images: aRes[1] || pa.images || [], videos: aRes[2] || pa.videos || [], ig: aRes[3] || pa.ig || [], ads: aRes[4] || pa.ads || [] };
     }));
 
-    const adsets = aggregate(all, allAdsets);
+    let adsets = aggregate(all, allAdsets);
+    Object.keys(failed).forEach(function (act) {
+      adsets = adsets.concat(prevAdsets.filter(function (a) { return a && a.account === act; }));
+      perAccount[act] = prevAccounts[act] || 0;
+      if (!assets[act]) assets[act] = prevAssets[act] || { creatives: [], images: [], videos: [], ig: [], ads: [] };
+    });
     const snapshot = {
       syncedAt: new Date().toISOString(),
       accounts: perAccount,
@@ -176,8 +197,6 @@ module.exports = async (req, res) => {
       assets: assets
     };
 
-    const sec = process.env.FIREBASE_DB_SECRET || '';
-    const authQ = sec ? ('?auth=' + encodeURIComponent(sec)) : '';
     const w = await fetch(dbUrl + '/meta_v2.json' + authQ, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -186,7 +205,7 @@ module.exports = async (req, res) => {
     if (!w.ok) throw new Error('Firebase 쓰기 실패: ' + (await w.text()));
 
     const assetTotals = Object.fromEntries(Object.entries(assets).map(([k, v]) => [k, { c: (v.creatives || []).length, i: (v.images || []).length, v: (v.videos || []).length }]));
-    return res.status(200).json({ ok: true, syncedAt: snapshot.syncedAt, adsetCount: adsets.length, adCount: all.length, assets: assetTotals });
+    return res.status(200).json({ ok: true, syncedAt: snapshot.syncedAt, adsetCount: adsets.length, adCount: all.length, assets: assetTotals, failed: failed });
   } catch (e) {
     return res.status(500).json({ ok: false, error: String((e && e.message) || e) });
   }
