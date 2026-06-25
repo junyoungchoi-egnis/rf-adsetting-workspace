@@ -225,7 +225,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
     <section class="page active" id="page-build">
       <div class="page-head">
         <h2>캠페인 · 광고세트 빌더</h2>
-        <p>제품·목표·입찰·스킴·타게팅·TAM을 조합하면 <b>광고세트명(=utm_campaign)</b>·합성코드·한글 캠페인명이 시트 규칙대로 자동 생성됩니다. TAM은 1개 선택, 타게팅은 여러 개 추가할 수 있고 타게팅 수만큼 세트가 한 번에 만들어집니다.</p>
+        <p>제품·목표·입찰·스킴·타게팅·타겟 컨셉(구 TAM)을 조합하면 <b>광고세트명(=utm_campaign)</b>·합성코드·한글 캠페인명이 시트 규칙대로 자동 생성됩니다. 타겟 컨셉은 1개 선택, 타게팅은 여러 개 추가할 수 있고 타게팅 수만큼 세트가 한 번에 만들어집니다.</p>
       </div>
 
       <div class="two-col">
@@ -260,7 +260,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
               <button class="btn btn-primary btn-sm" onclick="addComposedTargeting()">+ 타게팅 추가</button>
             </div>
             <div style="border-top:0.5px solid var(--border);padding-top:9px">
-              <div class="cnt" style="margin-bottom:5px">추가된 타게팅 <span style="color:var(--text3)">(이 목록 × TAM 조합만큼 세트 생성)</span></div>
+              <div class="cnt" style="margin-bottom:5px">추가된 타게팅 <span style="color:var(--text3)">(이 목록 × 타겟 컨셉 조합만큼 세트 생성)</span></div>
               <div class="chips" id="b_targetingChips"></div>
               <div class="row-flex" style="margin-top:7px">
                 <input id="b_newTarget" placeholder="예외 코드 직접입력 (예: VRE-PDE)" style="max-width:200px" onkeydown="if(event.key==='Enter')addTargeting()">
@@ -270,10 +270,10 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
           </div>
 
           <div class="panel">
-            <div class="panel-h"><span class="step">C</span>TAM (타겟 메시지) <span class="hint">콘텐츠마케터 영역 · 1개만 선택</span></div>
+            <div class="panel-h"><span class="step">C</span>타겟 컨셉 (구 TAM) <span class="hint">콘텐츠마케터 영역 · 1개만 선택</span></div>
             <div class="chips" id="b_tamChips" style="margin-bottom:9px"></div>
             <div class="row-flex">
-              <input id="b_newTam" placeholder="신규 TAM 추가 (예: BENEFIT)" style="max-width:220px" onkeydown="if(event.key==='Enter')addTam()">
+              <input id="b_newTam" placeholder="신규 타겟 컨셉 추가 (예: BENEFIT)" style="max-width:220px" onkeydown="if(event.key==='Enter')addTam()">
               <button class="btn btn-ghost btn-sm" onclick="addTam()">+ 추가</button>
             </div>
           </div>
@@ -319,13 +319,13 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
         <div class="seg-toggle" style="margin-bottom:12px"><button id="bcCamp" class="on" onclick="bcSub('campaign')">① 캠페인</button><button id="bcSet" onclick="bcSub('adset')">② 광고세트</button></div>
 
         <div class="bcsub" data-bcsub="campaign">
-          <div style="font-size:11px;color:var(--text3);margin-bottom:8px">📛 <b>이름 규칙</b>(제품·스킴·목표·입찰·TAM·넘버링 → 캠페인명) · ⚙️ <b>설정</b>(목표→objective, 예산 방식). 빌더 값에서 자동으로 채워집니다.</div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:8px">📛 <b>이름 규칙</b>(제품·스킴·목표·입찰·타겟 컨셉·넘버링 → 캠페인명) · ⚙️ <b>설정</b>(목표→objective, 예산 방식). 빌더 값에서 자동으로 채워집니다.</div>
           <div class="grid g3">
             <div class="field"><label>제품 <span class="opt">📛</span></label><select id="mcc_product" onchange="mcAutoName()"></select></div>
             <div class="field"><label>스킴 <span class="opt">📛</span></label><select id="mcc_scheme" onchange="mcAutoName()"></select></div>
             <div class="field"><label>캠페인 목표 <span class="opt">📛+⚙️objective</span></label><select id="mcc_goal" onchange="mcAutoName()"></select></div>
             <div class="field"><label>입찰 <span class="opt">📛</span></label><select id="mcc_bid" onchange="mcAutoName()"></select></div>
-            <div class="field"><label>TAM <span class="opt">📛</span></label><select id="mcc_tam" onchange="mcAutoName()"></select></div>
+            <div class="field"><label>타겟 컨셉 <span class="opt">📛</span></label><select id="mcc_tam" onchange="mcAutoName()"></select></div>
             <div class="field"><label>넘버링 <span class="opt">📛끝 _01</span></label><input id="mcc_num" value="01" oninput="mcAutoName()"></div>
           </div>
           <div class="grid g3" style="margin-top:2px">
@@ -402,7 +402,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
               <button class="btn btn-ghost btn-sm" style="margin-top:6px" onclick="addCreativeRow()">+ 소재 행 추가</button>
             </div>
             <div id="cCloneArea" style="display:none">
-              <div class="notice" style="margin-bottom:9px">생성 아카이브의 소재를 골라 <b>위 A·B에서 선택한 세트들</b>로 복제합니다. 콘텐츠(포맷·메시지·소재명·날짜·담당자)는 그대로, 타게팅·TAM·합성코드·랜딩·UTM은 대상 세트 기준으로 자동 치환됩니다.</div>
+              <div class="notice" style="margin-bottom:9px">생성 아카이브의 소재를 골라 <b>위 A·B에서 선택한 세트들</b>로 복제합니다. 콘텐츠(포맷·메시지·소재명·날짜·담당자)는 그대로, 타게팅·타겟 컨셉·합성코드·랜딩·UTM은 대상 세트 기준으로 자동 치환됩니다.</div>
               <div class="row-flex" style="margin-bottom:7px;gap:6px">
                 <input id="cloneSearch" placeholder="🔍 소재명 검색" style="max-width:190px" oninput="renderClonePicker()">
                 <select id="cloneFltProduct" onchange="renderClonePicker()" style="max-width:140px"></select>
@@ -552,10 +552,10 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
 
     <!-- ══════════ TAB 6: MAP ══════════ -->
     <section class="page" id="page-map">
-      <div class="page-head"><h2>설정/매핑 <span style="font-size:12px;font-weight:500;color:var(--text3)">· 클룹·스프린트 공통</span></h2><p>모든 자동 생성의 단일 기준 데이터이며, <b>기존 구글시트를 대체</b>합니다. (이 탭은 클룹/스프린트 공통 영역) <b>TAM은 콘텐츠마케터 파트장</b>, 그 외(매체·합성·제품·스킴 등)는 <b>퍼포먼스마케터</b>가 관리합니다. 변경 시 전 탭·전 팀원에게 즉시 반영됩니다.</p></div>
+      <div class="page-head"><h2>설정/매핑 <span style="font-size:12px;font-weight:500;color:var(--text3)">· 클룹·스프린트 공통</span></h2><p>모든 자동 생성의 단일 기준 데이터이며, <b>기존 구글시트를 대체</b>합니다. (이 탭은 클룹/스프린트 공통 영역) <b>타겟 컨셉은 콘텐츠마케터 파트장</b>, 그 외(매체·합성·제품·스킴 등)는 <b>퍼포먼스마케터</b>가 관리합니다. 변경 시 전 탭·전 팀원에게 즉시 반영됩니다.</p></div>
 
       <div class="notice" style="margin-bottom:14px">
-        <b>자동 소재명</b> &nbsp;:&nbsp; <code>날짜_매체_제품코드_포맷_메시지(1-2-3)_소재명-TAM_합성코드_타게팅_1차_2차스킴_담당자</code><br>
+        <b>자동 소재명</b> &nbsp;:&nbsp; <code>날짜_매체_제품코드_포맷_메시지(1-2-3)_소재명-타겟컨셉_합성코드_타게팅_1차_2차스킴_담당자</code><br>
         <b>광고세트명</b> &nbsp;:&nbsp; <code>매체_제품코드_캠페인목표_입찰_[최적화]_타게팅_스킴_TAM_날짜</code>
       </div>
 
@@ -565,8 +565,8 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
         <button class="btn btn-sm" data-ms="code" onclick="mapSub('code')">🧮 캠페인 코드</button>
         <button class="btn btn-sm" data-ms="landing" onclick="mapSub('landing')">🔗 랜딩 URL</button>
         <button class="btn btn-sm" data-ms="scheme" onclick="mapSub('scheme')">📐 스킴·포맷</button>
-        <button class="btn btn-sm" data-ms="tam" onclick="mapSub('tam')">🎯 TAM</button>
-        <button class="btn btn-sm" data-ms="msg" onclick="mapSub('msg')">💬 메시지</button>
+        <button class="btn btn-sm" data-ms="tam" onclick="mapSub('tam')">🎯 타겟 컨셉</button>
+        <button class="btn btn-sm" data-ms="msg" onclick="mapSub('msg')">💬 메시지 컨셉</button>
         <button class="btn btn-sm" data-ms="data" onclick="mapSub('data')">🛠 데이터·동기화</button>
       </div>
 
@@ -648,20 +648,20 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
       </div>
 
       <div class="msub" data-msub="tam" style="display:none">
-        <div class="notice" style="margin-bottom:12px"><b>TAM(타겟 메시지)</b> — 광고세트명·소재명에 들어가는 핵심 메시지 코드입니다. <span style="color:var(--accent2)">· 관리: 콘텐츠마케터 파트장</span></div>
+        <div class="notice" style="margin-bottom:12px"><b>타겟 컨셉 (구 TAM)</b> — 광고세트명·소재명에 들어가는 핵심 타겟 컨셉 코드입니다. <span style="color:var(--accent2)">· 관리: 콘텐츠마케터 파트장</span></div>
         <div class="panel">
-          <div class="panel-h">🎯 TAM 풀 <span class="hint">영문 코드 + 한글 의미</span></div>
+          <div class="panel-h">🎯 타겟 컨셉 풀 <span class="hint">영문 코드 + 한글 의미</span></div>
           <div class="tbl-wrap" style="max-height:340px;overflow-y:auto"><table><thead><tr><th>코드</th><th>한글 의미</th><th></th></tr></thead><tbody id="m_tams"></tbody></table></div>
-          <div class="row-flex" style="margin-top:10px"><input id="mt_new" placeholder="TAM 코드" style="max-width:140px" class="mono"><input id="mt_kr" placeholder="한글 의미" style="max-width:160px"><button class="btn btn-ghost btn-sm" onclick="addMapTam()">+ 추가</button></div>
+          <div class="row-flex" style="margin-top:10px"><input id="mt_new" placeholder="타겟 컨셉 코드" style="max-width:140px" class="mono"><input id="mt_kr" placeholder="한글 의미" style="max-width:160px"><button class="btn btn-ghost btn-sm" onclick="addMapTam()">+ 추가</button></div>
         </div>
       </div>
 
       <div class="msub" data-msub="msg" style="display:none">
-        <div class="notice" style="margin-bottom:12px">소재명 입력 시 자동완성으로 뜨는 <b>메시지 뎁스</b> 후보 목록입니다.</div>
+        <div class="notice" style="margin-bottom:12px">소재명 입력 시 자동완성으로 뜨는 <b>메시지 컨셉</b> 후보 목록입니다.</div>
         <div class="panel">
-          <div class="panel-h">💬 메시지 뎁스 풀 <span class="hint">영문 코드 + 한글 의미</span></div>
+          <div class="panel-h">💬 메시지 컨셉 풀 <span class="hint">영문 코드 + 한글 의미</span></div>
           <div class="tbl-wrap" style="max-height:360px;overflow-y:auto"><table><thead><tr><th>코드</th><th>한글 의미</th><th></th></tr></thead><tbody id="m_msgpool"></tbody></table></div>
-          <div class="row-flex" style="margin-top:10px"><input id="mmsg_new" placeholder="메시지 코드" style="max-width:140px" class="mono"><input id="mmsg_kr" placeholder="한글 의미" style="max-width:160px"><button class="btn btn-ghost btn-sm" onclick="addMsg()">+ 추가</button></div>
+          <div class="row-flex" style="margin-top:10px"><input id="mmsg_new" placeholder="메시지 컨셉 코드" style="max-width:140px" class="mono"><input id="mmsg_kr" placeholder="한글 의미" style="max-width:160px"><button class="btn btn-ghost btn-sm" onclick="addMsg()">+ 추가</button></div>
         </div>
       </div>
 
