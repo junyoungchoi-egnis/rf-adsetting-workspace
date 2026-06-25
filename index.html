@@ -1601,6 +1601,30 @@ function setChgFilter(v){chgFilter=v;
   renderChanges();}
 function chgArea(c){ const set=c.setId?DB.sets.find(x=>x.id===c.setId):null; const prod=(set&&set.product)||c.product||''; return prod?areaOf(prod):null; }
 function fmtTs(iso){ if(!iso)return''; const d=new Date(iso); return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
+let _campSugg={};
+function copyCampName(cid,btn){ const t=_campSugg[cid]; if(t) copy(t,btn); }
+function campConceptAudit(){
+  if(!metaSnap||!metaSnap.adsets) return [];
+  const rows=Array.isArray(metaSnap.adsets)?metaSnap.adsets:Object.values(metaSnap.adsets);
+  const byCamp={};
+  rows.forEach(a=>{ const cid=a.campaignId||''; if(!cid)return; if(!byCamp[cid])byCamp[cid]={campaignId:cid,campaignName:a.campaignName||'',adsets:[]}; byCamp[cid].adsets.push(a); });
+  const out=[];
+  Object.values(byCamp).forEach(c=>{
+    const nm=c.campaignName||''; const m=nm.match(/\(([^()]*)\)\s*$/); if(!m) return;
+    const declared=m[1].split('/').map(s=>s.trim()).filter(Boolean);
+    const active=new Set(); let area=null;
+    c.adsets.forEach(a=>{ const p=parseLiveSet(a); if(p&&area===null)area=areaOf(p.product); if(String(a.adsetStatus||'').toUpperCase()!=='ACTIVE')return; if(p&&p.tam)active.add(tamKr(p.tam)); });
+    if(area&&area!==areaScope) return;
+    const activeArr=[...active], decSet=new Set(declared);
+    const missing=declared.filter(x=>!active.has(x)), extra=activeArr.filter(x=>!decSet.has(x));
+    if(!missing.length&&!extra.length) return;
+    const base=nm.replace(/\s*\(([^()]*)\)\s*$/,'');
+    const suggested=activeArr.length?`${base} (${activeArr.join('/')})`:base;
+    out.push({campaignId:c.campaignId,campaignName:nm,declared,active:activeArr,missing,extra,suggested});
+  });
+  return out;
+}
+
 function renderChanges(){
   const wrap=$('changesBody'); if(!wrap) return;
   // ── 현재 규칙 불일치(매체명≠우리 저장명) 안내 ──
@@ -1618,6 +1642,20 @@ function renderChanges(){
         </div>`).join('');
       div.style.display='';
     } else { div.innerHTML=''; div.style.display='none'; }
+  }
+  // ── 캠페인명 ↔ 활성 세트 타겟 컨셉 불일치 (4-4) ──
+  if(div){
+    const _conc=campConceptAudit(); _campSugg={};
+    _conc.forEach(c=>_campSugg[c.campaignId]=c.suggested);
+    if(_conc.length){
+      const _html=`<div class="sub-h" style="color:#ffcf66;margin:10px 0 8px">⚠ 캠페인명 ↔ 활성 세트 타겟 컨셉 불일치 · ${_conc.length}건</div>`+
+        _conc.map(c=>{
+          const r=[]; if(c.missing.length)r.push(`이름엔 <b>${esc(c.missing.join('/'))}</b> 있으나 활성 세트 없음`); if(c.extra.length)r.push(`활성 <b>${esc(c.extra.join('/'))}</b> 세트가 이름에 없음`);
+          return `<div class="diverge-row"><div style="flex:1;min-width:0"><div class="t-mono" style="color:var(--text3);font-size:11px">현재: ${esc(c.campaignName)}</div><div class="t-mono" style="color:#7fd6a0">제안: ${esc(c.suggested)}</div><div style="color:#ffcf66;font-size:11px;margin-top:2px">${r.join(' · ')}</div></div><button class="btn btn-ghost btn-xs" onclick="copyCampName('${c.campaignId}',this)" title="제안 이름을 복사합니다">이름 복사</button></div>`;
+        }).join('');
+      div.insertAdjacentHTML('beforeend', _html);
+      div.style.display='';
+    }
   }
   // ── 안내 노트 ──
   const note=$('chgDivergeNote');
