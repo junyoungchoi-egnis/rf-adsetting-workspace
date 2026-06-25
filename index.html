@@ -1615,6 +1615,7 @@ function campConceptAudit(){
     const active=new Set(); let area=null;
     c.adsets.forEach(a=>{ const p=parseLiveSet(a); if(p&&area===null)area=areaOf(p.product); if(String(a.adsetStatus||'').toUpperCase()!=='ACTIVE')return; if(p&&p.tam)active.add(tamKr(p.tam)); });
     if(area&&area!==areaScope) return;
+    if(active.size===0) return;
     const activeArr=[...active], decSet=new Set(declared);
     const missing=declared.filter(x=>!active.has(x)), extra=activeArr.filter(x=>!decSet.has(x));
     if(!missing.length&&!extra.length) return;
