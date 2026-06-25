@@ -1115,8 +1115,8 @@ function buildSetName(o){
   return parts.join('_');
 }
 function buildKrName(o){
-  const base=`${o.media}_${brandOf(o.product)}_${schemeKr(o.scheme)}_${goalKr(o.goal)}_${bidKr(o.bid)}_${tamKr(o.tam)}`;
-  return o.cnum?`${base}_${o.cnum}`:base;
+  const base=`${o.media}_${brandOf(o.product)}_${schemeKr(o.scheme)}_${goalKr(o.goal)}_${bidKr(o.bid)}`;
+  return (o.cnum?`${base}_${o.cnum}`:base)+(o.tam?` (${tamKr(o.tam)})`:'');
 }
 function currentBuilder(){
   return {
