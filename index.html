@@ -505,7 +505,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
                 <div class="field"><label>① 대상 캠페인 (Meta 라이브) <label style="display:inline;font-weight:400;color:var(--text3)"><input type="checkbox" id="mcd_campActive" checked onchange="mcdRenderCamps()" style="width:auto;vertical-align:middle"> 활성만</label></label><input id="mcd_campSearch" placeholder="🔎 캠페인 검색" oninput="mcdRenderCamps()" style="margin-bottom:6px"><select id="mcd_camp" onchange="mcdRenderAdsets();mcdSync()"></select></div>
                 <div class="field"><label>② 대상 광고세트 <label style="display:inline;font-weight:400;color:var(--text3)"><input type="checkbox" id="mcd_adsetActive" checked onchange="mcdRenderAdsets()" style="width:auto;vertical-align:middle"> 활성만</label></label><input id="mcd_adsetSearch" placeholder="🔎 광고세트 검색" oninput="mcdRenderAdsets()" style="margin-bottom:6px"><select id="mcd_adset" onchange="mcdSync()"></select><div id="mcd_adsetDecode" class="hint" style="margin-top:4px"></div></div>
               </div>
-              <div class="field"><label>소재 (생성 아카이브 → 이름·UTM)</label><select id="mcd_creative" onchange="mcdSync()"></select></div>
+              <div class="field"><label>소재 (생성 아카이브 → 이름·UTM)</label><input id="mcd_creativeSearch" placeholder="🔍 소재명 검색" oninput="mcdFillCreative()" style="margin-bottom:5px"><select id="mcd_creative" onchange="mcdSync()"></select></div>
               <div class="field"><label>자동 소재명</label><div id="mcd_autoname" class="mono mcd-auto"></div></div>
               <div class="field"><label>UTM (광고 링크에 url_tags로 주입)</label><div id="mcd_utm" class="mono mcd-auto"></div><button class="btn btn-xs" style="margin-top:6px" onclick="mcdApplyLanding()">⬇ 이 URL을 랜딩 URL에 적용</button></div>
             </div>
@@ -1878,11 +1878,18 @@ function mcdRenderAdsets(){
   let ads=mcLiveAdsetsOf(cid); if(actOnly)ads=ads.filter(a=>a.active); if(q)ads=ads.filter(a=>a.name.toLowerCase().includes(q));
   $('mcd_adset').innerHTML=ads.length?ads.map(a=>_opt(a.id,a.name+(a.active?'':' · 비활성'))).join(''):_opt('','(조건에 맞는 광고세트 없음)');
 }
+function mcdFillCreative(){
+  const q=((document.getElementById('mcd_creativeSearch')||{}).value||'').toLowerCase();
+  let arc=DB.archive.filter(a=>archiveArea(a)===areaScope);
+  if(q) arc=arc.filter(a=>(a.name||'').toLowerCase().includes(q));
+  const sel=$('mcd_creative'); if(!sel) return; const prev=sel.value;
+  sel.innerHTML=arc.length?arc.map(a=>_opt(a.id,a.name)).join(''):_opt('',q?'(검색 결과 없음)':'(아카이브 소재 없음)');
+  if(prev&&arc.some(a=>a.id===prev)) sel.value=prev;
+}
 function renderMetaCreate(){
   if(!document.getElementById('mcd_adset'))return;
   mcdRenderCamps();
-  const arc=DB.archive.filter(a=>archiveArea(a)===areaScope);
-  $('mcd_creative').innerHTML=arc.length?arc.map(a=>_opt(a.id,a.name)).join(''):_opt('','(아카이브 소재 없음)');
+  mcdFillCreative();
   $('mcd_cta').innerHTML=CTA_OPTS.map(c=>_opt(c[0],`${c[0]} (${c[1]})`)).join('');
   mcdRenderProfiles();
   mcdSetFmt(mcdFmt,true);
