@@ -1656,6 +1656,19 @@ function campConceptAudit(){
   return out;
 }
 
+let _utmFixVals=[];
+function copyUtmFix(i,btn){ const t=_utmFixVals[i]; if(t!=null) copy(t,btn); }
+function utmAudit(){
+  if(!metaSnap||!metaSnap.assets) return {camp:[],content:[]};
+  const ads=Object.values(metaSnap.assets).flatMap(a=>(a&&a.ads)||[]);
+  const camp=[], content=[];
+  ads.forEach(a=>{
+    const prod=String(a.name||'').split('_')[2]||''; if(areaOf(prod)!==areaScope) return;
+    if(a.adsetName && a.utm_campaign && a.adsetName!==a.utm_campaign) camp.push({name:a.name,set:a.adsetName,utm:a.utm_campaign});
+    if(a.name && a.utm_content && a.name!==a.utm_content) content.push({name:a.name,utm:a.utm_content});
+  });
+  return {camp,content};
+}
 function renderChanges(){
   const wrap=$('changesBody'); if(!wrap) return;
   // ── 현재 규칙 불일치(매체명≠우리 저장명) 안내 ──
@@ -1687,6 +1700,20 @@ function renderChanges(){
       div.insertAdjacentHTML('beforeend', _html);
       div.style.display='';
     }
+  }
+  // ── 세트명↔utm_campaign / 소재명↔utm_content 불일치 (무결성 점검) ──
+  if(div){
+    const _ua=utmAudit(); _utmFixVals=[];
+    let _h='';
+    if(_ua.camp.length){
+      _h+=`<div class="sub-h" style="color:#ffcf66;margin:10px 0 8px">⚠ 세트명 ↔ utm_campaign 불일치 · ${_ua.camp.length}건</div>`+
+        _ua.camp.map(c=>{ const i=_utmFixVals.push(c.set)-1; return `<div class="diverge-row"><div style="flex:1;min-width:0"><div class="t-mono" style="color:var(--text3);font-size:11px">소재: ${esc(c.name)}</div><div class="t-mono" style="color:#7fd6a0">세트명(정답): ${esc(c.set)}</div><div class="t-mono" style="color:#ff9b9b">utm_campaign: ${esc(c.utm)}</div></div><button class="btn btn-ghost btn-xs" onclick="copyUtmFix(`+i+`,this)" title="세트명을 복사 — Meta URL 매개변수의 utm_campaign에 붙여넣기">정답 복사</button></div>`; }).join('');
+    }
+    if(_ua.content.length){
+      _h+=`<div class="sub-h" style="color:#ffcf66;margin:10px 0 8px">⚠ 소재명 ↔ utm_content 불일치 · ${_ua.content.length}건</div>`+
+        _ua.content.map(c=>{ const i=_utmFixVals.push(c.name)-1; return `<div class="diverge-row"><div style="flex:1;min-width:0"><div class="t-mono" style="color:#7fd6a0">소재명(정답): ${esc(c.name)}</div><div class="t-mono" style="color:#ff9b9b">utm_content: ${esc(c.utm)}</div></div><button class="btn btn-ghost btn-xs" onclick="copyUtmFix(`+i+`,this)" title="소재명을 복사 — Meta URL 매개변수의 utm_content에 붙여넣기">정답 복사</button></div>`; }).join('');
+    }
+    if(_h){ div.insertAdjacentHTML('beforeend',_h); div.style.display=''; }
   }
   // ── 안내 노트 ──
   const note=$('chgDivergeNote');
