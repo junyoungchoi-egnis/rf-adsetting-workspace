@@ -1669,6 +1669,29 @@ function utmAudit(){
   });
   return {camp,content};
 }
+let _fixBusyUtm=false;
+async function fixUtmAllUtm(btn){
+  if(_fixBusyUtm) return; _fixBusyUtm=true;
+  if(btn){ btn.disabled=true; btn.textContent='고치는 중…'; }
+  const ua=utmAudit(); const seen={}; const list=[];
+  ua.camp.concat(ua.content).forEach(function(c){ if(!seen[c.name]){ seen[c.name]=1; list.push(c.name); } });
+  let done=0, fail=0, limited=false;
+  for(let i=0;i<list.length;i++){
+    const adName=list[i];
+    let info=null; const as=(metaSnap&&metaSnap.assets)||{};
+    for(const k in as){ const f=(as[k].ads||[]).find(function(a){ return a.name===adName; }); if(f){ info={act:k, set:f.adsetName||''}; break; } }
+    if(!info||!info.set){ fail++; continue; }
+    try{
+      const r=await fetch('/api/fixutm',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ act:info.act, adName:adName, correctCampaign:info.set, correctContent:adName, apply:true }) });
+      const j=await r.json();
+      if(j.ok){ done++; } else { fail++; if(((j.error||'')+'').indexOf('limit')>=0){ limited=true; break; } }
+    }catch(e){ fail++; }
+    await new Promise(function(res){ setTimeout(res,1800); });
+  }
+  _fixBusyUtm=false;
+  if(btn){ btn.disabled=false; btn.textContent='⚙ utm 전부 자동 고치기'; }
+  toast('utm 고치기 — 완료 '+done+' · 실패 '+fail+(limited?' · 한도 도달, 잠시후 재시도':''));
+}
 function renderChanges(){
   const wrap=$('changesBody'); if(!wrap) return;
   // ── 현재 규칙 불일치(매체명≠우리 저장명) 안내 ──
@@ -1713,7 +1736,7 @@ function renderChanges(){
       _h+=`<div class="sub-h" style="color:#ffcf66;margin:10px 0 8px">⚠ 소재명 ↔ utm_content 불일치 · ${_ua.content.length}건</div>`+
         _ua.content.map(c=>{ const i=_utmFixVals.push(c.name)-1; return `<div class="diverge-row"><div style="flex:1;min-width:0"><div class="t-mono" style="color:#7fd6a0">소재명(정답): ${esc(c.name)}</div><div class="t-mono" style="color:#ff9b9b">utm_content: ${esc(c.utm)}</div></div><button class="btn btn-ghost btn-xs" onclick="copyUtmFix(`+i+`,this)" title="소재명을 복사 — Meta URL 매개변수의 utm_content에 붙여넣기">정답 복사</button></div>`; }).join('');
     }
-    if(_h){ div.insertAdjacentHTML('beforeend',_h); div.style.display=''; }
+    if(_h){ const _btn='<div style="margin:10px 0 6px"><button class="btn btn-sm" onclick="fixUtmAllUtm(this)">⚙ utm 전부 자동 고치기</button> <span class="hint" style="margin-left:6px">소재 새로 만들어 교체 · 검수 재진입</span></div>'; div.insertAdjacentHTML('beforeend', _btn + _h); div.style.display=''; }
   }
   // ── 안내 노트 ──
   const note=$('chgDivergeNote');
