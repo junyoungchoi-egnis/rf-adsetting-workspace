@@ -270,7 +270,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
           </div>
 
           <div class="panel">
-            <div class="panel-h"><span class="step">C</span>타겟 컨셉 (구 TAM) <span class="hint">콘텐츠마케터 영역 · 1개만 선택</span></div>
+            <div class="panel-h"><span class="step">C</span>타겟 컨셉 (구 TAM) <span class="hint">콘텐츠마케터 영역 · 여러 개 선택 가능</span></div>
             <div class="chips" id="b_tamChips" style="margin-bottom:9px"></div>
             <div class="row-flex">
               <input id="b_newTam" placeholder="신규 타겟 컨셉 추가 (예: BENEFIT)" style="max-width:220px" onkeydown="if(event.key==='Enter')addTam()">
@@ -1098,7 +1098,7 @@ function renderAddedTargets(){
 function addComposedTargeting(){ const code=composeTargeting(); if(!code){toast('타게팅 토큰을 선택하세요');return;} bTargets.add(code); bTokens.clear(); renderBuilderChips(); buildPreview(); }
 function toggleSet(set,v){set.has(v)?set.delete(v):set.add(v);}
 function addTargeting(){const v=$('b_newTarget').value.trim().toUpperCase();if(!v)return;bTargets.add(v);$('b_newTarget').value='';renderBuilderChips();buildPreview();}
-function bSetTam(c){ if(bTams.has(c))bTams.clear(); else { bTams.clear(); bTams.add(c); } renderBuilderChips(); buildPreview(); }
+function bSetTam(c){ if(bTams.has(c))bTams.delete(c); else bTams.add(c); renderBuilderChips(); buildPreview(); }
 function addTam(){const v=$('b_newTam').value.trim().toUpperCase();if(!v)return;if(!M().tams.some(t=>t.code===v)){M().tams.push({code:v,kr:''});save();}bTams.clear();bTams.add(v);$('b_newTam').value='';renderBuilderChips();buildPreview();}
 function onBidChange(){
   const bid=$('b_bid').value; $('b_optWrap').style.opacity='1';
@@ -1116,7 +1116,7 @@ function buildSetName(o){
 }
 function buildKrName(o){
   const base=`${o.media}_${brandOf(o.product)}_${schemeKr(o.scheme)}_${goalKr(o.goal)}_${bidKr(o.bid)}`;
-  return (o.cnum?`${base}_${o.cnum}`:base)+(o.tam?` (${tamKr(o.tam)})`:'');
+  const _tms=(o.tams&&o.tams.length)?o.tams:(o.tam?[o.tam]:[]); return (o.cnum?`${base}_${o.cnum}`:base)+(_tms.length?` (${_tms.map(tamKr).join('/')})`:'');
 }
 function currentBuilder(){
   return {
@@ -1141,7 +1141,7 @@ function buildPreview(){
   if(valid){
     const name=buildSetName(o);
     $('b_preview').innerHTML=name.split('_').map(t=>`<span class="tok">${esc(t)}</span>`).join('<span style="color:var(--text3)">_</span>');
-    $('b_previewKr').textContent=buildKrName(o);
+    $('b_previewKr').textContent=buildKrName({...o,tams:[...bTams]});
   }else{$('b_preview').innerHTML='<span class="ph">기본 정보를 채워주세요…</span>';$('b_previewKr').innerHTML='<span class="ph">—</span>';}
   $('b_composite').textContent=valid?compositeOf(b.goal,b.bid):'—';
   const cnt=(effectiveTargets().length||0)*(bTams.size||0);
@@ -1149,15 +1149,15 @@ function buildPreview(){
   const w=[];
   if(valid&&!landingFor(b.product,b.scheme))w.push(`⚠️ ${b.product}+${b.scheme} 랜딩 URL 매핑 없음 — 매핑키 탭에서 추가하면 UTM이 완성됩니다.`);
   if(effectiveTargets().length===0)w.push('타게팅 토큰을 1개 이상 선택하세요.');
-  if(bTams.size===0)w.push('TAM을 1개 이상 선택하세요.');
+  if(bTams.size===0)w.push('타겟 컨셉을 1개 이상 선택하세요.');
   const wb=$('b_warn');wb.innerHTML=w.join('<br>');wb.classList.toggle('show',w.length>0);
 }
 function generateSets(){
   const b=currentBuilder();
   if(!(b.product&&b.media&&b.date&&b.goal&&b.bid&&b.scheme)){toast('기본 정보를 모두 채워주세요');return;}
   const tgs=effectiveTargets();
-  if(!tgs.length||!bTams.size){toast('타게팅·TAM을 선택하세요');return;}
-  let added=0; const newIds=[];
+  if(!tgs.length||!bTams.size){toast('타게팅·타겟 컨셉을 선택하세요');return;}
+  let added=0; const newIds=[]; const _krName=buildKrName({...b,tams:[...bTams]});
   for(const tg of tgs)for(const tm of bTams){
     const o={...b,targeting:tg,tam:tm};
     const name=buildSetName(o);
@@ -1165,7 +1165,7 @@ function generateSets(){
     if(exist){ newIds.push(exist.id); continue; }
     const id=Date.now()+'-'+Math.random().toString(36).slice(2,6);
     DB.sets.push({
-      id, name, krName:buildKrName(o),
+      id, name, krName:_krName,
       product:b.product, brand:brandOf(b.product), media:b.media,
       goal:b.goal, bid:b.bid, composite:compositeOf(b.goal,b.bid),
       targeting:tg, scheme:b.scheme, tam:tm, firstcat:b.firstcat, date:b.date,
@@ -1176,7 +1176,7 @@ function generateSets(){
   save();renderSetLib();
   // ── 생성 단계(캠페인·광고세트)로 진입 — 같은 탭 하단에 표시 ──
   const tam0=[...bTams][0];
-  lastGen={product:b.product, scheme:b.scheme, goal:b.goal, media:b.media, bid:b.bid, tam:tam0, cnum:b.cnum, campaignName:buildKrName({...b,tam:tam0}), setIds:newIds};
+  lastGen={product:b.product, scheme:b.scheme, goal:b.goal, media:b.media, bid:b.bid, tam:tam0, cnum:b.cnum, campaignName:_krName, setIds:newIds};
   const w=$('b_createWrap'); if(w){ w.style.display=''; bcSub('campaign'); renderBuildCreate(); w.scrollIntoView({behavior:'smooth',block:'start'}); }
   toast(`광고세트 ${added}개 생성 · 아래 Meta 생성 단계로 진행하세요`);
 }
