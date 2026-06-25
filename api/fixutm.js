@@ -32,7 +32,7 @@ async function gget(url) {
 async function gpost(url, body) {
   const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   const j = await r.json();
-  if (j.error) throw new Error('[write] ' + (j.error.message || 'graph error'));
+  if (j.error) throw new Error('[write] ' + JSON.stringify(j.error));
   return j;
 }
 
