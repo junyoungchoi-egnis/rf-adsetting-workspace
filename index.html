@@ -1486,24 +1486,35 @@ function toggleCloneSource(id){ cloneSources.has(id)?cloneSources.delete(id):clo
 function clearCloneSources(){ cloneSources.clear(); renderClonePicker(); creativePreview(); }
 function runClone(){
   const sets=[...cSel].map(curSet).filter(Boolean);
-  const _pool=(cloneSrcMode==='meta')?metaCloneSources():DB.archive; const srcs=[...cloneSources].map(id=>_pool.find(a=>a.id===id)).filter(Boolean);
-  if(!sets.length){toast('대상 세트를 선택하세요 (A·B)');return;}
+  const _pool=(cloneSrcMode==='meta')?metaCloneSources():DB.archive;
+  const srcs=[...cloneSources].map(id=>_pool.find(a=>a.id===id)).filter(Boolean);
+  if(!sets.length){toast('대상 세트를 선택하세요');return;}
   if(!srcs.length){toast('복제할 소스 소재를 선택하세요');return;}
-  lastResults=[]; let skip=0; const ts=new Date().toISOString();
-  sets.forEach(set=>srcs.forEach(src=>{
+  const recs=[]; const plan=[]; const ts=new Date().toISOString();
+  sets.forEach(function(set){ srcs.forEach(function(src){
     const p=itemPayload(src); if(!p) return;
     const cr={fmt:p.fmt,msg:p.msg,soje:p.soje};
     const name=buildCreativeName(set,p.date,cr,p.manager||'');
-    if(DB.archive.some(a=>a.name===name)){skip++;return;}
     const srcLanding=(src&&src.link)||((src&&src.utm)||'').split(/[?&]utm_source=/)[0]||set.landing;
     const utm=buildUTM(set,name,srcLanding);
-    const item={id:(Date.now()+Math.random()).toString(36).slice(2,10),ts,setId:set.id,setName:set.name,brand:set.brand,manager:p.manager||'',name,utm,status:validateName(name),done:false,
-      fmt:p.fmt,msg:p.msg,soje:p.soje,date:p.date,cloned:true};
-    lastResults.push(item);DB.archive.unshift(item);
-  }));
-  save();renderResults();
-  toast(`복제 ${lastResults.length}건 생성${skip?` · 중복 ${skip} 제외`:''}`);
+    recs.push({id:(Date.now()+Math.random()).toString(36).slice(2,10),ts:ts,setId:set.id,setName:set.name,brand:set.brand,manager:p.manager||'',name:name,utm:utm,status:validateName(name),done:false,fmt:p.fmt,msg:p.msg,soje:p.soje,date:p.date,cloned:true});
+    if(set.adsetId && src.cid && set.account){ plan.push({act:set.account,srcCreativeId:src.cid,targetAdsetId:set.adsetId,newName:name,utmCampaign:set.name,utmContent:name}); }
+  }); });
+  recs.forEach(function(r){ DB.archive.unshift(r); }); lastResults=recs; save(); renderResults();
+  if(!plan.length){ toast('아카이브 기록됨 · 메타 생성 대상 없음 (Meta 라이브러리 소재 + 라이브 세트 필요)'); return; }
+  if(!confirm(plan.length+'개 광고를 대상 세트에 새로 생성합니다 (PAUSED). 진행할까요?')){ toast('취소됨'); return; }
+  (async function(){
+    let done=0,fail=0,stop=false;
+    for(let i=0;i<plan.length;i++){
+      try{ const r=await fetch('/api/clonead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({apply:true},plan[i]))}); const j=await r.json(); if(j.ok)done++; else { fail++; if(((j.error||'')+'').indexOf('limit')>=0){stop=true;} } }
+      catch(e){ fail++; }
+      if(stop) break;
+      await new Promise(function(res){ setTimeout(res,1500); });
+    }
+    toast('복제 생성 — 완료 '+done+' · 실패 '+fail+(stop?' · 한도 도달, 잠시후 재시도':''));
+  })();
 }
+
 function generateCreatives(){
   const date=yymmdd($('c_date').value), mgr=$('c_manager').value.trim();
   const sets=[...cSel].map(curSet).filter(Boolean);
