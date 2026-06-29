@@ -589,14 +589,34 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
           </div>
         </div>
         <div id="uc_newWrap">
-          <div class="hint" style="margin-bottom:8px">신규 소재 정의 — 소재명/미리보기까지 동작합니다. (에셋·문구·CTA·랜딩 입력과 실제 생성, 생성 아카이브 프리필은 다음 배포에서 연결)</div>
+          <div class="hint" style="margin-bottom:8px">신규 소재를 만들어 선택한 세트마다 PAUSED로 생성합니다. (생성 시 생성 아카이브에 기록됩니다)</div>
+          <div id="uc_archWrap" style="display:none;margin-bottom:10px">
+            <div class="field"><label>생성 아카이브에서 불러오기 (클릭 시 네이밍 자동 채움)</label>
+              <input id="uc_archSearch" placeholder="🔎 아카이브 소재명 검색" oninput="ucRenderArch()" style="margin-bottom:6px">
+              <div id="uc_archList" style="max-height:160px;overflow:auto;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:4px"></div>
+            </div>
+          </div>
           <div class="grid g2">
-            <div class="field"><label>계정</label><select id="uc_acct" onchange="ucRenderSets();ucRenderPreview()"></select></div>
-            <div class="field"><label>형식</label><select id="uc_fmt" onchange="ucRenderPreview()"></select></div>
-            <div class="field"><label>메시지 컨셉</label><select id="uc_msg" onchange="ucRenderPreview()"></select></div>
+            <div class="field"><label>계정</label><select id="uc_acct" onchange="ucFillAssets();ucRenderSets();ucRenderPreview()"></select></div>
+            <div class="field"><label>형식</label><select id="uc_fmt" onchange="ucFillAssets();ucRenderPreview()"></select></div>
+            <div class="field"><label>메시지1</label><select id="uc_msg1" onchange="ucRenderPreview()"></select></div>
+            <div class="field"><label>메시지2 (선택)</label><select id="uc_msg2" onchange="ucRenderPreview()"></select></div>
+            <div class="field"><label>메시지3 (선택)</label><select id="uc_msg3" onchange="ucRenderPreview()"></select></div>
             <div class="field"><label>소재명 (수동 입력)</label><input id="uc_soje" oninput="ucRenderPreview()" placeholder="예: cs.e"></div>
-            <div class="field"><label>날짜</label><input type="date" id="uc_date" onchange="ucRenderPreview()"></div>
+            <div class="field"><label>날짜</label><input type="date" id="uc_date" onchange="ucRenderPreview()" style="color-scheme:dark"></div>
             <div class="field"><label>담당자</label><input id="uc_manager" oninput="ucRenderPreview()" placeholder="예: ssh"></div>
+            <div class="field"><label>페이지</label><select id="uc_page"></select></div>
+            <div class="field"><label>CTA</label><select id="uc_cta"></select></div>
+          </div>
+          <div class="field" style="margin-top:6px"><label>에셋 (형식에 맞는 이미지/영상)</label>
+            <input id="uc_assetSearch" placeholder="🔎 에셋 검색" oninput="ucFillAssets()" style="margin-bottom:6px">
+            <select id="uc_asset"></select>
+          </div>
+          <div class="grid g2" style="margin-top:6px">
+            <div class="field"><label>문구 (본문)</label><input id="uc_body" placeholder="광고 본문"></div>
+            <div class="field"><label>헤드라인</label><input id="uc_headline" placeholder="제목"></div>
+            <div class="field"><label>설명 (선택)</label><input id="uc_desc" placeholder="설명"></div>
+            <div class="field"><label>랜딩 URL</label><input id="uc_landing" placeholder="https://..."></div>
           </div>
         </div>
       </div>
@@ -2038,10 +2058,11 @@ async function msCreate(btn){
   toast('생성 — 완료 '+done+' · 실패 '+fail+(stop?' · 한도 도달, 잠시후 재시도':''));
 }
 
-/* ⑥ 통합 소재 세팅 — Round 1 (복제 경로 라이브 + 3스텝 구조) */
+/* ⑥ 통합 소재 세팅 — Round 2 (복제 + 신규 생성) */
 var UC={mode:'new', scope:'single', srcs:{}, targets:{}};
 var UC_ACCT={'1462607070849777':'클룹 메인','793134085895227':'클룹 서브','3342733785912061':'스프린트','539103343188615':'[사용X]'};
 var UC_BRAND={'1462607070849777':'클룹','793134085895227':'클룹','3342733785912061':'스프린트','539103343188615':''};
+var UC_CTA=['SHOP_NOW','LEARN_MORE','ORDER_NOW','BUY_NOW','GET_OFFER','SIGN_UP','SEE_MORE','GET_DETAILS','SUBSCRIBE'];
 
 function ucCurScope(){
   try{
@@ -2074,20 +2095,31 @@ function ucSourcesEnriched(){
   var campOf=ucMetaSetCampOf();
   return ucSources().map(function(s){ s._set=s.adsetName||''; s._camp=campOf[s.adsetName]||''; return s; });
 }
+function ucAssetsOf(acct){ try{ return (metaSnap.assets&&metaSnap.assets[acct])||{}; }catch(e){ return {}; } }
 
 function ucInit(){
   try{ if(typeof renderMetaCreate==='function'){ var pg=document.getElementById('mcd_page'); if(pg&&!pg.options.length) renderMetaCreate(); } }catch(e){}
-  ucFillMaps(); ucFillAcct(); ucFillSrcCamp();
+  ucFillMaps(); ucFillCta(); ucFillAcct(); ucFillPages(); ucFillSrcCamp(); ucFillAssets(); ucRenderArch();
   ucSrcMode(UC.mode); ucScope(UC.scope);
   ucRenderSrcList(); ucRenderSets(); ucRenderPreview();
-  if(!window.__ucScopeHook){ window.__ucScopeHook=1; document.addEventListener('click',function(e){ var t=e.target&&e.target.closest?e.target.closest('button'):null; if(!t)return; var tx=(t.textContent||'').trim(); if(tx==='\uD074\uB8F9'||tx==='\uC2A4\uD504\uB9B0\uD2B8'){ setTimeout(ucScopeRefresh,80); } },true); }
+  if(!window.__ucScopeHook){ window.__ucScopeHook=1; document.addEventListener('click',function(e){ var t=e.target&&e.target.closest?e.target.closest('button'):null; if(!t)return; var tx=(t.textContent||'').trim(); if(tx==='클룹'||tx==='스프린트'){ setTimeout(ucScopeRefresh,80); } },true); }
 }
-function ucScopeRefresh(){ var pg=document.getElementById('page-unified'); if(!pg||!pg.classList.contains('active'))return; UC.srcs={}; UC.targets={}; ucFillAcct(); ucFillSrcCamp(); ucRenderSrcList(); ucRenderSets(); ucRenderPreview(); }
+function ucScopeRefresh(){ var pg=document.getElementById('page-unified'); if(!pg||!pg.classList.contains('active'))return; UC.srcs={}; UC.targets={}; ucFillAcct(); ucFillSrcCamp(); ucFillAssets(); ucRenderSrcList(); ucRenderSets(); ucRenderPreview(); }
+
 function ucFillMaps(){
   var fmt=document.getElementById('uc_fmt');
   if(fmt&&!fmt.options.length){ var fl=ucMapList('formats'); fmt.innerHTML=fl.map(function(o){ return '<option value="'+o.code+'">'+esc(o.label||o.code)+' ('+o.code+')</option>'; }).join(''); }
-  var msg=document.getElementById('uc_msg');
-  if(msg&&!msg.options.length){ var ml=ucMapList('msgpool'); msg.innerHTML='<option value="">메시지 컨셉 선택</option>'+ml.map(function(o){ return '<option value="'+o.code+'">'+esc(o.code)+(o.label?' · '+esc(o.label):'')+'</option>'; }).join(''); }
+  var ml=ucMapList('msgpool');
+  ['uc_msg1','uc_msg2','uc_msg3'].forEach(function(id,idx){
+    var sel=document.getElementById(id);
+    if(sel&&!sel.options.length){ sel.innerHTML='<option value="">'+(idx===0?'메시지1 선택':'(없음)')+'</option>'+ml.map(function(o){ return '<option value="'+o.code+'">'+esc(o.code)+(o.label?' · '+esc(o.label):'')+'</option>'; }).join(''); }
+  });
+}
+function ucFillCta(){ var c=document.getElementById('uc_cta'); if(c&&!c.options.length){ c.innerHTML=UC_CTA.map(function(v){ return '<option value="'+v+'">'+v+'</option>'; }).join(''); } }
+function ucFillPages(){
+  var dst=document.getElementById('uc_page'); if(!dst) return;
+  var srcSel=document.getElementById('mcd_page');
+  if(srcSel&&srcSel.options.length){ dst.innerHTML=[].slice.call(srcSel.options).map(function(o){ return '<option value="'+o.value+'">'+esc(o.textContent||o.value)+'</option>'; }).join(''); }
 }
 function ucFillAcct(){
   var s=document.getElementById('uc_acct'); if(!s) return;
@@ -2096,6 +2128,18 @@ function ucFillAcct(){
   var ids=Object.keys(seen);
   if(!ids.length){ var sc=ucCurScope(); ids=Object.keys(UC_BRAND).filter(function(id){ return UC_BRAND[id]===sc; }); }
   s.innerHTML=ids.map(function(id){ return '<option value="'+id+'"'+(id===cur?' selected':'')+'>'+(UC_ACCT[id]||id)+'</option>'; }).join('');
+}
+function ucFillAssets(){
+  var sel=document.getElementById('uc_asset'); if(!sel) return;
+  var acct=(document.getElementById('uc_acct')||{}).value||'';
+  var fmt=(document.getElementById('uc_fmt')||{}).value||'';
+  var q=((document.getElementById('uc_assetSearch')||{}).value||'').toLowerCase();
+  var a=ucAssetsOf(acct), out=[];
+  if(fmt==='V'){ (a.videos||[]).forEach(function(v){ out.push({val:'vid:'+v.id, label:(v.title||v.id)}); }); }
+  else { (a.images||[]).forEach(function(im){ out.push({val:'img:'+im.hash, label:(im.name||im.hash)}); }); }
+  if(q) out=out.filter(function(o){ return (o.label||'').toLowerCase().indexOf(q)>=0; });
+  out=out.slice(0,80);
+  sel.innerHTML='<option value="">(에셋 선택)</option>'+out.map(function(o){ return '<option value="'+o.val+'">'+esc((o.label||'').slice(0,40))+'</option>'; }).join('');
 }
 function ucFillSrcCamp(){
   var sel=document.getElementById('uc_srcCamp'); if(!sel) return;
@@ -2116,10 +2160,35 @@ function ucSrcCampChange(){ ucFillSrcSet(); ucRenderSrcList(); }
 function ucSrcMode(m){
   UC.mode=m;
   ['new','archive','meta'].forEach(function(x){ var b=document.getElementById('uc_m_'+x); if(b)b.className=(x===m?'on':''); });
-  var mw=document.getElementById('uc_metaWrap'), nw=document.getElementById('uc_newWrap');
+  var mw=document.getElementById('uc_metaWrap'), nw=document.getElementById('uc_newWrap'), aw=document.getElementById('uc_archWrap');
   if(mw)mw.style.display=(m==='meta')?'':'none';
   if(nw)nw.style.display=(m==='meta')?'none':'';
+  if(aw)aw.style.display=(m==='archive')?'':'none';
+  if(m==='archive') ucRenderArch();
   ucRenderSets(); ucRenderPreview();
+}
+
+/* ── 생성 아카이브 불러오기 (프리필) ── */
+function ucArchList(){ try{ return (DB.archive||[]).slice().reverse(); }catch(e){ return []; } }
+function ucRenderArch(){
+  var wrap=document.getElementById('uc_archList'); if(!wrap) return;
+  var q=((document.getElementById('uc_archSearch')||{}).value||'').toLowerCase();
+  var list=ucArchList(); if(q) list=list.filter(function(a){ return ((a.name||'')+(a.setName||'')).toLowerCase().indexOf(q)>=0; });
+  list=list.slice(0,60); window.__ucArch=list;
+  wrap.innerHTML=list.length?list.map(function(a,i){
+    return '<div class="diverge-row" style="cursor:pointer;gap:8px" onclick="ucPrefillArch('+i+')"><span class="t-mono" style="flex:1;min-width:0;font-size:11px;color:var(--text3)">'+esc((a.name||'').slice(0,46))+'</span><span style="font-size:10px;color:var(--accent2)">'+esc(a.date||'')+'</span></div>';
+  }).join(''):'<div class="empty" style="padding:10px">아카이브 없음</div>';
+}
+function ucPrefillArch(i){
+  var a=(window.__ucArch||[])[i]; if(!a) return;
+  var sv=function(id,val){ var e=document.getElementById(id); if(e)e.value=val||''; };
+  sv('uc_fmt', a.fmt);
+  var parts=String(a.msg||'').split('-'); sv('uc_msg1',parts[0]||''); sv('uc_msg2',parts[1]||''); sv('uc_msg3',parts[2]||'');
+  sv('uc_soje', a.soje);
+  var d=String(a.date||''); if(/^\d{6}$/.test(d)) sv('uc_date','20'+d.slice(0,2)+'-'+d.slice(2,4)+'-'+d.slice(4,6)); 
+  sv('uc_manager', a.manager);
+  ucRenderPreview();
+  if(typeof toast==='function') toast('아카이브에서 네이밍 불러옴 — 콘텐츠(페이지·에셋·문구) 입력 후 생성');
 }
 
 function ucRenderSrcList(){
@@ -2144,7 +2213,15 @@ function ucSelectedSrcs(){ return Object.keys(UC.srcs).map(function(k){ return U
 function ucNewPayload(){
   var g=function(id){ return (document.getElementById(id)||{}).value||''; };
   var d=g('uc_date');
-  return { fmt:g('uc_fmt'), msg:g('uc_msg'), soje:g('uc_soje'), date:(d?d.replace(/-/g,'').slice(2):''), manager:g('uc_manager') };
+  var msg=[g('uc_msg1'),g('uc_msg2'),g('uc_msg3')].filter(Boolean).join('-');
+  return { fmt:g('uc_fmt'), msg:msg, soje:g('uc_soje'), date:(d?d.replace(/-/g,'').slice(2):''), manager:g('uc_manager') };
+}
+function ucNewSpec(){
+  var g=function(id){ return (document.getElementById(id)||{}).value||''; };
+  var asset=g('uc_asset'); var spec={ page_id:g('uc_page'), message:g('uc_body'), name:g('uc_headline'), description:g('uc_desc'), cta:g('uc_cta'), link:g('uc_landing') };
+  if(asset.indexOf('vid:')===0) spec.video_id=asset.slice(4);
+  else if(asset.indexOf('img:')===0) spec.image_hash=asset.slice(4);
+  return spec;
 }
 function ucPayloadOf(src){ return (typeof itemPayload==='function'?itemPayload(src):null)||{}; }
 
@@ -2199,34 +2276,54 @@ function ucRenderPreview(){
   }).join('');
 }
 
+function ucArchPush(set,name,utm,p,cloned){
+  try{ DB.archive=DB.archive||[];
+    DB.archive.push({ id:Date.now()+'-'+Math.floor(Math.random()*1000), ts:new Date().toISOString(), setId:set.adsetId, setName:set.name, brand:(set.brand||''), manager:p.manager||'', name:name, utm:utm, status:'PAUSED', done:false, fmt:p.fmt, msg:p.msg, soje:p.soje, date:p.date, cloned:!!cloned });
+  }catch(e){}
+}
+
 async function ucCreate(btn){
   var sets=ucSelectedSets();
-  if(UC.mode!=='meta'){ toast('신규 소재 생성은 다음 배포에서 연결됩니다 (현재 네이밍·미리보기까지 동작)'); return; }
-  var srcs=ucSelectedSrcs();
-  if(!srcs.length){ toast('복제할 소재를 1개 이상 선택하세요'); return; }
   if(!sets.length){ toast('세팅할 세트를 선택하세요'); return; }
   var plan=[];
-  sets.forEach(function(set){ srcs.forEach(function(src){
-    var p=ucPayloadOf(src);
-    var name=buildCreativeName(set,p.date,{fmt:p.fmt,msg:p.msg,soje:p.soje},p.manager||'');
-    if(set._acct&&set.adsetId) plan.push({ act:set._acct, srcCreativeId:src.cid, targetAdsetId:set.adsetId, newName:name, utmCampaign:set.name, utmContent:name });
-  }); });
+  if(UC.mode==='meta'){
+    var srcs=ucSelectedSrcs();
+    if(!srcs.length){ toast('복제할 소재를 1개 이상 선택하세요'); return; }
+    sets.forEach(function(set){ srcs.forEach(function(src){
+      var p=ucPayloadOf(src); var name=buildCreativeName(set,p.date,{fmt:p.fmt,msg:p.msg,soje:p.soje},p.manager||'');
+      if(set._acct&&set.adsetId) plan.push({ act:set._acct, srcCreativeId:src.cid, targetAdsetId:set.adsetId, newName:name, utmCampaign:set.name, utmContent:name, _p:p, _set:set, _cloned:true });
+    }); });
+  } else {
+    var p2=ucNewPayload(); var ns=ucNewSpec();
+    if(!ns.page_id){ toast('페이지를 선택하세요'); return; }
+    if(!ns.image_hash&&!ns.video_id){ toast('형식에 맞는 에셋(이미지/영상)을 선택하세요'); return; }
+    if(!ns.link){ toast('랜딩 URL을 입력하세요'); return; }
+    if(ns.link.indexOf('utm_')<0){ ns.link += (ns.link.indexOf('?')<0?'?':'&')+'utm_campaign=&utm_content='; }
+    sets.forEach(function(set){
+      var name=buildCreativeName(set,p2.date,{fmt:p2.fmt,msg:p2.msg,soje:p2.soje},p2.manager||'');
+      if(set._acct&&set.adsetId) plan.push({ act:set._acct, targetAdsetId:set.adsetId, newName:name, utmCampaign:set.name, utmContent:name, newSpec:Object.assign({},ns), _p:p2, _set:set, _cloned:false });
+    });
+  }
   if(!plan.length){ toast('생성 가능한 조합이 없습니다 (계정 매핑 확인)'); return; }
-  if(!confirm(plan.length+'건 생성 (소재 '+srcs.length+' × 세트 '+sets.length+', PAUSED). 진행할까요?')){ toast('취소됨'); return; }
+  var msg=(UC.mode==='meta')?(plan.length+'건 생성 (PAUSED). 진행할까요?'):(plan.length+'개 세트에 신규 소재 생성 (PAUSED). 진행할까요?');
+  if(!confirm(msg)){ toast('취소됨'); return; }
   if(btn){ btn.disabled=true; btn.textContent='세팅 중…'; }
-  var done=0,fail=0,stop=false;
+  var done=0,fail=0,stop=false,lastErr='';
   for(var i=0;i<plan.length;i++){
+    var item=plan[i]; var body=Object.assign({apply:true},item); delete body._p; delete body._set; delete body._cloned;
     try{
-      var r=await fetch('/api/clonead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({apply:true},plan[i]))});
+      var r=await fetch('/api/clonead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
       var j=await r.json();
-      if(j.ok)done++; else { fail++; if(((j.error||'')+'').indexOf('limit')>=0){ stop=true; } }
+      if(j.ok){ done++; ucArchPush(item._set,item.newName,item.utmCampaign,item._p,item._cloned); }
+      else { fail++; lastErr=(j.error||'')+''; if(lastErr.indexOf('limit')>=0){ stop=true; } }
     }catch(e){ fail++; }
     if(stop)break;
     await new Promise(function(res){ setTimeout(res,1500); });
   }
+  if(done&&typeof save==='function'){ try{ save(); }catch(e){} }
   if(btn){ btn.disabled=false; btn.textContent='세트마다 세팅 (PAUSED)'; }
-  if(typeof mcLogActivity==='function'){ try{ mcLogActivity('통합탭 복제 세팅 '+done+'/'+plan.length); }catch(e){} }
-  toast('세팅 — 완료 '+done+' · 실패 '+fail+(stop?' · 한도 도달, 잠시 후 재시도':''));
+  if(typeof mcLogActivity==='function'){ try{ mcLogActivity('통합탭 '+(UC.mode==='meta'?'복제':'신규')+' 세팅 '+done+'/'+plan.length); }catch(e){} }
+  toast('세팅 — 완료 '+done+' · 실패 '+fail+(stop?' · 한도 도달, 잠시 후 재시도':(lastErr&&fail?' · '+lastErr.slice(0,40):'')));
 }
 
 function mcdRenderAdsets(){
