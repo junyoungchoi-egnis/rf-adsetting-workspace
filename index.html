@@ -205,7 +205,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
       <div class="nav-item" data-tab="archive" onclick="go('archive')"><span class="n">3</span>생성 아카이브</div>
       <div class="nav-item" data-tab="changes" onclick="go('changes')"><span class="n">4</span>변경 아카이브</div>
       <div class="nav-item" data-tab="metacreate" onclick="go('metacreate')"><span class="n">5</span>Meta 소재 세팅 <span style="font-size:9px;background:#3a2e15;color:#ffcf66;padding:1px 5px;border-radius:6px;margin-left:2px">beta</span></div>
-      <div class="nav-item" data-tab="map" onclick="go('map')"><span class="n">⚙</span>설정/매핑</div>
+      <div class="nav-item" data-tab="unified" onclick="go('unified');ucInit()"><span class="n">⑥</span>통합 세팅</div><div class="nav-item" data-tab="map" onclick="go('map')"><span class="n">⚙</span>설정/매핑</div>
     </nav>
     <div class="side-foot">
       <div class="side-stat"><span>광고세트</span><b id="stSets">0</b></div>
@@ -565,7 +565,60 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
     </section>
 
     <!-- ══════════ TAB 6: MAP ══════════ -->
-    <section class="page" id="page-map">
+    <section class="page" id="page-unified">
+      <div class="panel" style="margin-bottom:14px">
+        <div class="panel-h">⑥ 통합 소재 세팅 <span class="bdg bdg-ok">소재명 → 어디에 세팅할지 → 세팅</span></div>
+        <div class="hint">한 소재를 정의하고, 1개 또는 여러 광고 세트에 소재명·UTM을 자동 재파생해 한 번에 세팅합니다. (Meta 라이브러리 = 기존 소재 복제는 바로 동작 · 신규 작성/생성 아카이브 = 신규 생성은 네이밍·미리보기까지 동작)</div>
+      </div>
+
+      <div class="panel" style="margin-bottom:14px">
+        <div class="panel-h">1단계 · 소재 정의</div>
+        <div class="row-flex" style="gap:6px;margin:8px 0 12px;flex-wrap:wrap">
+          <button class="btn on" id="uc_m_meta" onclick="ucSrcMode('meta')">Meta 라이브러리 (기존 복제)</button>
+          <button class="btn" id="uc_m_archive" onclick="ucSrcMode('archive')">생성 아카이브 (신규)</button>
+          <button class="btn" id="uc_m_new" onclick="ucSrcMode('new')">신규 작성</button>
+        </div>
+        <div id="uc_metaWrap">
+          <div class="field"><label>소재 선택 (검색)</label>
+            <input id="uc_srcSearch" placeholder="🔎 소재명 검색" oninput="ucRenderSrcList()" style="margin-bottom:6px">
+            <div id="uc_srcList" style="max-height:200px;overflow:auto;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:4px"></div>
+          </div>
+        </div>
+        <div id="uc_newWrap" style="display:none">
+          <div class="hint" style="margin-bottom:8px">신규 소재 생성 — 소재명/미리보기까지 동작합니다. 에셋·페이지·문구·CTA·랜딩 입력과 실제 생성은 다음 배포에서 연결됩니다.</div>
+          <div class="grid g2">
+            <div class="field"><label>계정</label><select id="uc_acct" onchange="ucRenderSets();ucRenderPreview()"></select></div>
+            <div class="field"><label>형식</label><select id="uc_fmt" onchange="ucNameBase();ucRenderPreview()"><option value="V">영상(V)</option><option value="I">이미지(I)</option></select></div>
+            <div class="field"><label>메시지 컨셉</label><input id="uc_msg" oninput="ucNameBase();ucRenderPreview()" placeholder="예: drunk-nego"></div>
+            <div class="field"><label>소재(크리에이터/코드)</label><input id="uc_soje" oninput="ucNameBase();ucRenderPreview()" placeholder="예: cs.e"></div>
+            <div class="field"><label>날짜</label><input type="date" id="uc_date" onchange="ucNameBase();ucRenderPreview()"></div>
+            <div class="field"><label>담당자</label><input id="uc_manager" oninput="ucNameBase();ucRenderPreview()" placeholder="예: ssh"></div>
+          </div>
+        </div>
+        <div style="margin-top:10px" class="hint">소재명 베이스: <span class="t-mono" id="uc_namebase" style="color:var(--text)">—</span></div>
+      </div>
+
+      <div class="panel" style="margin-bottom:14px">
+        <div class="panel-h">2단계 · 세트 대상</div>
+        <div class="row-flex" style="gap:6px;margin:8px 0;align-items:center;flex-wrap:wrap">
+          <button class="btn on" id="uc_sc_single" onclick="ucScope('single')">1개 세트</button>
+          <button class="btn" id="uc_sc_multi" onclick="ucScope('multi')">다중 세트</button>
+          <span class="hint" id="uc_setCount" style="margin-left:6px">0개 선택</span>
+          <label style="margin-left:auto;font-weight:400;color:var(--text3);font-size:12px"><input type="checkbox" id="uc_setActive" checked onchange="ucRenderSets()" style="width:auto;vertical-align:middle"> 활성만</label>
+        </div>
+        <input id="uc_setSearch" placeholder="🔎 세트명 검색" oninput="ucRenderSets()" style="margin-bottom:6px">
+        <div id="uc_setlist" style="max-height:240px;overflow:auto;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:4px"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h">3단계 · 최종 반환 + 세팅</div>
+        <div class="hint" style="margin-bottom:6px">세트마다 소재명·UTM 자동 재파생 (펼치면 상세) · utm_campaign=세트명, utm_content=소재명</div>
+        <div id="uc_preview"></div>
+        <div style="margin-top:10px"><button class="btn btn-primary" onclick="ucCreate(this)">세트마다 세팅 (PAUSED)</button></div>
+      </div>
+    </section>
+
+      <section class="page" id="page-map">
       <div class="page-head"><h2>설정/매핑 <span style="font-size:12px;font-weight:500;color:var(--text3)">· 클룹·스프린트 공통</span></h2><p>모든 자동 생성의 단일 기준 데이터이며, <b>기존 구글시트를 대체</b>합니다. (이 탭은 클룹/스프린트 공통 영역) <b>타겟 컨셉은 콘텐츠마케터 파트장</b>, 그 외(매체·합성·제품·스킴 등)는 <b>퍼포먼스마케터</b>가 관리합니다. 변경 시 전 탭·전 팀원에게 즉시 반영됩니다.</p></div>
 
       <div class="notice" style="margin-bottom:14px">
@@ -1978,6 +2031,136 @@ async function msCreate(btn){
   if(btn){ btn.disabled=false; btn.textContent='세트마다 생성 (PAUSED)'; }
   if(typeof mcLogActivity==='function'){ try{ mcLogActivity('소재 다중복제 생성 완료 '+done+'/'+plan.length); }catch(e){} }
   toast('생성 — 완료 '+done+' · 실패 '+fail+(stop?' · 한도 도달, 잠시후 재시도':''));
+}
+
+/* ⑥ 통합 소재 세팅 — Round 1 (복제 경로 라이브 + 3스텝 구조) */
+var UC={mode:'meta', scope:'single', src:null, targets:{}};
+var UC_ACCT={'1462607070849777':'클룹 메인','793134085895227':'클룹 서브','3342733785912061':'스프린트','539103343188615':'[사용X]'};
+
+function ucAcctOf(){
+  var rows=(typeof metaSnap!=='undefined'&&metaSnap&&metaSnap.adsets)?(Array.isArray(metaSnap.adsets)?metaSnap.adsets:Object.values(metaSnap.adsets)):[];
+  var m={}; rows.forEach(function(a){ if(a&&a.adsetId)m[a.adsetId]=a.account; }); return m;
+}
+function ucCandidates(){
+  if(typeof creativeCandidates!=='function') return [];
+  var acctOf=ucAcctOf();
+  return creativeCandidates().filter(function(c){ return c.adsetId; }).map(function(c){ c._acct=acctOf[c.adsetId]||''; return c; });
+}
+function ucSources(){ return (typeof metaCloneSources==='function')?metaCloneSources():[]; }
+
+function ucInit(){
+  try{ if(typeof renderMetaCreate==='function'){ var pg=document.getElementById('mcd_page'); if(pg&&!pg.options.length) renderMetaCreate(); } }catch(e){}
+  ucFillAcct(); ucRenderSrcList(); ucRenderSets(); ucRenderPreview(); ucNameBase();
+}
+function ucFillAcct(){
+  var s=document.getElementById('uc_acct'); if(!s||s.options.length) return;
+  var seen={}; ucCandidates().forEach(function(c){ if(c._acct)seen[c._acct]=1; });
+  var ids=Object.keys(seen); if(!ids.length) ids=Object.keys(UC_ACCT);
+  s.innerHTML=ids.map(function(id){ return '<option value="'+id+'">'+(UC_ACCT[id]||id)+'</option>'; }).join('');
+}
+
+function ucSrcMode(m){
+  UC.mode=m;
+  ['meta','archive','new'].forEach(function(x){ var b=document.getElementById('uc_m_'+x); if(b)b.className='btn'+(x===m?' on':''); });
+  var mw=document.getElementById('uc_metaWrap'), nw=document.getElementById('uc_newWrap');
+  if(mw)mw.style.display=(m==='meta')?'':'none';
+  if(nw)nw.style.display=(m==='meta')?'none':'';
+  ucNameBase(); ucRenderSets(); ucRenderPreview();
+}
+
+function ucRenderSrcList(){
+  var wrap=document.getElementById('uc_srcList'); if(!wrap) return;
+  var q=((document.getElementById('uc_srcSearch')||{}).value||'').toLowerCase();
+  var list=ucSources(); if(q) list=list.filter(function(s){ return (s.name||'').toLowerCase().indexOf(q)>=0; });
+  window.__ucSrc=list;
+  wrap.innerHTML=list.length?list.map(function(s,i){
+    var on=UC.src&&UC.src.cid===s.cid;
+    return '<div class="diverge-row" style="cursor:pointer;gap:8px" onclick="ucPickSrc('+i+')"><span style="font-style:normal">'+(on?'●':'○')+'</span><span class="t-mono" style="flex:1;min-width:0;font-size:11.5px;color:'+(on?'var(--text)':'var(--text3)')+'">'+esc(s.name||s.cid)+'</span><span style="font-size:10.5px;color:var(--text3)">'+esc(s.type||'')+'</span></div>';
+  }).join(''):'<div class="empty" style="padding:10px">소재 없음 (동기화 필요)</div>';
+}
+function ucPickSrc(i){ var s=(window.__ucSrc||[])[i]; if(!s)return; UC.src=s; ucRenderSrcList(); ucNameBase(); ucRenderPreview(); }
+
+function ucBasePayload(){
+  if(UC.mode==='meta'){ return UC.src?((typeof itemPayload==='function'?itemPayload(UC.src):null)||{}):null; }
+  var g=function(id){ return (document.getElementById(id)||{}).value||''; };
+  var d=g('uc_date');
+  return { fmt:g('uc_fmt'), msg:g('uc_msg'), soje:g('uc_soje'), date:(d?d.replace(/-/g,'').slice(2):''), manager:g('uc_manager') };
+}
+function ucNameBase(){
+  var el=document.getElementById('uc_namebase'); if(!el)return;
+  var p=ucBasePayload();
+  if(!p||(UC.mode==='meta'&&!UC.src)){ el.textContent='—'; return; }
+  el.textContent=[p.fmt,p.msg,p.soje,p.date,p.manager].filter(Boolean).join('_')||'—';
+}
+
+function ucScope(s){
+  UC.scope=s;
+  ['single','multi'].forEach(function(x){ var b=document.getElementById('uc_sc_'+x); if(b)b.className='btn'+(x===s?' on':''); });
+  if(s==='single'){ var ks=Object.keys(UC.targets); if(ks.length>1){ var first=ks[0], keep=UC.targets[first]; UC.targets={}; UC.targets[first]=keep; } }
+  ucRenderSets(); ucRenderPreview();
+}
+
+function ucRenderSets(){
+  var wrap=document.getElementById('uc_setlist'); if(!wrap)return;
+  var q=((document.getElementById('uc_setSearch')||{}).value||'').toLowerCase();
+  var actOnly=(document.getElementById('uc_setActive')||{}).checked;
+  var cands=ucCandidates();
+  if(UC.mode!=='meta'){ var acct=(document.getElementById('uc_acct')||{}).value; if(acct) cands=cands.filter(function(c){ return c._acct===acct; }); }
+  if(actOnly) cands=cands.filter(function(c){ return (c.live&&c.live.active>0)||c.campStatus==='ACTIVE'; });
+  var seen={}; cands=cands.filter(function(c){ if(seen[c.adsetId])return false; seen[c.adsetId]=1; return true; });
+  if(q) cands=cands.filter(function(c){ return (c.name||'').toLowerCase().indexOf(q)>=0; });
+  window.__ucCands=cands;
+  wrap.innerHTML=cands.length?cands.map(function(c,i){
+    var on=!!UC.targets[c.adsetId];
+    var mark=UC.scope==='single'?(on?'◉':'○'):(on?'☑':'☐');
+    return '<div class="diverge-row" style="cursor:pointer;gap:8px" onclick="ucToggleSet('+i+')"><span style="font-style:normal">'+mark+'</span><span class="t-mono" style="flex:1;min-width:0;font-size:11.5px;color:'+(on?'var(--text)':'var(--text3)')+'">'+esc(c.name)+'</span><span style="font-size:11px;color:var(--accent2)">'+esc(tamKr(c.tam)||'')+'</span></div>';
+  }).join(''):'<div class="empty" style="padding:10px">조건에 맞는 세트 없음</div>';
+  var cnt=document.getElementById('uc_setCount'); if(cnt)cnt.textContent=Object.keys(UC.targets).length+'개 선택';
+}
+function ucToggleSet(i){
+  var c=(window.__ucCands||[])[i]; if(!c)return;
+  if(UC.scope==='single'){ UC.targets={}; UC.targets[c.adsetId]=c; }
+  else { if(UC.targets[c.adsetId]) delete UC.targets[c.adsetId]; else UC.targets[c.adsetId]=c; }
+  ucRenderSets(); ucRenderPreview();
+}
+function ucSelectedSets(){ return Object.keys(UC.targets).map(function(k){ return UC.targets[k]; }); }
+
+function ucRenderPreview(){
+  var wrap=document.getElementById('uc_preview'); if(!wrap)return;
+  var sets=ucSelectedSets(), p=ucBasePayload();
+  var haveSrc=(UC.mode==='meta')?!!UC.src:true;
+  if(!haveSrc||!sets.length||!p){ wrap.innerHTML='<div class="hint" style="padding:8px">소재와 세트를 선택하면 세트별 소재명·UTM이 표시됩니다.</div>'; return; }
+  wrap.innerHTML=sets.map(function(set){
+    var name=buildCreativeName(set,p.date,{fmt:p.fmt,msg:p.msg,soje:p.soje},p.manager||'');
+    return '<details style="border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 10px;margin-bottom:5px"><summary style="cursor:pointer;font-size:12px"><b style="color:var(--accent2)">'+esc(tamKr(set.tam)||'')+'</b> 세트 <span class="hint">'+esc(set.name)+'</span></summary><div class="t-mono" style="font-size:10.5px;line-height:1.75;margin-top:5px;word-break:break-all"><div class="hint">캠페인 '+esc(set.campName||'')+'</div><div>소재명 '+esc(name)+'</div><div>utm_campaign '+esc(set.name)+'</div><div>utm_content '+esc(name)+'</div></div></details>';
+  }).join('');
+}
+
+async function ucCreate(btn){
+  var sets=ucSelectedSets(), p=ucBasePayload();
+  if(UC.mode!=='meta'){ toast('신규 소재 생성은 다음 배포에서 연결됩니다 (현재 네이밍·미리보기까지 동작)'); return; }
+  if(!UC.src){ toast('복제할 소재를 선택하세요'); return; }
+  if(!sets.length){ toast('세팅할 세트를 선택하세요'); return; }
+  var plan=sets.map(function(set){
+    var name=buildCreativeName(set,p.date,{fmt:p.fmt,msg:p.msg,soje:p.soje},p.manager||'');
+    return { act:set._acct, srcCreativeId:UC.src.cid, targetAdsetId:set.adsetId, newName:name, utmCampaign:set.name, utmContent:name };
+  }).filter(function(x){ return x.act&&x.targetAdsetId; });
+  if(!plan.length){ toast('생성 가능한 세트가 없습니다 (계정 매핑 확인)'); return; }
+  if(!confirm(plan.length+'개 세트에 이 소재를 각각 세팅합니다 (PAUSED). 진행할까요?')){ toast('취소됨'); return; }
+  if(btn){ btn.disabled=true; btn.textContent='세팅 중…'; }
+  var done=0,fail=0,stop=false;
+  for(var i=0;i<plan.length;i++){
+    try{
+      var r=await fetch('/api/clonead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({apply:true},plan[i]))});
+      var j=await r.json();
+      if(j.ok)done++; else { fail++; if(((j.error||'')+'').indexOf('limit')>=0){ stop=true; } }
+    }catch(e){ fail++; }
+    if(stop)break;
+    await new Promise(function(res){ setTimeout(res,1500); });
+  }
+  if(btn){ btn.disabled=false; btn.textContent='세트마다 세팅 (PAUSED)'; }
+  if(typeof mcLogActivity==='function'){ try{ mcLogActivity('통합탭 복제 세팅 '+done+'/'+plan.length); }catch(e){} }
+  toast('세팅 — 완료 '+done+' · 실패 '+fail+(stop?' · 한도 도달, 잠시 후 재시도':''));
 }
 
 function mcdRenderAdsets(){
