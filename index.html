@@ -201,7 +201,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
     </div>
     <nav class="nav">
       <div class="nav-item active" data-tab="build" onclick="go('build')"><span class="n">1</span>캠페인·세트 생성</div>
-      <div class="nav-item" data-tab="creative" onclick="go('creative')"><span class="n">2</span>소재명·UTM 생성</div>
+      <div class="nav-item" style="display:none" data-tab="creative" onclick="go('creative')"><span class="n">2</span>소재명·UTM 생성</div>
       <div class="nav-item" data-tab="archive" onclick="go('archive')"><span class="n">3</span>생성 아카이브</div>
       <div class="nav-item" data-tab="changes" onclick="go('changes')"><span class="n">4</span>변경 아카이브</div>
       <div class="nav-item" data-tab="metacreate" onclick="go('metacreate')"><span class="n">5</span>Meta 소재 세팅 <span style="font-size:9px;background:#3a2e15;color:#ffcf66;padding:1px 5px;border-radius:6px;margin-left:2px">beta</span></div>
@@ -497,12 +497,12 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
       <div class="mcsub" data-mcsub="ad">
         <div id="mcd_ctxbar" class="panel" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 12px;margin-bottom:14px"></div>
         <div class="panel" style="margin-bottom:14px">
-        <div class="panel-h">★ 한 소재 → 여러 세트 동시 세팅 <span class="bdg bdg-ok">세트마다 자동 이름·UTM</span></div>
+        <div class="panel-h">① 소재 선택 (기존 소재) <span class="bdg bdg-ok">세트마다 자동 이름·UTM</span></div>
         <div>
-          <div class="field"><label>기존 소재 복제</label><select id="ms_src" onchange="msRenderSrc()"></select></div>
-          <div class="field"><label>대상 세트 (여러 개) · <span class="hint" id="ms_setCount">0개 선택</span> &nbsp;<label style="display:inline;font-weight:400;color:var(--text3)"><input type="checkbox" id="ms_setActive" checked onchange="msRenderSets()" style="width:auto;vertical-align:middle"> 활성만</label></label><input id="ms_setSearch" placeholder="🔎 세트명 검색" oninput="msRenderSets()" style="margin-bottom:6px"><div id="ms_setlist" style="max-height:200px;overflow:auto;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:4px"></div></div>
+          <div class="field"><label>기존 소재 복제</label><input id="ms_srcSearch" placeholder="🔎 소재명 검색" oninput="msRenderSrc()" style="margin-bottom:6px"><select id="ms_src" onchange="msRenderSrc()"></select></div>
+          <div class="field"><label>② 광고 세트 선택 — 다중 선택 가능 · <span class="hint" id="ms_setCount">0개 선택</span> &nbsp;<label style="display:inline;font-weight:400;color:var(--text3)"><input type="checkbox" id="ms_setActive" checked onchange="msRenderSets()" style="width:auto;vertical-align:middle"> 활성만</label></label><input id="ms_setSearch" placeholder="🔎 세트명 검색" oninput="msRenderSets()" style="margin-bottom:6px"><div id="ms_setlist" style="max-height:200px;overflow:auto;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:4px"></div></div>
         </div>
-        <div style="margin-top:10px"><div class="hint" style="margin-bottom:4px">생성 미리보기 (펼치면 상세)</div><div id="ms_preview"></div></div>
+        <div style="margin-top:10px"><div class="hint" style="margin-bottom:4px">③ 세팅 미리보기</div><div id="ms_preview"></div></div>
         <div style="margin-top:8px"><button class="btn btn-primary" onclick="msCreate(this)">세트마다 생성 (PAUSED)</button></div>
       </div>
 
@@ -515,7 +515,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
                 <div class="field"><label>① 대상 캠페인 (Meta 라이브) <label style="display:inline;font-weight:400;color:var(--text3)"><input type="checkbox" id="mcd_campActive" checked onchange="mcdRenderCamps()" style="width:auto;vertical-align:middle"> 활성만</label></label><input id="mcd_campSearch" placeholder="🔎 캠페인 검색" oninput="mcdRenderCamps()" style="margin-bottom:6px"><select id="mcd_camp" onchange="mcdRenderAdsets();mcdSync()"></select></div>
                 <div class="field"><label>② 대상 광고세트 <label style="display:inline;font-weight:400;color:var(--text3)"><input type="checkbox" id="mcd_adsetActive" checked onchange="mcdRenderAdsets()" style="width:auto;vertical-align:middle"> 활성만</label></label><input id="mcd_adsetSearch" placeholder="🔎 광고세트 검색" oninput="mcdRenderAdsets()" style="margin-bottom:6px"><select id="mcd_adset" onchange="mcdSync()"></select><div id="mcd_adsetDecode" class="hint" style="margin-top:4px"></div></div>
               </div>
-              <div class="field"><label>소재 (생성 아카이브 → 이름·UTM)</label><input id="mcd_creativeSearch" placeholder="🔍 소재명 검색" oninput="mcdFillCreative()" style="margin-bottom:5px"><select id="mcd_creative" onchange="mcdSync()"></select></div>
+              <div class="field"><label>① 소재 선택 (생성 아카이브)</label><input id="mcd_creativeSearch" placeholder="🔍 소재명 검색" oninput="mcdFillCreative()" style="margin-bottom:5px"><select id="mcd_creative" onchange="mcdSync()"></select></div>
               <div class="field"><label>자동 소재명</label><div id="mcd_autoname" class="mono mcd-auto"></div></div>
               <div class="field"><label>UTM (광고 링크에 url_tags로 주입)</label><div id="mcd_utm" class="mono mcd-auto"></div><button class="btn btn-xs" style="margin-top:6px" onclick="mcdApplyLanding()">⬇ 이 URL을 랜딩 URL에 적용</button></div>
             </div>
@@ -2002,7 +2002,8 @@ function msCandidates(){
 }
 function msRenderSrc(){
   const sel=document.getElementById('ms_src'); if(!sel) return;
-  const list=msSources();
+  const q=((document.getElementById('ms_srcSearch')||{}).value||'').toLowerCase();
+  let list=msSources(); if(q)list=list.filter(function(s){return (s.name||'').toLowerCase().indexOf(q)>=0;});
   sel.innerHTML=list.length?list.map(function(s){ return '<option value="'+s.cid+'">'+esc(s.name||s.cid)+'</option>'; }).join(''):'<option value="">(메타 라이브러리 소재 없음 — 동기화 필요)</option>';
   msRenderPreview();
 }
@@ -2017,7 +2018,7 @@ function msRenderSets(){
   window.__msCands=cands;
   wrap.innerHTML=cands.length?cands.map(function(c,i){
     const on=!!msTargets[c.adsetId];
-    return '<div class="diverge-row" style="cursor:pointer;gap:8px" onclick="msToggle('+i+')"><span style="font-style:normal">'+(on?'☑':'☐')+'</span><span class="t-mono" style="flex:1;min-width:0;font-size:11.5px;color:'+(on?'var(--text)':'var(--text3)')+'">'+esc(c.name)+'</span><span style="font-size:11px;color:var(--accent2)">'+esc(tamKr(c.tam)||'')+'</span></div>';
+    return '<div class="diverge-row" style="cursor:pointer;gap:8px" onclick="msToggle('+i+')"><span style="font-style:normal">'+(on?'☑':'☐')+'</span><span class="t-mono" style="flex:1;min-width:0;font-size:11.5px;color:'+(on?'var(--text)':'var(--text3)')+'">'+esc(c.name)+'</span><span style="font-size:11px;color:var(--text3);white-space:nowrap">'+esc((c.brand||c.product||'')+'·'+schemeKr(c.scheme))+'</span><span style="font-size:11px;color:var(--accent2);margin-left:6px;white-space:nowrap">'+esc(tamKr(c.tam)||'')+'</span></div>';
   }).join(''):'<div class="empty" style="padding:10px">조건에 맞는 세트 없음</div>';
   const cnt=document.getElementById('ms_setCount'); if(cnt)cnt.textContent=Object.keys(msTargets).length+'개 선택';
 }
@@ -2579,7 +2580,7 @@ function mcdRenderAssets(){
   if(!document.getElementById('mcd_assets'))return;
   if(mcdFmt==='CAROUSEL'){ $('mcd_assets').innerHTML='<div class="hint" style="grid-column:1/-1">카탈로그 캐러셀은 제품세트(product_set)에서 자동 구성됩니다. 별도 에셋 선택은 필요 없습니다.</div>'; return; }
   const q=($('mcd_assetSearch').value||'').toLowerCase();
-  const list=mcdAssets().filter(a=>!q||(a.name||'').toLowerCase().includes(q));
+  const list=mcdAssets().filter(a=>!q||(a.name||'').toLowerCase().includes(q)||(a.image_hash||'').toLowerCase().includes(q)||(a.video_id||'').toLowerCase().includes(q));
   $('mcd_assets').innerHTML=list.length?list.map(a=>{
     const g=a.grid||a.thumb;
     const th=g
