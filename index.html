@@ -579,9 +579,13 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
           <button id="uc_m_meta" onclick="ucSrcMode('meta')">기존 소재 복제</button>
         </div>
         <div id="uc_metaWrap" style="display:none">
-          <div class="field"><label>복제할 소재 선택 (검색)</label>
+          <div class="grid g2" style="margin-bottom:8px">
+            <div class="field"><label>소스 캠페인</label><select id="uc_srcCamp" onchange="ucSrcCampChange()"></select></div>
+            <div class="field"><label>소스 세트</label><select id="uc_srcSet" onchange="ucRenderSrcList()"></select></div>
+          </div>
+          <div class="field"><label>복제할 소재 선택 (여러 개 선택 가능) · <span class="hint" id="uc_srcCount">0개 선택</span></label>
             <input id="uc_srcSearch" placeholder="🔎 소재명 검색" oninput="ucRenderSrcList()" style="margin-bottom:6px">
-            <div id="uc_srcList" style="max-height:200px;overflow:auto;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:4px"></div>
+            <div id="uc_srcList" style="max-height:220px;overflow:auto;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:4px"></div>
           </div>
         </div>
         <div id="uc_newWrap">
@@ -2035,7 +2039,7 @@ async function msCreate(btn){
 }
 
 /* ⑥ 통합 소재 세팅 — Round 1 (복제 경로 라이브 + 3스텝 구조) */
-var UC={mode:'new', scope:'single', src:null, targets:{}};
+var UC={mode:'new', scope:'single', srcs:{}, targets:{}};
 var UC_ACCT={'1462607070849777':'클룹 메인','793134085895227':'클룹 서브','3342733785912061':'스프린트','539103343188615':'[사용X]'};
 var UC_BRAND={'1462607070849777':'클룹','793134085895227':'클룹','3342733785912061':'스프린트','539103343188615':''};
 
@@ -2055,6 +2059,10 @@ function ucAcctOf(){
   var rows=(typeof metaSnap!=='undefined'&&metaSnap&&metaSnap.adsets)?(Array.isArray(metaSnap.adsets)?metaSnap.adsets:Object.values(metaSnap.adsets)):[];
   var m={}; rows.forEach(function(a){ if(a&&a.adsetId)m[a.adsetId]=a.account; }); return m;
 }
+function ucMetaSetCampOf(){
+  var rows=(typeof metaSnap!=='undefined'&&metaSnap&&metaSnap.adsets)?(Array.isArray(metaSnap.adsets)?metaSnap.adsets:Object.values(metaSnap.adsets)):[];
+  var m={}; rows.forEach(function(a){ if(a&&a.adsetName)m[a.adsetName]=a.campaignName||''; }); return m;
+}
 function ucCandidates(){
   if(typeof creativeCandidates!=='function') return [];
   var acctOf=ucAcctOf(), sc=ucCurScope();
@@ -2062,10 +2070,14 @@ function ucCandidates(){
     .filter(function(c){ var br=UC_BRAND[c._acct]; return !br||br===sc; });
 }
 function ucSources(){ return (typeof metaCloneSources==='function')?metaCloneSources():[]; }
+function ucSourcesEnriched(){
+  var campOf=ucMetaSetCampOf();
+  return ucSources().map(function(s){ s._set=s.adsetName||''; s._camp=campOf[s.adsetName]||''; return s; });
+}
 
 function ucInit(){
   try{ if(typeof renderMetaCreate==='function'){ var pg=document.getElementById('mcd_page'); if(pg&&!pg.options.length) renderMetaCreate(); } }catch(e){}
-  ucFillMaps(); ucFillAcct();
+  ucFillMaps(); ucFillAcct(); ucFillSrcCamp();
   ucSrcMode(UC.mode); ucScope(UC.scope);
   ucRenderSrcList(); ucRenderSets(); ucRenderPreview();
 }
@@ -2083,6 +2095,21 @@ function ucFillAcct(){
   if(!ids.length){ var sc=ucCurScope(); ids=Object.keys(UC_BRAND).filter(function(id){ return UC_BRAND[id]===sc; }); }
   s.innerHTML=ids.map(function(id){ return '<option value="'+id+'"'+(id===cur?' selected':'')+'>'+(UC_ACCT[id]||id)+'</option>'; }).join('');
 }
+function ucFillSrcCamp(){
+  var sel=document.getElementById('uc_srcCamp'); if(!sel) return;
+  var seen={}; ucSourcesEnriched().forEach(function(s){ seen[s._camp||'(미지정)']=1; });
+  var camps=Object.keys(seen).sort();
+  sel.innerHTML='<option value="">(전체 캠페인)</option>'+camps.map(function(c){ return '<option value="'+esc(c)+'">'+esc(c)+'</option>'; }).join('');
+  ucFillSrcSet();
+}
+function ucFillSrcSet(){
+  var sel=document.getElementById('uc_srcSet'); if(!sel) return;
+  var camp=(document.getElementById('uc_srcCamp')||{}).value||'';
+  var seen={}; ucSourcesEnriched().forEach(function(s){ var c=s._camp||'(미지정)'; if(!camp||c===camp) seen[s._set||'(미지정)']=1; });
+  var sets=Object.keys(seen).sort();
+  sel.innerHTML='<option value="">(전체 세트)</option>'+sets.map(function(x){ return '<option value="'+esc(x)+'">'+esc(x)+'</option>'; }).join('');
+}
+function ucSrcCampChange(){ ucFillSrcSet(); ucRenderSrcList(); }
 
 function ucSrcMode(m){
   UC.mode=m;
@@ -2096,21 +2123,28 @@ function ucSrcMode(m){
 function ucRenderSrcList(){
   var wrap=document.getElementById('uc_srcList'); if(!wrap) return;
   var q=((document.getElementById('uc_srcSearch')||{}).value||'').toLowerCase();
-  var list=ucSources(); if(q) list=list.filter(function(s){ return (s.name||'').toLowerCase().indexOf(q)>=0; });
-  window.__ucSrc=list;
+  var camp=(document.getElementById('uc_srcCamp')||{}).value||'';
+  var set=(document.getElementById('uc_srcSet')||{}).value||'';
+  var list=ucSourcesEnriched();
+  if(camp) list=list.filter(function(s){ return (s._camp||'(미지정)')===camp; });
+  if(set) list=list.filter(function(s){ return (s._set||'(미지정)')===set; });
+  if(q) list=list.filter(function(s){ return (s.name||'').toLowerCase().indexOf(q)>=0; });
+  window.__ucSrcList=list;
   wrap.innerHTML=list.length?list.map(function(s,i){
-    var on=UC.src&&UC.src.cid===s.cid;
-    return '<div class="diverge-row" style="cursor:pointer;gap:8px" onclick="ucPickSrc('+i+')"><span style="font-style:normal">'+(on?'●':'○')+'</span><span class="t-mono" style="flex:1;min-width:0;font-size:11.5px;color:'+(on?'var(--text)':'var(--text3)')+'">'+esc(s.name||s.cid)+'</span><span style="font-size:10.5px;color:var(--text3)">'+esc(s.type||'')+'</span></div>';
-  }).join(''):'<div class="empty" style="padding:10px">소재 없음 (동기화 필요)</div>';
+    var on=!!UC.srcs[s.cid];
+    return '<div class="diverge-row" style="cursor:pointer;gap:8px" onclick="ucToggleSrc('+i+')"><span style="font-style:normal">'+(on?'☑':'☐')+'</span><span class="t-mono" style="flex:1;min-width:0;font-size:11.5px;color:'+(on?'var(--text)':'var(--text3)')+'">'+esc(s.name||s.cid)+'</span><span style="font-size:10.5px;color:var(--text3)">'+esc(s.type||'')+'</span></div>';
+  }).join(''):'<div class="empty" style="padding:10px">소재 없음 (필터/동기화 확인)</div>';
+  var cnt=document.getElementById('uc_srcCount'); if(cnt)cnt.textContent=Object.keys(UC.srcs).length+'개 선택';
 }
-function ucPickSrc(i){ var s=(window.__ucSrc||[])[i]; if(!s)return; UC.src=s; ucRenderSrcList(); ucRenderPreview(); }
+function ucToggleSrc(i){ var s=(window.__ucSrcList||[])[i]; if(!s)return; if(UC.srcs[s.cid]) delete UC.srcs[s.cid]; else UC.srcs[s.cid]=s; ucRenderSrcList(); ucRenderPreview(); }
+function ucSelectedSrcs(){ return Object.keys(UC.srcs).map(function(k){ return UC.srcs[k]; }); }
 
-function ucBasePayload(){
-  if(UC.mode==='meta'){ return UC.src?((typeof itemPayload==='function'?itemPayload(UC.src):null)||{}):null; }
+function ucNewPayload(){
   var g=function(id){ return (document.getElementById(id)||{}).value||''; };
   var d=g('uc_date');
   return { fmt:g('uc_fmt'), msg:g('uc_msg'), soje:g('uc_soje'), date:(d?d.replace(/-/g,'').slice(2):''), manager:g('uc_manager') };
 }
+function ucPayloadOf(src){ return (typeof itemPayload==='function'?itemPayload(src):null)||{}; }
 
 function ucScope(s){
   UC.scope=s;
@@ -2124,7 +2158,6 @@ function ucRenderSets(){
   var q=((document.getElementById('uc_setSearch')||{}).value||'').toLowerCase();
   var actOnly=(document.getElementById('uc_setActive')||{}).checked;
   var cands=ucCandidates();
-  if(UC.mode!=='meta'){ var acct=(document.getElementById('uc_acct')||{}).value; if(acct) cands=cands.filter(function(c){ return c._acct===acct; }); }
   if(actOnly) cands=cands.filter(function(c){ return (c.live&&c.live.active>0)||c.campStatus==='ACTIVE'; });
   var seen={}; cands=cands.filter(function(c){ if(seen[c.adsetId])return false; seen[c.adsetId]=1; return true; });
   if(q) cands=cands.filter(function(c){ return (c.name||'').toLowerCase().indexOf(q)>=0; });
@@ -2146,9 +2179,18 @@ function ucSelectedSets(){ return Object.keys(UC.targets).map(function(k){ retur
 
 function ucRenderPreview(){
   var wrap=document.getElementById('uc_preview'); if(!wrap)return;
-  var sets=ucSelectedSets(), p=ucBasePayload();
-  var haveSrc=(UC.mode==='meta')?!!UC.src:true;
-  if(!haveSrc||!sets.length||!p){ wrap.innerHTML='<div class="hint" style="padding:8px">소재와 세트를 선택하면 세트별 소재명·UTM이 표시됩니다.</div>'; return; }
+  var sets=ucSelectedSets();
+  if(!sets.length){ wrap.innerHTML='<div class="hint" style="padding:8px">대상 세트를 선택하면 세트별 소재명·UTM이 표시됩니다.</div>'; return; }
+  if(UC.mode==='meta'){
+    var srcs=ucSelectedSrcs();
+    if(!srcs.length){ wrap.innerHTML='<div class="hint" style="padding:8px">복제할 소재를 1개 이상 선택하세요.</div>'; return; }
+    wrap.innerHTML=sets.map(function(set){
+      var rows=srcs.map(function(src){ var p=ucPayloadOf(src); var name=buildCreativeName(set,p.date,{fmt:p.fmt,msg:p.msg,soje:p.soje},p.manager||''); return '<div style="margin-bottom:3px"><div>소재명 '+esc(name)+'</div><div class="hint">utm_content '+esc(name)+'</div></div>'; }).join('');
+      return '<details style="border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 10px;margin-bottom:5px"><summary style="cursor:pointer;font-size:12px"><b style="color:var(--accent2)">'+esc(tamKr(set.tam)||'')+'</b> 세트 <span class="hint">'+esc(set.name)+'</span> · '+srcs.length+'개 소재</summary><div class="t-mono" style="font-size:10.5px;line-height:1.7;margin-top:5px;word-break:break-all"><div class="hint">utm_campaign '+esc(set.name)+'</div>'+rows+'</div></details>';
+    }).join('');
+    return;
+  }
+  var p=ucNewPayload();
   wrap.innerHTML=sets.map(function(set){
     var name=buildCreativeName(set,p.date,{fmt:p.fmt,msg:p.msg,soje:p.soje},p.manager||'');
     return '<details style="border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 10px;margin-bottom:5px"><summary style="cursor:pointer;font-size:12px"><b style="color:var(--accent2)">'+esc(tamKr(set.tam)||'')+'</b> 세트 <span class="hint">'+esc(set.name)+'</span></summary><div class="t-mono" style="font-size:10.5px;line-height:1.75;margin-top:5px;word-break:break-all"><div class="hint">캠페인 '+esc(set.campName||'')+'</div><div>소재명 '+esc(name)+'</div><div>utm_campaign '+esc(set.name)+'</div><div>utm_content '+esc(name)+'</div></div></details>';
@@ -2156,16 +2198,19 @@ function ucRenderPreview(){
 }
 
 async function ucCreate(btn){
-  var sets=ucSelectedSets(), p=ucBasePayload();
+  var sets=ucSelectedSets();
   if(UC.mode!=='meta'){ toast('신규 소재 생성은 다음 배포에서 연결됩니다 (현재 네이밍·미리보기까지 동작)'); return; }
-  if(!UC.src){ toast('복제할 소재를 선택하세요'); return; }
+  var srcs=ucSelectedSrcs();
+  if(!srcs.length){ toast('복제할 소재를 1개 이상 선택하세요'); return; }
   if(!sets.length){ toast('세팅할 세트를 선택하세요'); return; }
-  var plan=sets.map(function(set){
+  var plan=[];
+  sets.forEach(function(set){ srcs.forEach(function(src){
+    var p=ucPayloadOf(src);
     var name=buildCreativeName(set,p.date,{fmt:p.fmt,msg:p.msg,soje:p.soje},p.manager||'');
-    return { act:set._acct, srcCreativeId:UC.src.cid, targetAdsetId:set.adsetId, newName:name, utmCampaign:set.name, utmContent:name };
-  }).filter(function(x){ return x.act&&x.targetAdsetId; });
-  if(!plan.length){ toast('생성 가능한 세트가 없습니다 (계정 매핑 확인)'); return; }
-  if(!confirm(plan.length+'개 세트에 이 소재를 각각 세팅합니다 (PAUSED). 진행할까요?')){ toast('취소됨'); return; }
+    if(set._acct&&set.adsetId) plan.push({ act:set._acct, srcCreativeId:src.cid, targetAdsetId:set.adsetId, newName:name, utmCampaign:set.name, utmContent:name });
+  }); });
+  if(!plan.length){ toast('생성 가능한 조합이 없습니다 (계정 매핑 확인)'); return; }
+  if(!confirm(plan.length+'건 생성 (소재 '+srcs.length+' × 세트 '+sets.length+', PAUSED). 진행할까요?')){ toast('취소됨'); return; }
   if(btn){ btn.disabled=true; btn.textContent='세팅 중…'; }
   var done=0,fail=0,stop=false;
   for(var i=0;i<plan.length;i++){
