@@ -496,6 +496,16 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
 
       <div class="mcsub" data-mcsub="ad">
         <div id="mcd_ctxbar" class="panel" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 12px;margin-bottom:14px"></div>
+        <div class="panel" style="margin-bottom:14px">
+        <div class="panel-h">★ 한 소재 → 여러 세트 동시 세팅 <span class="bdg bdg-ok">세트마다 자동 이름·UTM</span></div>
+        <div class="grid g2">
+          <div class="field"><label>소스 소재 (메타 라이브러리)</label><select id="ms_src" onchange="msRenderSrc()"></select></div>
+          <div class="field"><label>대상 세트 (여러 개) · <span class="hint" id="ms_setCount">0개 선택</span> &nbsp;<label style="display:inline;font-weight:400;color:var(--text3)"><input type="checkbox" id="ms_setActive" checked onchange="msRenderSets()" style="width:auto;vertical-align:middle"> 활성만</label></label><input id="ms_setSearch" placeholder="🔎 세트명 검색" oninput="msRenderSets()" style="margin-bottom:6px"><div id="ms_setlist" style="max-height:200px;overflow:auto;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:4px"></div></div>
+        </div>
+        <div style="margin-top:10px"><div class="hint" style="margin-bottom:4px">생성 미리보기 (펼치면 상세)</div><div id="ms_preview"></div></div>
+        <div style="margin-top:8px"><button class="btn btn-primary" onclick="msCreate(this)">세트마다 생성 (PAUSED)</button></div>
+      </div>
+
         <div style="display:grid;grid-template-columns:1fr 320px;gap:16px" class="mcd-grid">
           <div>
             <!-- A. 소재명·UTM -->
@@ -1904,6 +1914,72 @@ function mcdRenderCamps(){
   if(cur&&[...$('mcd_camp').options].some(o=>o.value===cur))$('mcd_camp').value=cur;
   mcdRenderAdsets();
 }
+let msTargets={};
+function msSources(){ return (typeof metaCloneSources==='function')?metaCloneSources():[]; }
+function msCandidates(){
+  if(typeof creativeCandidates!=='function') return [];
+  const rows=(metaSnap&&metaSnap.adsets)?(Array.isArray(metaSnap.adsets)?metaSnap.adsets:Object.values(metaSnap.adsets)):[];
+  const acctOf={}; rows.forEach(function(a){ if(a.adsetId)acctOf[a.adsetId]=a.account; });
+  return creativeCandidates().filter(function(c){ return c.adsetId; }).map(function(c){ c._acct=acctOf[c.adsetId]||''; return c; });
+}
+function msRenderSrc(){
+  const sel=document.getElementById('ms_src'); if(!sel) return;
+  const list=msSources();
+  sel.innerHTML=list.length?list.map(function(s){ return '<option value="'+s.cid+'">'+esc(s.name||s.cid)+'</option>'; }).join(''):'<option value="">(메타 라이브러리 소재 없음 — 동기화 필요)</option>';
+  msRenderPreview();
+}
+function msRenderSets(){
+  const wrap=document.getElementById('ms_setlist'); if(!wrap) return;
+  const q=((document.getElementById('ms_setSearch')||{}).value||'').toLowerCase();
+  const actOnly=(document.getElementById('ms_setActive')||{}).checked;
+  let cands=msCandidates();
+  if(actOnly) cands=cands.filter(function(c){ return (c.live&&c.live.active>0)||c.campStatus==='ACTIVE'; });
+  const seen={}; cands=cands.filter(function(c){ if(seen[c.adsetId])return false; seen[c.adsetId]=1; return true; });
+  if(q) cands=cands.filter(function(c){ return (c.name||'').toLowerCase().includes(q); });
+  window.__msCands=cands;
+  wrap.innerHTML=cands.length?cands.map(function(c,i){
+    const on=!!msTargets[c.adsetId];
+    return '<div class="diverge-row" style="cursor:pointer;gap:8px" onclick="msToggle('+i+')"><span style="font-style:normal">'+(on?'☑':'☐')+'</span><span class="t-mono" style="flex:1;min-width:0;font-size:11.5px;color:'+(on?'var(--text)':'var(--text3)')+'">'+esc(c.name)+'</span><span style="font-size:11px;color:var(--accent2)">'+esc(tamKr(c.tam)||'')+'</span></div>';
+  }).join(''):'<div class="empty" style="padding:10px">조건에 맞는 세트 없음</div>';
+  const cnt=document.getElementById('ms_setCount'); if(cnt)cnt.textContent=Object.keys(msTargets).length+'개 선택';
+}
+function msToggle(i){ const c=(window.__msCands||[])[i]; if(!c)return; if(msTargets[c.adsetId])delete msTargets[c.adsetId]; else msTargets[c.adsetId]=c; msRenderSets(); msRenderPreview(); }
+function msSelectedSets(){ return Object.keys(msTargets).map(function(k){ return msTargets[k]; }); }
+function msRenderPreview(){
+  const wrap=document.getElementById('ms_preview'); if(!wrap) return;
+  const sel=document.getElementById('ms_src');
+  const src=msSources().find(function(s){ return s.cid===(sel?sel.value:''); });
+  const sets=msSelectedSets();
+  if(!src||!sets.length){ wrap.innerHTML='<div class="hint" style="padding:8px">소재와 세트를 선택하면 세트마다 생성될 이름·UTM이 보입니다.</div>'; return; }
+  const p=itemPayload(src)||{};
+  wrap.innerHTML=sets.map(function(set){
+    const name=buildCreativeName(set,p.date,{fmt:p.fmt,msg:p.msg,soje:p.soje},p.manager||'');
+    const cmp=set.campName||'';
+    return '<details style="border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 10px;margin-bottom:5px"><summary style="cursor:pointer;font-size:12px"><b style="color:var(--accent2)">'+esc(tamKr(set.tam)||'')+'</b> 세트 <span class="hint">'+esc(set.name)+'</span></summary><div class="t-mono" style="font-size:10.5px;line-height:1.75;margin-top:5px;word-break:break-all"><div class="hint">캠페인 '+esc(cmp)+'</div><div>소재명 '+esc(name)+'</div><div>utm_campaign '+esc(set.name)+'</div><div>utm_content '+esc(name)+'</div></div></details>';
+  }).join('');
+}
+async function msCreate(btn){
+  const sel=document.getElementById('ms_src'); const src=msSources().find(function(s){ return s.cid===(sel?sel.value:''); });
+  const sets=msSelectedSets();
+  if(!src){ toast('소스 소재를 선택하세요'); return; }
+  if(!sets.length){ toast('대상 세트를 선택하세요'); return; }
+  const p=itemPayload(src)||{};
+  const plan=sets.map(function(set){ const name=buildCreativeName(set,p.date,{fmt:p.fmt,msg:p.msg,soje:p.soje},p.manager||''); return {act:set._acct, srcCreativeId:src.cid, targetAdsetId:set.adsetId, newName:name, utmCampaign:set.name, utmContent:name}; }).filter(function(x){ return x.act&&x.targetAdsetId; });
+  if(!plan.length){ toast('생성 가능한 라이브 세트가 없습니다'); return; }
+  if(!confirm(plan.length+'개 세트에 이 소재를 각각 생성합니다 (PAUSED). 진행할까요?')){ toast('취소됨'); return; }
+  if(btn){ btn.disabled=true; btn.textContent='생성 중…'; }
+  let done=0,fail=0,stop=false;
+  for(let i=0;i<plan.length;i++){
+    try{ const r=await fetch('/api/clonead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({apply:true},plan[i]))}); const j=await r.json(); if(j.ok)done++; else { fail++; if(((j.error||'')+'').indexOf('limit')>=0){stop=true;} } }
+    catch(e){ fail++; }
+    if(stop) break;
+    await new Promise(function(res){ setTimeout(res,1500); });
+  }
+  if(btn){ btn.disabled=false; btn.textContent='세트마다 생성 (PAUSED)'; }
+  if(typeof mcLogActivity==='function'){ try{ mcLogActivity('소재 다중복제 생성 완료 '+done+'/'+plan.length); }catch(e){} }
+  toast('생성 — 완료 '+done+' · 실패 '+fail+(stop?' · 한도 도달, 잠시후 재시도':''));
+}
+
 function mcdRenderAdsets(){
   if(!document.getElementById('mcd_adset'))return;
   const cid=$('mcd_camp')?$('mcd_camp').value:'';
@@ -1928,6 +2004,7 @@ function renderMetaCreate(){
   mcdRenderProfiles();
   mcdSetFmt(mcdFmt,true);
   mcdSetSrc(mcdSrc,true);
+  try{msRenderSrc();msRenderSets();}catch(e){}
   mcdSync();
 }
 function mcdRenderProfiles(){
