@@ -2326,6 +2326,19 @@ async function ucCreate(btn){
   toast('세팅 — 완료 '+done+' · 실패 '+fail+(stop?' · 한도 도달, 잠시 후 재시도':(lastErr&&fail?' · '+lastErr.slice(0,40):'')));
 }
 
+;(function(){
+  if(window.__ucMapPatch) return; window.__ucMapPatch=1;
+  function gv(id){ var e=document.getElementById(id); return e?(e.value||'').trim():''; }
+  function cv(id){ var e=document.getElementById(id); if(e)e.value=''; }
+  function injectKr(codeId,krId){ var c=document.getElementById(codeId); if(!c||document.getElementById(krId))return; var k=document.createElement('input'); k.id=krId; k.placeholder='한글 의미'; try{ k.className=c.className; k.style.cssText=c.style.cssText; }catch(e){} if(c.parentNode) c.parentNode.insertBefore(k, c.nextSibling); }
+  function addSaveBtn(){ var pg=document.getElementById('page-map'); if(!pg||document.getElementById('ucMapSaveBtn'))return; var b=document.createElement('button'); b.id='ucMapSaveBtn'; b.className='btn btn-primary'; b.textContent='💾 매핑 저장'; b.style.cssText='float:right;margin-bottom:8px'; b.onclick=function(){ try{ if(typeof save==='function')save(); if(typeof toast==='function')toast('매핑 저장됨'); }catch(e){ if(typeof toast==='function')toast('저장 실패'); } }; pg.insertBefore(b, pg.firstChild); }
+  function enhance(){ try{ injectKr('ms_new','ms_kr'); injectKr('mf_new','mf_kr'); addSaveBtn(); }catch(e){} }
+  if(typeof mapSub==='function'){ var _m=mapSub; window.mapSub=function(x){ _m(x); setTimeout(enhance,0); }; }
+  window.addScheme=function(){ var c=gv('ms_new'); if(!c) return; DB.maps.schemes=DB.maps.schemes||[]; DB.maps.schemes.push({code:c,kr:gv('ms_kr')}); cv('ms_new'); cv('ms_kr'); if(typeof renderMap==='function')renderMap(); setTimeout(enhance,0); if(typeof toast==='function')toast('스킴 추가 — 💾 저장을 눌러 반영하세요'); };
+  window.addFormat=function(){ var c=gv('mf_new'); if(!c) return; DB.maps.formats=DB.maps.formats||[]; DB.maps.formats.push({code:c,label:gv('mf_kr')}); cv('mf_new'); cv('mf_kr'); if(typeof renderMap==='function')renderMap(); setTimeout(enhance,0); if(typeof toast==='function')toast('포맷 추가 — 💾 저장을 눌러 반영하세요'); };
+  setTimeout(enhance,0);
+})();
+
 function mcdRenderAdsets(){
   if(!document.getElementById('mcd_adset'))return;
   const cid=$('mcd_camp')?$('mcd_camp').value:'';
