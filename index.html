@@ -2411,7 +2411,8 @@ async function ucCreate(btn){
         +'<div class="field" style="margin:0"><label>\uc18c\uc7ac\uba85</label><input id="n5_soje" oninput="n5Compose()" placeholder="\uc608: cs.e"></div>'
         +'<div class="field" style="margin:0"><label>\ub2f4\ub2f9\uc790</label><input id="n5_mgr" oninput="n5Compose()" placeholder="\uc608: ssh"></div>'
       +'</div>'
-      +'<div style="margin-top:10px"><button class="btn btn-primary btn-sm" onclick="n5Save(this)">\u1f4be \uc800\uc7a5 \u2192 \uc0dd\uc131 \uc544\uce74\uc774\ube0c(\u2462)</button></div>';
+      +'<div id="n5_namePreview" class="mono" style="font-size:12px;margin:8px 0 0;padding:7px 9px;border:1px dashed rgba(255,255,255,.14);border-radius:8px;word-break:break-all;color:#3df0c8">\uc18c\uc7ac\uba85 \ubbf8\ub9ac\ubcf4\uae30</div>'
+      +'<div style="margin-top:10px"><button class="btn btn-primary btn-sm" onclick="n5Save(this)">\ud83d\udcbe \uc800\uc7a5 \u2192 \uc0dd\uc131 \uc544\uce74\uc774\ube0c(\u2462)</button></div>';
     var ch=document.createElement('div'); ch.id='n5_cloneHint'; ch.className='hint'; ch.style.cssText='display:none;margin:6px 0';
     ch.innerHTML='\uae30\uc874 \uc18c\uc7ac \ubcf5\uc81c\ub294 \uc704\uc758 <b>\u2605 \ud55c \uc18c\uc7ac \u2192 \uc5ec\ub7ec \uc138\ud2b8</b> \ud328\ub110\uc744 \uc0ac\uc6a9\ud558\uc138\uc694.';
     var n5pn=cf.closest('.panel');var n5ph=n5pn?n5pn.querySelector('.panel-h'):null;var n5cg=$('mcd_camp')&&$('mcd_camp').closest?$('mcd_camp').closest('.grid'):null;if(n5ph&&n5ph.parentNode){n5ph.parentNode.insertBefore(bar,n5ph.nextSibling);}else{creativeField.parentNode.insertBefore(bar,creativeField);}if(n5cg&&n5cg.parentNode===bar.parentNode){bar.parentNode.insertBefore(n5cg,bar.nextSibling);}
@@ -2426,6 +2427,8 @@ async function ucCreate(btn){
     if(box)box.style.display=(m==='new')?'':'none';
     if(ch)ch.style.display=(m==='clone')?'':'none';
     if(cfield)cfield.style.display=(m==='arch')?'':'none';
+    var anF=$('mcd_autoname')&&$('mcd_autoname').closest?$('mcd_autoname').closest('.field'):null; var umF=$('mcd_utm')&&$('mcd_utm').closest?$('mcd_utm').closest('.field'):null;
+    if(anF)anF.style.display=(m==='new')?'none':''; if(umF)umF.style.display=(m==='new')?'none':'';
     if(m==='new') window.n5Compose();
     else if(m==='arch' && typeof mcdSync==='function'){ try{ mcdSync(); }catch(e){} }
   };
@@ -2443,6 +2446,7 @@ async function ucCreate(btn){
     var utm=buildUtm(set.landing,set.name,name);
     if(an)an.textContent=name;
     if(um)um.textContent=utm;
+    var pv=$('n5_namePreview'); if(pv)pv.textContent=name||'\uc18c\uc7ac\uba85 \ubbf8\ub9ac\ubcf4\uae30';
   };
   window.n5Save=function(){
     if(MODE!=='new') return;
