@@ -2034,7 +2034,7 @@ function msRenderPreview(){
   wrap.innerHTML=sets.map(function(set){
     const name=buildCreativeName(set,p.date,{fmt:p.fmt,msg:p.msg,soje:p.soje},p.manager||'');
     const cmp=set.campName||''; var lu=(set.landing||''); var fu=lu?(lu+(lu.indexOf('?')>=0?'&':'?')+'utm_source=facebook&utm_medium=social&utm_campaign='+set.name+'&utm_term={{ad.id}}&utm_content='+name):'(랜딩 미매핑 — 생성 제외)';
-    return '<details style="border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 10px;margin-bottom:5px"><summary style="cursor:pointer;font-size:12px"><b style="color:var(--accent2)">'+esc(tamKr(set.tam)||'')+'</b> 세트 <span class="hint">'+esc(set.name)+'</span></summary><div class="t-mono" style="font-size:10.5px;line-height:1.75;margin-top:5px;word-break:break-all"><div class="hint">캠페인 '+esc(cmp)+'</div><div>소재명 '+esc(name)+'</div><div>utm_campaign '+esc(set.name)+'</div><div>utm_content '+esc(name)+'</div><div'+(lu?'':' style="color:#ffb400"')+'>최종 URL '+esc(fu)+'</div></div></details>';
+    return '<details style="border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 10px;margin-bottom:5px"><summary style="cursor:pointer;font-size:12px"><b style="color:var(--accent2)">'+esc(tamKr(set.tam)||'')+'</b> 세트 <span class="hint">'+esc(set.name)+'</span></summary><div class="t-mono" style="font-size:10.5px;line-height:1.75;margin-top:5px;word-break:break-all"><div class="hint">캠페인 '+esc(cmp)+'</div><div><span class="hint">소재명</span> '+esc(name)+'</div><div><span class="hint">utm_campaign</span> '+esc(set.name)+'</div><div><span class="hint">utm_content</span> '+esc(name)+'</div><div'+(lu?'':' style="color:#ffb400"')+'>최종 URL '+esc(fu)+'</div></div></details>';
   }).join('');
 }
 async function msCreate(btn){
@@ -2273,7 +2273,7 @@ function ucRenderPreview(){
   var p=ucNewPayload();
   wrap.innerHTML=sets.map(function(set){
     var name=buildCreativeName(set,p.date,{fmt:p.fmt,msg:p.msg,soje:p.soje},p.manager||'');
-    return '<details style="border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 10px;margin-bottom:5px"><summary style="cursor:pointer;font-size:12px"><b style="color:var(--accent2)">'+esc(tamKr(set.tam)||'')+'</b> 세트 <span class="hint">'+esc(set.name)+'</span></summary><div class="t-mono" style="font-size:10.5px;line-height:1.75;margin-top:5px;word-break:break-all"><div class="hint">캠페인 '+esc(set.campName||'')+'</div><div>소재명 '+esc(name)+'</div><div>utm_campaign '+esc(set.name)+'</div><div>utm_content '+esc(name)+'</div></div></details>';
+    return '<details style="border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 10px;margin-bottom:5px"><summary style="cursor:pointer;font-size:12px"><b style="color:var(--accent2)">'+esc(tamKr(set.tam)||'')+'</b> 세트 <span class="hint">'+esc(set.name)+'</span></summary><div class="t-mono" style="font-size:10.5px;line-height:1.75;margin-top:5px;word-break:break-all"><div class="hint">캠페인 '+esc(set.campName||'')+'</div><div><span class="hint">소재명</span> '+esc(name)+'</div><div><span class="hint">utm_campaign</span> '+esc(set.name)+'</div><div><span class="hint">utm_content</span> '+esc(name)+'</div></div></details>';
   }).join('');
 }
 
@@ -2420,10 +2420,10 @@ async function ucCreate(btn){
     creativeField.parentNode.insertBefore(box, creativeField);
     creativeField.parentNode.insertBefore(ch, creativeField);
     var bbox=document.createElement('div'); bbox.id='n5b_box'; bbox.style.display='none'; bbox.style.marginTop='10px';
-    bbox.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin:2px 0 4px"><span style="font-size:12px;color:var(--text2)">\u2461 \ub300\uc0c1 \uce90\ud398\uc778-\uc138\ud2b8 \uc870\ud569 \u2014 1\uac1c \ub610\ub294 \uc5ec\ub7ec \uac1c</span><span id="n5b_count" class="hint" style="font-size:11px"></span><label style="margin-left:auto;font-size:11px;color:var(--text3)"><input type="checkbox" id="n5b_active" checked onchange="n5bRender()" style="width:auto;vertical-align:middle"> \ud65c\uc131\ub9cc</label></div>'
+    bbox.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin:2px 0 4px"><span style="font-size:12px;color:var(--text2)">\u2461 \uad11\uace0 \uc138\ud2b8 \uc120\ud0dd \u2014 \ub2e4\uc911 \uc120\ud0dd \uac00\ub2a5</span><span id="n5b_count" class="hint" style="font-size:11px"></span><label style="margin-left:auto;font-size:11px;color:var(--text3)"><input type="checkbox" id="n5b_active" checked onchange="n5bRender()" style="width:auto;vertical-align:middle"> \ud65c\uc131\ub9cc</label></div>'
       +'<input id="n5b_search" placeholder="\ud83d\udd0e \uc138\ud2b8\uba85 \uac80\uc0c9" oninput="n5bRender()" style="margin-bottom:6px">'
       +'<div id="n5b_setlist" style="max-height:200px;overflow:auto;border:1px solid rgba(255,255,255,.1);border-radius:8px"></div>'
-      +'<div style="margin-top:10px;font-size:12px;color:var(--text2)">\uc870\ud569\ubcc4 \uc18c\uc7ac\uba85 \ubbf8\ub9ac\ubcf4\uae30</div>'
+      +'<div style="margin-top:10px;font-size:12px;color:var(--text2)">\u2462 \uc138\ud305 \ubbf8\ub9ac\ubcf4\uae30</div>'
       +'<div id="n5b_preview" class="mono" style="margin-top:4px;border:1px dashed rgba(255,255,255,.12);border-radius:8px;padding:8px 10px"></div>';
     creativeField.parentNode.insertBefore(bbox, creativeField.nextSibling);
     var msP=$('ms_src')&&$('ms_src').closest?$('ms_src').closest('.panel'):null; if(msP&&!msP.__abs){ msP.__abs=1; msP.style.display='none'; ch.parentNode.insertBefore(msP, ch.nextSibling); }
@@ -2489,7 +2489,7 @@ async function ucCreate(btn){
     if(!item||!sets.length){ wrap.innerHTML='<div class="hint">③ 소재명과 조합을 선택하면 조합별 소재명·UTM이 보입니다.</div>'; return; }
     var p=(typeof itemPayload==='function')?itemPayload(item):null; if(!p){ wrap.innerHTML='<div class="hint">소재 정보 파싱 불가 (이름 규칙 확인)</div>'; return; }
     wrap.innerHTML=sets.map(function(set){ var name=''; try{ name=buildCreativeName(set,p.date,{fmt:p.fmt,msg:p.msg,soje:p.soje},p.manager||''); }catch(e){ name='(이름 생성 오류)'; } var lu=(set.landing||''); var fu=lu?(lu+(lu.indexOf('?')>=0?'&':'?')+'utm_source=facebook&utm_medium=social&utm_campaign='+set.name+'&utm_term={{ad.id}}&utm_content='+name):'(랜딩 미매핑 — 생성 제외)';
-      return '<details style="border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 10px;margin-bottom:5px"><summary style="cursor:pointer;font-size:12px"><b style="color:var(--accent2)">'+esc(tamKr(set.tam)||'')+'</b> 세트 <span class="hint">'+esc(set.name)+'</span></summary><div class="t-mono" style="font-size:10.5px;line-height:1.75;margin-top:5px;word-break:break-all"><div class="hint">캠페인 '+esc(set.campName||'')+'</div><div>소재명 '+esc(name)+'</div><div>utm_campaign '+esc(set.name)+'</div><div>utm_content '+esc(name)+'</div><div'+(lu?'':' style="color:#ffb400"')+'>최종 URL '+esc(fu)+'</div></div></details>';
+      return '<details style="border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 10px;margin-bottom:5px"><summary style="cursor:pointer;font-size:12px"><b style="color:var(--accent2)">'+esc(tamKr(set.tam)||'')+'</b> 세트 <span class="hint">'+esc(set.name)+'</span></summary><div class="t-mono" style="font-size:10.5px;line-height:1.75;margin-top:5px;word-break:break-all"><div class="hint">캠페인 '+esc(set.campName||'')+'</div><div><span class="hint">소재명</span> '+esc(name)+'</div><div><span class="hint">utm_campaign</span> '+esc(set.name)+'</div><div><span class="hint">utm_content</span> '+esc(name)+'</div><div'+(lu?'':' style="color:#ffb400"')+'>최종 URL '+esc(fu)+'</div></div></details>';
     }).join('');
   };
     if(typeof mcdSync==='function' && !window.__n5Hooked){ window.__n5Hooked=1; var _s=mcdSync; window.mcdSync=function(){ var r; try{ r=_s.apply(this,arguments); }catch(e){} setTimeout(function(){ ensureUI(); if(MODE==='new') window.n5Compose(); else if(MODE==='arch'){ try{ window.n5bRender(); window.n5bPreview(); }catch(e){} } },45); return r; }; }
