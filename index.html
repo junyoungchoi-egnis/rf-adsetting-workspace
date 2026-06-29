@@ -2080,7 +2080,9 @@ function ucInit(){
   ucFillMaps(); ucFillAcct(); ucFillSrcCamp();
   ucSrcMode(UC.mode); ucScope(UC.scope);
   ucRenderSrcList(); ucRenderSets(); ucRenderPreview();
+  if(!window.__ucScopeHook){ window.__ucScopeHook=1; document.addEventListener('click',function(e){ var t=e.target&&e.target.closest?e.target.closest('button'):null; if(!t)return; var tx=(t.textContent||'').trim(); if(tx==='\uD074\uB8F9'||tx==='\uC2A4\uD504\uB9B0\uD2B8'){ setTimeout(ucScopeRefresh,80); } },true); }
 }
+function ucScopeRefresh(){ var pg=document.getElementById('page-unified'); if(!pg||!pg.classList.contains('active'))return; UC.srcs={}; UC.targets={}; ucFillAcct(); ucFillSrcCamp(); ucRenderSrcList(); ucRenderSets(); ucRenderPreview(); }
 function ucFillMaps(){
   var fmt=document.getElementById('uc_fmt');
   if(fmt&&!fmt.options.length){ var fl=ucMapList('formats'); fmt.innerHTML=fl.map(function(o){ return '<option value="'+o.code+'">'+esc(o.label||o.code)+' ('+o.code+')</option>'; }).join(''); }
