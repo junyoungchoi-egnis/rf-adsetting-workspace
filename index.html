@@ -568,42 +568,43 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
     <section class="page" id="page-unified">
       <div class="panel" style="margin-bottom:14px">
         <div class="panel-h">⑥ 통합 소재 세팅 <span class="bdg bdg-ok">소재명 → 어디에 세팅할지 → 세팅</span></div>
-        <div class="hint">한 소재를 정의하고, 1개 또는 여러 광고 세트에 소재명·UTM을 자동 재파생해 한 번에 세팅합니다. (Meta 라이브러리 = 기존 소재 복제는 바로 동작 · 신규 작성/생성 아카이브 = 신규 생성은 네이밍·미리보기까지 동작)</div>
+        <div class="hint">한 소재를 정의하고, 1개 또는 여러 광고 세트에 소재명·UTM을 자동 재파생해 한 번에 세팅합니다.</div>
       </div>
 
       <div class="panel" style="margin-bottom:14px">
         <div class="panel-h">1단계 · 소재 정의</div>
-        <div class="row-flex" style="gap:6px;margin:8px 0 12px;flex-wrap:wrap">
-          <button class="btn on" id="uc_m_meta" onclick="ucSrcMode('meta')">Meta 라이브러리 (기존 복제)</button>
-          <button class="btn" id="uc_m_archive" onclick="ucSrcMode('archive')">생성 아카이브 (신규)</button>
-          <button class="btn" id="uc_m_new" onclick="ucSrcMode('new')">신규 작성</button>
+        <div class="seg-toggle" style="margin:8px 0 12px">
+          <button class="on" id="uc_m_new" onclick="ucSrcMode('new')">신규 작성</button>
+          <button id="uc_m_archive" onclick="ucSrcMode('archive')">생성 아카이브 가져오기</button>
+          <button id="uc_m_meta" onclick="ucSrcMode('meta')">기존 소재 복제</button>
         </div>
-        <div id="uc_metaWrap">
-          <div class="field"><label>소재 선택 (검색)</label>
+        <div id="uc_metaWrap" style="display:none">
+          <div class="field"><label>복제할 소재 선택 (검색)</label>
             <input id="uc_srcSearch" placeholder="🔎 소재명 검색" oninput="ucRenderSrcList()" style="margin-bottom:6px">
             <div id="uc_srcList" style="max-height:200px;overflow:auto;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:4px"></div>
           </div>
         </div>
-        <div id="uc_newWrap" style="display:none">
-          <div class="hint" style="margin-bottom:8px">신규 소재 생성 — 소재명/미리보기까지 동작합니다. 에셋·페이지·문구·CTA·랜딩 입력과 실제 생성은 다음 배포에서 연결됩니다.</div>
+        <div id="uc_newWrap">
+          <div class="hint" style="margin-bottom:8px">신규 소재 정의 — 소재명/미리보기까지 동작합니다. (에셋·문구·CTA·랜딩 입력과 실제 생성, 생성 아카이브 프리필은 다음 배포에서 연결)</div>
           <div class="grid g2">
             <div class="field"><label>계정</label><select id="uc_acct" onchange="ucRenderSets();ucRenderPreview()"></select></div>
-            <div class="field"><label>형식</label><select id="uc_fmt" onchange="ucNameBase();ucRenderPreview()"><option value="V">영상(V)</option><option value="I">이미지(I)</option></select></div>
-            <div class="field"><label>메시지 컨셉</label><input id="uc_msg" oninput="ucNameBase();ucRenderPreview()" placeholder="예: drunk-nego"></div>
-            <div class="field"><label>소재(크리에이터/코드)</label><input id="uc_soje" oninput="ucNameBase();ucRenderPreview()" placeholder="예: cs.e"></div>
-            <div class="field"><label>날짜</label><input type="date" id="uc_date" onchange="ucNameBase();ucRenderPreview()"></div>
-            <div class="field"><label>담당자</label><input id="uc_manager" oninput="ucNameBase();ucRenderPreview()" placeholder="예: ssh"></div>
+            <div class="field"><label>형식</label><select id="uc_fmt" onchange="ucRenderPreview()"></select></div>
+            <div class="field"><label>메시지 컨셉</label><select id="uc_msg" onchange="ucRenderPreview()"></select></div>
+            <div class="field"><label>소재명 (수동 입력)</label><input id="uc_soje" oninput="ucRenderPreview()" placeholder="예: cs.e"></div>
+            <div class="field"><label>날짜</label><input type="date" id="uc_date" onchange="ucRenderPreview()"></div>
+            <div class="field"><label>담당자</label><input id="uc_manager" oninput="ucRenderPreview()" placeholder="예: ssh"></div>
           </div>
         </div>
-        <div style="margin-top:10px" class="hint">소재명 베이스: <span class="t-mono" id="uc_namebase" style="color:var(--text)">—</span></div>
       </div>
 
       <div class="panel" style="margin-bottom:14px">
-        <div class="panel-h">2단계 · 세트 대상</div>
-        <div class="row-flex" style="gap:6px;margin:8px 0;align-items:center;flex-wrap:wrap">
-          <button class="btn on" id="uc_sc_single" onclick="ucScope('single')">1개 세트</button>
-          <button class="btn" id="uc_sc_multi" onclick="ucScope('multi')">다중 세트</button>
-          <span class="hint" id="uc_setCount" style="margin-left:6px">0개 선택</span>
+        <div class="panel-h">2단계 · 세팅 대상</div>
+        <div class="row-flex" style="gap:10px;margin:8px 0;align-items:center;flex-wrap:wrap">
+          <div class="seg-toggle">
+            <button class="on" id="uc_sc_single" onclick="ucScope('single')">1개 세트</button>
+            <button id="uc_sc_multi" onclick="ucScope('multi')">다중 세트</button>
+          </div>
+          <span class="hint" id="uc_setCount">0개 선택</span>
           <label style="margin-left:auto;font-weight:400;color:var(--text3);font-size:12px"><input type="checkbox" id="uc_setActive" checked onchange="ucRenderSets()" style="width:auto;vertical-align:middle"> 활성만</label>
         </div>
         <input id="uc_setSearch" placeholder="🔎 세트명 검색" oninput="ucRenderSets()" style="margin-bottom:6px">
@@ -2034,38 +2035,62 @@ async function msCreate(btn){
 }
 
 /* ⑥ 통합 소재 세팅 — Round 1 (복제 경로 라이브 + 3스텝 구조) */
-var UC={mode:'meta', scope:'single', src:null, targets:{}};
+var UC={mode:'new', scope:'single', src:null, targets:{}};
 var UC_ACCT={'1462607070849777':'클룹 메인','793134085895227':'클룹 서브','3342733785912061':'스프린트','539103343188615':'[사용X]'};
+var UC_BRAND={'1462607070849777':'클룹','793134085895227':'클룹','3342733785912061':'스프린트','539103343188615':''};
 
+function ucCurScope(){
+  try{
+    var b=[].slice.call(document.querySelectorAll('button')).filter(function(x){ var t=(x.textContent||'').trim(); return t==='클룹'||t==='스프린트'; });
+    var a=b.filter(function(x){ return /btn-primary/.test(x.className); })[0];
+    return a?a.textContent.trim():'클룹';
+  }catch(e){ return '클룹'; }
+}
+function ucMapList(key){
+  try{ var m=DB.maps[key]; var arr=Array.isArray(m)?m:Object.values(m||{});
+    return arr.map(function(v){ return (typeof v==='object')?{code:(v.code||v.key||v.id||''),label:(v.label||v.kr||v.name||'')}:{code:v,label:v}; }).filter(function(o){ return o.code; });
+  }catch(e){ return []; }
+}
 function ucAcctOf(){
   var rows=(typeof metaSnap!=='undefined'&&metaSnap&&metaSnap.adsets)?(Array.isArray(metaSnap.adsets)?metaSnap.adsets:Object.values(metaSnap.adsets)):[];
   var m={}; rows.forEach(function(a){ if(a&&a.adsetId)m[a.adsetId]=a.account; }); return m;
 }
 function ucCandidates(){
   if(typeof creativeCandidates!=='function') return [];
-  var acctOf=ucAcctOf();
-  return creativeCandidates().filter(function(c){ return c.adsetId; }).map(function(c){ c._acct=acctOf[c.adsetId]||''; return c; });
+  var acctOf=ucAcctOf(), sc=ucCurScope();
+  return creativeCandidates().filter(function(c){ return c.adsetId; }).map(function(c){ c._acct=acctOf[c.adsetId]||''; return c; })
+    .filter(function(c){ var br=UC_BRAND[c._acct]; return !br||br===sc; });
 }
 function ucSources(){ return (typeof metaCloneSources==='function')?metaCloneSources():[]; }
 
 function ucInit(){
   try{ if(typeof renderMetaCreate==='function'){ var pg=document.getElementById('mcd_page'); if(pg&&!pg.options.length) renderMetaCreate(); } }catch(e){}
-  ucFillAcct(); ucRenderSrcList(); ucRenderSets(); ucRenderPreview(); ucNameBase();
+  ucFillMaps(); ucFillAcct();
+  ucSrcMode(UC.mode); ucScope(UC.scope);
+  ucRenderSrcList(); ucRenderSets(); ucRenderPreview();
+}
+function ucFillMaps(){
+  var fmt=document.getElementById('uc_fmt');
+  if(fmt&&!fmt.options.length){ var fl=ucMapList('formats'); fmt.innerHTML=fl.map(function(o){ return '<option value="'+o.code+'">'+esc(o.label||o.code)+' ('+o.code+')</option>'; }).join(''); }
+  var msg=document.getElementById('uc_msg');
+  if(msg&&!msg.options.length){ var ml=ucMapList('msgpool'); msg.innerHTML='<option value="">메시지 컨셉 선택</option>'+ml.map(function(o){ return '<option value="'+o.code+'">'+esc(o.code)+(o.label?' · '+esc(o.label):'')+'</option>'; }).join(''); }
 }
 function ucFillAcct(){
-  var s=document.getElementById('uc_acct'); if(!s||s.options.length) return;
-  var seen={}; ucCandidates().forEach(function(c){ if(c._acct)seen[c._acct]=1; });
-  var ids=Object.keys(seen); if(!ids.length) ids=Object.keys(UC_ACCT);
-  s.innerHTML=ids.map(function(id){ return '<option value="'+id+'">'+(UC_ACCT[id]||id)+'</option>'; }).join('');
+  var s=document.getElementById('uc_acct'); if(!s) return;
+  var cur=s.value, seen={};
+  ucCandidates().forEach(function(c){ if(c._acct)seen[c._acct]=1; });
+  var ids=Object.keys(seen);
+  if(!ids.length){ var sc=ucCurScope(); ids=Object.keys(UC_BRAND).filter(function(id){ return UC_BRAND[id]===sc; }); }
+  s.innerHTML=ids.map(function(id){ return '<option value="'+id+'"'+(id===cur?' selected':'')+'>'+(UC_ACCT[id]||id)+'</option>'; }).join('');
 }
 
 function ucSrcMode(m){
   UC.mode=m;
-  ['meta','archive','new'].forEach(function(x){ var b=document.getElementById('uc_m_'+x); if(b)b.className='btn'+(x===m?' on':''); });
+  ['new','archive','meta'].forEach(function(x){ var b=document.getElementById('uc_m_'+x); if(b)b.className=(x===m?'on':''); });
   var mw=document.getElementById('uc_metaWrap'), nw=document.getElementById('uc_newWrap');
   if(mw)mw.style.display=(m==='meta')?'':'none';
   if(nw)nw.style.display=(m==='meta')?'none':'';
-  ucNameBase(); ucRenderSets(); ucRenderPreview();
+  ucRenderSets(); ucRenderPreview();
 }
 
 function ucRenderSrcList(){
@@ -2078,7 +2103,7 @@ function ucRenderSrcList(){
     return '<div class="diverge-row" style="cursor:pointer;gap:8px" onclick="ucPickSrc('+i+')"><span style="font-style:normal">'+(on?'●':'○')+'</span><span class="t-mono" style="flex:1;min-width:0;font-size:11.5px;color:'+(on?'var(--text)':'var(--text3)')+'">'+esc(s.name||s.cid)+'</span><span style="font-size:10.5px;color:var(--text3)">'+esc(s.type||'')+'</span></div>';
   }).join(''):'<div class="empty" style="padding:10px">소재 없음 (동기화 필요)</div>';
 }
-function ucPickSrc(i){ var s=(window.__ucSrc||[])[i]; if(!s)return; UC.src=s; ucRenderSrcList(); ucNameBase(); ucRenderPreview(); }
+function ucPickSrc(i){ var s=(window.__ucSrc||[])[i]; if(!s)return; UC.src=s; ucRenderSrcList(); ucRenderPreview(); }
 
 function ucBasePayload(){
   if(UC.mode==='meta'){ return UC.src?((typeof itemPayload==='function'?itemPayload(UC.src):null)||{}):null; }
@@ -2086,16 +2111,10 @@ function ucBasePayload(){
   var d=g('uc_date');
   return { fmt:g('uc_fmt'), msg:g('uc_msg'), soje:g('uc_soje'), date:(d?d.replace(/-/g,'').slice(2):''), manager:g('uc_manager') };
 }
-function ucNameBase(){
-  var el=document.getElementById('uc_namebase'); if(!el)return;
-  var p=ucBasePayload();
-  if(!p||(UC.mode==='meta'&&!UC.src)){ el.textContent='—'; return; }
-  el.textContent=[p.fmt,p.msg,p.soje,p.date,p.manager].filter(Boolean).join('_')||'—';
-}
 
 function ucScope(s){
   UC.scope=s;
-  ['single','multi'].forEach(function(x){ var b=document.getElementById('uc_sc_'+x); if(b)b.className='btn'+(x===s?' on':''); });
+  ['single','multi'].forEach(function(x){ var b=document.getElementById('uc_sc_'+x); if(b)b.className=(x===s?'on':''); });
   if(s==='single'){ var ks=Object.keys(UC.targets); if(ks.length>1){ var first=ks[0], keep=UC.targets[first]; UC.targets={}; UC.targets[first]=keep; } }
   ucRenderSets(); ucRenderPreview();
 }
