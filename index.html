@@ -2396,7 +2396,7 @@ async function ucCreate(btn){
     var fmts=(typeof ucMapList==='function')?ucMapList('formats'):[];
     var msgs=(typeof ucMapList==='function')?ucMapList('msgpool'):[];
     var bar=document.createElement('div'); bar.id='n5_modeBar'; bar.className='seg-toggle'; bar.style.cssText='margin:6px 0 10px';
-    bar.innerHTML='<button class="on" id="n5_mA" onclick="n5Mode(\'new\')">\u24d0 \uc18c\uc7ac \uc815\uc758</button><button id="n5_mB" onclick="n5Mode(\'arch\')">\u24d1 \u2462 \uc544\uce74\uc774\ube0c</button><button id="n5_mC" onclick="n5Mode(\'clone\')">\u24d2 \ubcf5\uc81c</button>';
+    bar.innerHTML='<button class="on" id="n5_mA" onclick="n5Mode(\'new\')">\u24d0 \uc18c\uc7ac \uc815\uc758</button><button id="n5_mB" onclick="n5Mode(\'arch\')">\u24d1 \uc2e0\uaddc \uc138\ud305</button><button id="n5_mC" onclick="n5Mode(\'clone\')">\u24d2 \ubcf5\uc81c</button>';
     var box=document.createElement('div'); box.id='n5_newBox';
     box.innerHTML=''
       +'<div id="n5_chip" class="hint" style="margin:2px 0 8px;font-size:11px">\uce90\ud398\uc778\u00b7\uc138\ud2b8\ub97c \uba3c\uc800 \uc120\ud0dd\ud558\uc138\uc694</div>'
@@ -2433,6 +2433,7 @@ async function ucCreate(btn){
     [['n5_mA','new'],['n5_mB','arch'],['n5_mC','clone']].forEach(function(p){ var b=$(p[0]); if(b)b.className=(p[1]===m?'on':''); });
     var box=$('n5_newBox'), ch=$('n5_cloneHint'), cf=$('mcd_creative'); var cfield=cf&&cf.closest?cf.closest('.field'):null;
     if(box)box.style.display=(m==='new')?'':'none';
+    var cg=$('mcd_camp')&&$('mcd_camp').closest?$('mcd_camp').closest('.grid'):null; if(cg)cg.style.display=(m==='new')?'':'none';
     if(ch)ch.style.display='none';
     var msP=$('ms_src')&&$('ms_src').closest?$('ms_src').closest('.panel'):null; if(msP)msP.style.display=(m==='clone')?'':'none'; if(m==='clone'){ try{ if(typeof msRenderSrc==='function')msRenderSrc(); if(typeof msRenderSets==='function')msRenderSets(); if(typeof msRenderPreview==='function')msRenderPreview(); }catch(e){} }
     if(cfield)cfield.style.display=(m==='arch')?'':'none';
