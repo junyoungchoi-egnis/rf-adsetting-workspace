@@ -208,9 +208,8 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
       <div class="nav-item" style="display:none" data-tab="unified" onclick="go('unified');ucInit()"><span class="n">⑥</span>통합 세팅</div><div class="nav-item" data-tab="map" onclick="go('map')"><span class="n">⚙</span>설정/매핑</div>
     </nav>
     <div class="side-foot">
-      <div class="side-stat"><span>광고세트</span><b id="stSets">0</b></div>
-      <div class="side-stat"><span>생성 소재</span><b id="stArc">0</b></div>
-      <div class="side-stat"><span>제품</span><b id="stProd">0</b></div>
+      <div class="side-stat"><span>마지막 동기화</span><b id="stSyncTime" style="color:var(--accent2)">—</b></div>
+      <div class="side-stat"><span>세트·소재·제품</span><b id="stCounts">0·0·0</b></div>
       <div style="margin-top:8px"><span class="sync-dot off" id="syncDot"></span><span id="syncLabel">연결 중…</span></div>
     </div>
   </aside>
@@ -926,6 +925,8 @@ try{ firebase.initializeApp(firebaseConfig); DBREF=firebase.database().ref('v2')
 catch(e){ console.warn('Firebase 초기화 실패 — 로컬 모드로 동작합니다.', e); }
 /* API 호출에 로그인 토큰 자동 첨부 — 서버 엔드포인트 인증(@egnis.kr) */
 (function(){ var _f=window.fetch; window.fetch=function(u,o){ try{ if(typeof u==='string' && u.indexOf('/api/')===0 && window.firebase && firebase.auth && firebase.auth().currentUser){ o=o||{}; return firebase.auth().currentUser.getIdToken().then(function(t){ var h=Object.assign({},o.headers||{}); h['Authorization']='Bearer '+t; o.headers=h; return _f(u,o); }).catch(function(){ return _f(u,o); }); } }catch(e){} return _f(u,o); }; })();
+/* API 호출에 로그인 토큰 자동 첨부 — 서버 엔드포인트 인증(@egnis.kr) */
+(function(){ var _f=window.fetch; window.fetch=function(u,o){ try{ if(typeof u==='string' && u.indexOf('/api/')===0 && window.firebase && firebase.auth && firebase.auth().currentUser){ o=o||{}; return firebase.auth().currentUser.getIdToken().then(function(t){ var h=Object.assign({},o.headers||{}); h['Authorization']='Bearer '+t; o.headers=h; return _f(u,o); }).catch(function(){ return _f(u,o); }); } }catch(e){} return _f(u,o); }; })();
 
 let mcUser=null;
 function mcLogActivity(action,detail){ try{ if(!window.firebase||!firebase.database)return; var who=mcUser?(mcUser.email||mcUser.displayName||'사용자'):'(비로그인)'; firebase.database().ref('v2/activity').push({who:who,action:action,detail:detail||'',at:new Date().toISOString()}); }catch(e){} }
@@ -1062,6 +1063,7 @@ function updateMetaStatus(){
   const el=document.getElementById('metaStatus'); if(!el) return;
   if(metaSnap&&metaSnap.syncedAt){ const d=new Date(metaSnap.syncedAt); el.textContent=`Meta 동기화: ${d.toLocaleString('ko-KR')} · 세트 ${metaSnap.adsetCount||0}·소재 ${metaSnap.adCount||0}`; }
   else el.textContent='Meta 동기화 데이터 없음 (토큰·배포 후 동기화 필요)';
+  var _ss=document.getElementById('stSyncTime'); if(_ss){ if(metaSnap&&metaSnap.syncedAt){ var dd=new Date(metaSnap.syncedAt); _ss.textContent=dd.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}); _ss.title=dd.toLocaleString('ko-KR'); } else _ss.textContent='없음'; }
 }
 async function runMetaSync(btn){
   const t0=btn?btn.textContent:''; if(btn){btn.disabled=true;btn.textContent='동기화 중…';}
@@ -1115,9 +1117,7 @@ function init(){
   startMetaSync();
 }
 function updateStats(){
-  $('stSets').textContent=DB.sets.length;
-  $('stArc').textContent=DB.archive.length;
-  $('stProd').textContent=M().products.length;
+  var _sc=$('stCounts'); if(_sc)_sc.textContent=DB.sets.length+'·'+DB.archive.length+'·'+M().products.length;
 }
 
 /* ════════════════════════ TAB1: BUILDER ════════════════════════ */
