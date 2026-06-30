@@ -2424,7 +2424,9 @@ async function ucCreate(btn){
       +'<input id="n5b_search" placeholder="\ud83d\udd0e \uc138\ud2b8\uba85 \uac80\uc0c9" oninput="n5bRender()" style="margin-bottom:6px">'
       +'<div id="n5b_setlist" style="max-height:200px;overflow:auto;border:1px solid rgba(255,255,255,.1);border-radius:8px"></div>'
       +'<div style="margin-top:10px;font-size:12px;color:var(--text2)">\u2462 \uc138\ud305 \ubbf8\ub9ac\ubcf4\uae30</div>'
-      +'<div id="n5b_preview" class="mono" style="margin-top:4px;border:1px dashed rgba(255,255,255,.12);border-radius:8px;padding:8px 10px"></div>';
+      +'<div id="n5b_preview" class="mono" style="margin-top:4px;border:1px dashed rgba(255,255,255,.12);border-radius:8px;padding:8px 10px"></div>'
+      +'<div id="n5b_pre" style="margin-top:10px"></div>'
+      +'<div style="text-align:center;margin-top:10px"><button class="btn btn-primary" id="n5b_gen" onclick="n5bCreate(this)">⚡ 신규 세팅 생성 (PAUSED)</button></div>';
     creativeField.parentNode.insertBefore(bbox, creativeField.nextSibling);
     var msP=$('ms_src')&&$('ms_src').closest?$('ms_src').closest('.panel'):null; if(msP&&!msP.__abs){ msP.__abs=1; msP.style.display='none'; ch.parentNode.insertBefore(msP, ch.nextSibling); }
     window.n5Mode(MODE);
@@ -2444,7 +2446,7 @@ async function ucCreate(btn){
     var lf=$('mcd_landing')&&$('mcd_landing').closest?$('mcd_landing').closest('.field'):null; if(lf)lf.style.display='none';
     var bb=$('n5b_box'); if(bb)bb.style.display=(m==='arch')?'':'none';
     if(m==='new') window.n5Compose();
-    else if(m==='arch'){ if(typeof mcdSync==='function'){ try{ mcdSync(); }catch(e){} } try{ window.n5bRender(); window.n5bPreview(); }catch(e){} }
+    else if(m==='arch'){ if(typeof mcdSync==='function'){ try{ mcdSync(); }catch(e){} } try{ window.n5bRender(); window.n5bPreview(); window.n5bPre(); }catch(e){} }
   };
   window.n5Compose=function(){
     if(MODE!=='new') return;
@@ -2479,7 +2481,7 @@ async function ucCreate(btn){
   var n5bTargets={};
   function n5bArchItem(){ try{ return DB.archive.find(function(x){return x.id===(($('mcd_creative')||{}).value);}); }catch(e){ return null; } }
   function n5bCands(){ try{ var c=(typeof msCandidates==='function')?msCandidates():[]; if((($('n5b_active')||{}).checked)){ c=c.filter(function(x){ return (x.live&&x.live.active>0)||x.campStatus==='ACTIVE'; }); } var q=(($('n5b_search')||{}).value||'').toLowerCase(); if(q)c=c.filter(function(x){return (x.name||'').toLowerCase().indexOf(q)>=0;}); var seen={}; return c.filter(function(x){ if(seen[x.adsetId])return false; seen[x.adsetId]=1; return true; }); }catch(e){ return []; } }
-  window.n5bToggle=function(i){ var c=(window.__n5bCands||[])[i]; if(!c)return; if(n5bTargets[c.adsetId])delete n5bTargets[c.adsetId]; else n5bTargets[c.adsetId]=c; window.n5bRender(); window.n5bPreview(); };
+  window.n5bToggle=function(i){ var c=(window.__n5bCands||[])[i]; if(!c)return; if(n5bTargets[c.adsetId])delete n5bTargets[c.adsetId]; else n5bTargets[c.adsetId]=c; window.n5bRender(); window.n5bPreview(); try{ window.n5bPre(); }catch(e){} };
   window.n5bRender=function(){ var wrap=$('n5b_setlist'); if(!wrap)return; var cs=n5bCands(); window.__n5bCands=cs;
     wrap.innerHTML=cs.length?cs.map(function(c,i){ var on=!!n5bTargets[c.adsetId];
       return '<div style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.06)" onclick="n5bToggle('+i+')"><span>'+(on?'\u2611':'\u2610')+'</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace;font-size:10.5px;color:'+(on?'var(--text)':'var(--text3)')+'">'+esc(c.name)+'</span><span style="font-size:10.5px;color:var(--text3);white-space:nowrap">'+esc((c.brand||c.product||'')+'\u00b7'+schemeKr(c.scheme))+'</span><span style="font-size:10.5px;color:var(--accent2);margin-left:6px;white-space:nowrap">'+esc(tamKr(c.tam)||'')+'</span></div>';
@@ -2493,7 +2495,78 @@ async function ucCreate(btn){
       return '<details style="border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 10px;margin-bottom:5px"><summary style="cursor:pointer;font-size:12px"><b style="color:var(--accent2)">'+esc(tamKr(set.tam)||'')+'</b> 세트 <span class="hint">'+esc(set.name)+'</span></summary><div class="t-mono" style="font-size:10.5px;line-height:1.75;margin-top:5px;word-break:break-all"><div class="hint">캠페인 '+esc(set.campName||'')+'</div><div><span class="hint">소재명</span> '+esc(name)+'</div><div><span class="hint">utm_campaign</span> '+esc(set.name)+'</div><div><span class="hint">utm_content</span> '+esc(name)+'</div><div'+(lu?'':' style="color:#ffb400"')+'>최종 URL '+esc(fu)+'</div></div></details>';
     }).join('');
   };
-    if(typeof mcdSync==='function' && !window.__n5Hooked){ window.__n5Hooked=1; var _s=mcdSync; window.mcdSync=function(){ var r; try{ r=_s.apply(this,arguments); }catch(e){} setTimeout(function(){ ensureUI(); if(MODE==='new') window.n5Compose(); else if(MODE==='arch'){ try{ window.n5bRender(); window.n5bPreview(); }catch(e){} } },45); return r; }; }
+    function n5bSpec(){
+    var g=function(id){ var e=$(id); return e?((e.value||'').trim()):''; };
+    var spec={ page_id:g('mcd_page'), message:g('mcd_body'), name:g('mcd_headline'), description:g('mcd_desc'), cta:g('mcd_cta') };
+    var sa=(typeof mcdSelAsset==='function')?mcdSelAsset():null;
+    if(sa){ if(sa.video_id)spec.video_id=sa.video_id; else if(sa.image_hash)spec.image_hash=sa.image_hash; if(sa.thumb)spec.image_url=sa.thumb; }
+    else if(typeof mcdSrc!=='undefined' && (mcdSrc==='hash')){ spec.image_hash=g('mcd_manualId'); }
+    else if(typeof mcdSrc!=='undefined' && (mcdSrc==='story')){ spec.object_story_id=g('mcd_manualId'); }
+    return spec;
+  }
+  function n5bGaps(){
+    var spec=n5bSpec(); var item=n5bArchItem();
+    var sets=Object.keys(n5bTargets).map(function(k){return n5bTargets[k];});
+    var g=[];
+    if(!item) g.push('① 소재명을 선택하세요');
+    if(!spec.page_id) g.push('Facebook 페이지를 선택하세요');
+    if(!spec.image_hash&&!spec.video_id&&!spec.object_story_id) g.push('에셋(이미지/영상/게시물)을 선택하세요');
+    if(!spec.message) g.push('기본 문구(Primary text)를 입력하세요');
+    if(!sets.length) g.push('② 광고 세트를 1개 이상 선택하세요');
+    var noLand=sets.filter(function(s){ return !((s.landing||'').trim()); });
+    return { gaps:g, sets:sets, noLand:noLand, spec:spec, item:item };
+  }
+  window.n5bPre=function(){
+    var box=$('n5b_pre'); if(!box) return;
+    var r=n5bGaps(); var rows=[];
+    var ok=function(t){ return '<div style="color:#5fd08a">✅ '+t+'</div>'; };
+    var bad=function(t){ return '<div style="color:#fbbf24">⚠️ '+t+'</div>'; };
+    rows.push(r.spec.page_id?ok('페이지 선택됨'):bad('페이지 미선택'));
+    rows.push((r.spec.image_hash||r.spec.video_id||r.spec.object_story_id)?ok('에셋 선택됨'):bad('에셋 미선택'));
+    rows.push(r.spec.message?ok('본문 입력됨'):bad('본문 미입력'));
+    var valid=r.sets.length-r.noLand.length;
+    if(r.sets.length) rows.push(ok('생성 예정 '+valid+'건'));
+    if(r.noLand.length) rows.push(bad('랜딩 미매핑 '+r.noLand.length+'건: '+r.noLand.map(function(s){return tamKr(s.tam)||s.name;}).join(', ')+' → 매핑 후 진행'));
+    var blocked=r.gaps.length>0;
+    box.innerHTML='<div style="background:rgba(40,90,107,.18);border:1px solid #2f5a6b;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.7">'
+      +'<div style="font-size:11px;color:#7fb3c8;margin-bottom:6px">③ 사전 점검</div>'+rows.join('')+'</div>';
+    var btn=$('n5b_gen'); if(btn){ btn.disabled=blocked; btn.style.opacity=blocked?'.5':'1'; btn.textContent=blocked?'⚡ 신규 세팅 생성 (PAUSED)':('⚡ 신규 세팅 생성 (PAUSED) · '+valid+'건'); }
+  };
+  window.n5bCreate=async function(btn){
+    var r=n5bGaps();
+    if(r.gaps.length){ alert('생성 전 확인 필요:\n\n• '+r.gaps.join('\n• ')); return; }
+    if(r.noLand.length){ alert('랜딩이 미매핑된 세트가 있어 생성을 진행할 수 없습니다.\n\n미매핑: '+r.noLand.map(function(s){return tamKr(s.tam)||s.name;}).join(', ')+'\n\n설정 > 매핑에서 스킴-랜딩을 연결한 뒤 다시 시도하세요.'); return; }
+    var p=(typeof itemPayload==='function')?itemPayload(r.item):null;
+    if(!p){ toast('소재명 파싱 불가 (이름 규칙 확인)'); return; }
+    var plan=r.sets.map(function(set){
+      var name=''; try{ name=buildCreativeName(set,p.date,{fmt:p.fmt,msg:p.msg,soje:p.soje},p.manager||''); }catch(e){ name=''; }
+      var link=buildUtm(set.landing,set.name,name);
+      var ns=Object.assign({},r.spec,{link:link});
+      return { act:set._acct, targetAdsetId:set.adsetId, newName:name, utmCampaign:set.name, utmContent:name, newSpec:ns, _set:set, _p:p };
+    }).filter(function(x){ return x.act&&x.targetAdsetId&&x.newName; });
+    if(!plan.length){ toast('생성 가능한 조합이 없습니다 (계정 매핑 확인)'); return; }
+    if(!confirm(plan.length+'개 세트에 신규 소재 생성 (PAUSED). 진행할까요?')){ toast('취소됨'); return; }
+    if(btn){ btn.disabled=true; btn.textContent='세팅 중…'; }
+    var done=0,fail=0,stop=false,lastErr='';
+    for(var i=0;i<plan.length;i++){
+      var it=plan[i]; var body=Object.assign({apply:true},it); delete body._set; delete body._p;
+      try{
+        var res=await fetch('/api/clonead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+        var j=await res.json();
+        if(j.ok){ done++; if(typeof ucArchPush==='function'){ try{ ucArchPush(it._set,it.newName,it.utmCampaign,it._p,false); }catch(e){} } }
+        else { fail++; lastErr=(j.error||'')+''; if(lastErr.indexOf('limit')>=0)stop=true; }
+      }catch(e){ fail++; }
+      if(stop)break;
+      await new Promise(function(rs){ setTimeout(rs,1500); });
+    }
+    if(done&&typeof save==='function'){ try{ save(); }catch(e){} }
+    if(btn){ btn.disabled=false; }
+    if(typeof mcLogActivity==='function'){ try{ mcLogActivity('ⓑ 신규 세팅 '+done+'/'+plan.length); }catch(e){} }
+    toast('신규 세팅 — 완료 '+done+' · 실패 '+fail+(stop?' · 한도 도달, 잠시 후 재시도':(lastErr&&fail?' · '+lastErr.slice(0,40):'')));
+    try{ window.n5bPre(); }catch(e){}
+  };
+  if(typeof mcdSync==='function' && !window.__n5Hooked){ window.__n5Hooked=1; var _s=mcdSync; window.mcdSync=function(){ var r; try{ r=_s.apply(this,arguments); }catch(e){} setTimeout(function(){ ensureUI(); if(MODE==='new') window.n5Compose(); else if(MODE==='arch'){ try{ window.n5bRender(); window.n5bPreview(); window.n5bPre(); }catch(e){} } },45); return r; }; }
+  if(typeof mcdPreview==='function' && !window.__n5PrevHooked){ window.__n5PrevHooked=1; var _mp=mcdPreview; window.mcdPreview=function(){ var r; try{ r=_mp.apply(this,arguments); }catch(e){} if(MODE==='arch'){ try{ window.n5bPre(); }catch(e){} } return r; }; }
   setTimeout(ensureUI,60);
 })();
 
