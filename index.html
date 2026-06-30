@@ -924,6 +924,8 @@ const firebaseConfig = {
 let DBREF=null, _syncStarted=false;
 try{ firebase.initializeApp(firebaseConfig); DBREF=firebase.database().ref('v2'); }
 catch(e){ console.warn('Firebase 초기화 실패 — 로컬 모드로 동작합니다.', e); }
+/* API 호출에 로그인 토큰 자동 첨부 — 서버 엔드포인트 인증(@egnis.kr) */
+(function(){ var _f=window.fetch; window.fetch=function(u,o){ try{ if(typeof u==='string' && u.indexOf('/api/')===0 && window.firebase && firebase.auth && firebase.auth().currentUser){ o=o||{}; return firebase.auth().currentUser.getIdToken().then(function(t){ var h=Object.assign({},o.headers||{}); h['Authorization']='Bearer '+t; o.headers=h; return _f(u,o); }).catch(function(){ return _f(u,o); }); } }catch(e){} return _f(u,o); }; })();
 
 let mcUser=null;
 function mcLogActivity(action,detail){ try{ if(!window.firebase||!firebase.database)return; var who=mcUser?(mcUser.email||mcUser.displayName||'사용자'):'(비로그인)'; firebase.database().ref('v2/activity').push({who:who,action:action,detail:detail||'',at:new Date().toISOString()}); }catch(e){} }
