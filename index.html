@@ -2044,7 +2044,7 @@ function msRenderPreview(){
   const wrap=document.getElementById('ms_preview'); if(!wrap) return;
   const sel=document.getElementById('ms_src');
   const src=msSources().find(function(s){ return s.cid===(sel?sel.value:''); });
-  if(src){ if($('mcd_body'))$('mcd_body').value=src.body||''; if($('mcd_headline'))$('mcd_headline').value=src.title||''; if($('mcd_cta')&&src.cta)$('mcd_cta').value=src.cta; window.__cloneSrcAsset={kind:(src.video_id?'video':'image'),thumb:src.thumb||src.full||'',source:src.source||'',image_hash:src.image_hash||'',video_id:src.video_id||''}; var _pid=((src.story||'').split('_')[0])||''; var _pg=$('mcd_page'); if(_pid&&_pg&&[].some.call(_pg.options,function(o){return o.value===_pid;}))_pg.value=_pid; if(typeof mcdPreview==='function')mcdPreview(); } else { window.__cloneSrcAsset=null; }
+  if(src){ if($('mcd_body'))$('mcd_body').value=src.body||''; if($('mcd_headline'))$('mcd_headline').value=src.title||''; if($('mcd_cta')&&src.cta)$('mcd_cta').value=src.cta; var _vid=src.video_id||'',_ih=src.image_hash||'',_thumb=src.thumb||src.full||'',_source=src.source||''; try{ var _AS=(metaSnap&&metaSnap.assets)||{}; Object.keys(_AS).forEach(function(ac){ var a=_AS[ac]||{}; if(_vid){ var v=(a.videos||[]).find(function(x){return x.id===_vid;}); if(v){ if(v.source)_source=v.source; if(v.thumb)_thumb=v.thumb; } } if(_ih){ var im=(a.images||[]).find(function(x){return x.hash===_ih;}); if(im&&im.full)_thumb=im.full; } }); }catch(e){} window.__cloneSrcAsset={kind:(_vid?'video':'image'),thumb:_thumb,source:_source,image_hash:_ih,video_id:_vid}; var _pid=((src.story||'').split('_')[0])||''; var _pg=$('mcd_page'); if(_pid&&_pg&&[].some.call(_pg.options,function(o){return o.value===_pid;}))_pg.value=_pid; if(typeof mcdPreview==='function')mcdPreview(); } else { window.__cloneSrcAsset=null; }
   const sets=msSelectedSets();
   if(!src||!sets.length){ wrap.innerHTML='<div class="hint" style="padding:8px">소재와 세트를 선택하면 세트마다 생성될 이름·UTM이 보입니다.</div>'; return; }
   const p=itemPayload(src)||{};
@@ -2467,7 +2467,7 @@ async function ucCreate(btn){
     var box=$('n5_newBox'), ch=$('n5_cloneHint'), cf=$('mcd_creative'); var cfield=cf&&cf.closest?cf.closest('.field'):null;
     if(box)box.style.display=(m==='new')?'':'none';
     var cg=$('mcd_camp')&&$('mcd_camp').closest?$('mcd_camp').closest('.grid'):null; if(cg)cg.style.display=(m==='new')?'':'none';
-    var cp=$('mcd_cPanel'); if(cp)cp.style.display=(m==='new'||m==='clone')?'none':''; if(m==='arch'){ if(!window.__srcAdv&&typeof mcdSrc!=='undefined'&&mcdSrc!=='reuse'&&typeof mcdSetSrc==='function'){ mcdSetSrc('reuse',true); } if(typeof window.n5SrcApply==='function')window.n5SrcApply(); }
+    var cp=$('mcd_cPanel'); if(cp)cp.style.display=(m==='new'||m==='clone')?'none':''; var bpan=$('mcd_page')&&$('mcd_page').closest?$('mcd_page').closest('.panel'):null; if(bpan)bpan.style.display=(m==='new')?'none':''; if(m==='arch'){ if(!window.__srcAdv&&typeof mcdSrc!=='undefined'&&mcdSrc!=='reuse'&&typeof mcdSetSrc==='function'){ mcdSetSrc('reuse',true); } if(typeof window.n5SrcApply==='function')window.n5SrcApply(); }
     if(ch)ch.style.display='none';
     var msP=$('ms_src')&&$('ms_src').closest?$('ms_src').closest('.panel'):null; if(msP)msP.style.display=(m==='clone')?'':'none'; if(m==='clone'){ mcdSel=null; try{ if(typeof msRenderSrc==='function')msRenderSrc(); if(typeof msRenderSets==='function')msRenderSets(); if(typeof msRenderPreview==='function')msRenderPreview(); }catch(e){} } else { window.__cloneSrcAsset=null; }
     if(cfield)cfield.style.display=(m==='arch')?'':'none';
@@ -2712,7 +2712,7 @@ function mcdSync(){
   const campName=($('mcd_camp').selectedOptions[0]||{}).textContent||'(캠페인 미선택)';
   const adsetName=($('mcd_adset').selectedOptions[0]||{}).textContent||'(광고세트 미선택)';
   $('mcd_ctxbar').innerHTML=(a?`<span class="hint">선택한 소재</span> <span class="chip">소재 <b>${esc(a.name.length>40?a.name.slice(0,40)+'…':a.name)}</b></span>`:'');
-  $('mcd_ctxbar').style.display=a?'flex':'none';
+  $('mcd_ctxbar').style.display='none';
   if(typeof mcdRenderProfiles==='function')mcdRenderProfiles(); { const dEl=document.getElementById('mcd_adsetDecode'); if(dEl){ const nm=(($('mcd_adset').selectedOptions[0]||{}).textContent||'').replace(/ · 비활성$/,''); if(nm&&nm.indexOf('FB_')===0&&typeof parseLiveSet==='function'){ const p=parseLiveSet({adsetName:nm,adsetId:'_',campaignId:'_'}); const a2=[]; if(p){ if(p.media==='FB')a2.push('페이스북'); if(p.goal)a2.push(goalKr(p.goal)); if(p.bid)a2.push(bidKr(p.bid)); if(p.targeting)a2.push('타게팅 '+p.targeting); if(p.scheme)a2.push(schemeKr(p.scheme)); if(p.tam)a2.push(tamKr(p.tam)); } dEl.textContent=a2.length?('📖 '+a2.join(' · ')):''; } else dEl.textContent=''; } } mcdRenderAssets(); mcdPreview(); mcdFinalUrl();
 }
 function mcdUrlTags(){ const a=DB.archive.find(x=>x.id===$('mcd_creative').value); if(a&&a.utm&&a.utm.indexOf('?')>=0)return a.utm.slice(a.utm.indexOf('?')+1); return ''; }
