@@ -499,7 +499,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
         <div class="panel" style="margin-bottom:14px">
         <div class="panel-h">① 소재 선택 (기존 소재) <span class="bdg bdg-ok">세트마다 자동 이름·UTM</span></div>
         <div>
-          <div class="field"><label>기존 소재 복제</label><input id="ms_srcSearch" placeholder="🔎 소재명 검색" oninput="msRenderSrc()" style="margin-bottom:6px"><select id="ms_src" onchange="msRenderSrc()"></select></div>
+          <div class="field"><label>기존 소재 복제</label><input id="ms_srcSearch" placeholder="🔎 소재명 검색" oninput="msRenderSrc()" style="margin-bottom:6px"><div style="display:flex;gap:6px;margin-bottom:6px"><select id="ms_srcProduct" onchange="msRenderSrc()" style="flex:1"><option value="">상품 전체</option></select><select id="ms_srcManager" onchange="msRenderSrc()" style="flex:1"><option value="">담당자 전체</option></select></div><select id="ms_src" onchange="msRenderPreview()"></select></div>
           <div class="field"><label>② 광고 세트 선택 — 다중 선택 가능 · <span class="hint" id="ms_setCount">0개 선택</span> &nbsp;<label style="display:inline;font-weight:400;color:var(--text3)"><input type="checkbox" id="ms_setActive" checked onchange="msRenderSets()" style="width:auto;vertical-align:middle"> 활성만</label></label><input id="ms_setSearch" placeholder="🔎 세트명 검색" oninput="msRenderSets()" style="margin-bottom:6px"><div id="ms_setlist" style="max-height:200px;overflow:auto;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:4px"></div></div>
         </div>
         <div style="margin-top:10px"><div class="hint" style="margin-bottom:4px">③ 세팅 미리보기</div><div id="ms_preview"></div></div>
@@ -2002,8 +2002,19 @@ function msCandidates(){
 function msRenderSrc(){
   const sel=document.getElementById('ms_src'); if(!sel) return;
   const q=((document.getElementById('ms_srcSearch')||{}).value||'').toLowerCase();
-  let list=msSources(); if(q)list=list.filter(function(s){return (s.name||'').toLowerCase().indexOf(q)>=0;});
+  let list=msSources();
+  const prodSel=document.getElementById('ms_srcProduct'), mgrSel=document.getElementById('ms_srcManager');
+  const prodOf=s=>String(s.name||'').split('_')[2]||'';
+  const mgrOf=s=>{const p=itemPayload(s);return (p&&p.manager)||'';};
+  if(prodSel){ const prods=[...new Set(list.map(prodOf).filter(Boolean))].sort(); const cp=prodSel.value; prodSel.innerHTML='<option value="">상품 전체</option>'+prods.map(p=>_opt(p,p)).join(''); if(cp&&prods.indexOf(cp)>=0)prodSel.value=cp; }
+  if(mgrSel){ const mgrs=[...new Set(list.map(mgrOf).filter(Boolean))].sort(); const cm=mgrSel.value; mgrSel.innerHTML='<option value="">담당자 전체</option>'+mgrs.map(m=>_opt(m,m)).join(''); if(cm&&mgrs.indexOf(cm)>=0)mgrSel.value=cm; }
+  const fp=prodSel?prodSel.value:'', fm=mgrSel?mgrSel.value:'';
+  if(q)list=list.filter(function(s){return (s.name||'').toLowerCase().indexOf(q)>=0;});
+  if(fp)list=list.filter(s=>prodOf(s)===fp);
+  if(fm)list=list.filter(s=>mgrOf(s)===fm);
+  const prev=sel.value;
   sel.innerHTML=list.length?list.map(function(s){ return '<option value="'+s.cid+'">'+esc(s.name||s.cid)+'</option>'; }).join(''):'<option value="">(메타 라이브러리 소재 없음 — 동기화 필요)</option>';
+  if(prev&&list.some(s=>s.cid===prev)) sel.value=prev;
   msRenderPreview();
 }
 function msRenderSets(){
