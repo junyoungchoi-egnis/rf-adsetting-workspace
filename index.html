@@ -991,7 +991,7 @@ function startMetaSync(){
   try{
     if(!window.firebase || !firebase.database) return;
     metaRefStarted=true;
-    firebase.database().ref('meta_v2').on('value', snap=>{ metaSnap=snap.val(); applyMeta(); });
+    firebase.database().ref('meta_v2').on('value', snap=>{ metaSnap=snap.val(); applyMeta(); try{ maybeAutoSync(); }catch(e){} });
   }catch(e){ console.warn('meta 리스너 실패',e); }
 }
 function applyMeta(){
@@ -1049,6 +1049,12 @@ function metaBadge(setId){
   const m=metaIndex[setId]; if(!m) return '';
   const warn = m.renamed?` <span class="bdg bdg-warn" title="매체에서 이름변경됨: ${esc(m.liveName)}">⚠이름변경</span>`:'';
   return ` <span class="bdg" style="background:#15263f;color:#5fa8ff">소재 ${m.total}·활성 ${m.active}</span>${warn}`;
+}
+function maybeAutoSync(){
+  if(window.__autoSyncDone)return;
+  if(!metaSnap||!metaSnap.syncedAt)return;
+  var ageMin=(Date.now()-new Date(metaSnap.syncedAt).getTime())/60000;
+  if(ageMin>120){ window.__autoSyncDone=true; if(typeof runMetaSync==='function'){ try{ if(typeof toast==='function')toast('동기화 2시간 경과 — 최신 데이터로 자동 갱신 중…'); runMetaSync(null); }catch(e){} } }
 }
 function updateMetaStatus(){
   const el=document.getElementById('metaStatus'); if(!el) return;
