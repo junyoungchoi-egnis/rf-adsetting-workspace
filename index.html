@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CLOOP·SPRINT 광고 네이밍 워크스페이스</title>
+<title>메타 광고 워크스페이스 · CLOOP·SPRINT</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -197,14 +197,14 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
   <!-- SIDEBAR -->
   <aside class="side">
     <div>
-      <div class="brand">🧊 광고 워크스페이스<small>CLOOP · SPRINT D2C</small></div>
+      <div class="brand">🧊 메타 광고 워크스페이스<small>CLOOP · SPRINT D2C</small></div>
     </div>
     <nav class="nav">
       <div class="nav-item active" data-tab="build" onclick="go('build')"><span class="n">1</span>캠페인·세트 생성</div>
-      <div class="nav-item" style="display:none" data-tab="creative" onclick="go('creative')"><span class="n">2</span>소재명·UTM 생성</div>
+      <div class="nav-item" data-tab="metacreate" onclick="go('metacreate')"><span class="n">2</span>소재 세팅 <span style="font-size:9px;background:#3a2e15;color:#ffcf66;padding:1px 5px;border-radius:6px;margin-left:2px">beta</span></div>
+      <div class="nav-item" style="display:none" data-tab="creative" onclick="go('creative')"><span class="n">·</span>소재명·UTM 생성</div>
       <div class="nav-item" data-tab="archive" onclick="go('archive')"><span class="n">3</span>생성 아카이브</div>
       <div class="nav-item" data-tab="changes" onclick="go('changes')"><span class="n">4</span>변경 아카이브</div>
-      <div class="nav-item" data-tab="metacreate" onclick="go('metacreate')"><span class="n">5</span>Meta 소재 세팅 <span style="font-size:9px;background:#3a2e15;color:#ffcf66;padding:1px 5px;border-radius:6px;margin-left:2px">beta</span></div>
       <div class="nav-item" style="display:none" data-tab="unified" onclick="go('unified');ucInit()"><span class="n">⑥</span>통합 세팅</div><div class="nav-item" data-tab="map" onclick="go('map')"><span class="n">⚙</span>설정/매핑</div>
     </nav>
     <div class="side-foot">
@@ -492,7 +492,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
 
     <!-- ══════════ TAB 5: META CREATE (dry-run) ══════════ -->
     <section class="page" id="page-metacreate">
-      <div class="page-head"><h2>Meta 소재 세팅 <span style="font-size:12px;font-weight:500;color:var(--text3)">· dry-run 미리보기</span></h2><p>이미 생성된(또는 메타에 존재하는) <b>광고세트를 골라 소재를 연결</b>해, 보낼 광고 페이로드를 미리 만듭니다. 캠페인·광고세트 생성은 <b>① 캠페인·세트 생성</b> 탭에서 합니다. 실제 생성은 권한 확보 후 연결됩니다(생성 시 PAUSED).</p></div>
+      <div class="page-head"><h2>소재 세팅 <span style="font-size:12px;font-weight:500;color:var(--text3)">· dry-run 미리보기</span></h2><p>이미 생성된(또는 메타에 존재하는) <b>광고세트를 골라 소재를 연결</b>해, 보낼 광고 페이로드를 미리 만듭니다. 캠페인·광고세트 생성은 <b>① 캠페인·세트 생성</b> 탭에서 합니다. 실제 생성은 권한 확보 후 연결됩니다(생성 시 PAUSED).</p></div>
 
       <div class="mcsub" data-mcsub="ad">
         <div id="mcd_ctxbar" class="panel" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 12px;margin-bottom:14px"></div>
