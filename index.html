@@ -515,7 +515,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
                 <div class="field"><label>① 대상 캠페인 (Meta 라이브) <label style="display:inline;font-weight:400;color:var(--text3)"><input type="checkbox" id="mcd_campActive" checked onchange="mcdRenderCamps()" style="width:auto;vertical-align:middle"> 활성만</label></label><input id="mcd_campSearch" placeholder="🔎 캠페인 검색" oninput="mcdRenderCamps()" style="margin-bottom:6px"><select id="mcd_camp" onchange="mcdRenderAdsets();mcdSync()"></select></div>
                 <div class="field"><label>② 대상 광고세트 <label style="display:inline;font-weight:400;color:var(--text3)"><input type="checkbox" id="mcd_adsetActive" checked onchange="mcdRenderAdsets()" style="width:auto;vertical-align:middle"> 활성만</label></label><input id="mcd_adsetSearch" placeholder="🔎 광고세트 검색" oninput="mcdRenderAdsets()" style="margin-bottom:6px"><select id="mcd_adset" onchange="mcdSync()"></select><div id="mcd_adsetDecode" class="hint" style="margin-top:4px"></div></div>
               </div>
-              <div class="field"><label>① 소재 선택 (생성 아카이브)</label><input id="mcd_creativeSearch" placeholder="🔍 소재명 검색" oninput="mcdFillCreative()" style="margin-bottom:5px"><select id="mcd_creative" onchange="mcdSync()"></select></div>
+              <div class="field"><label>① 소재 선택 (생성 아카이브)</label><input id="mcd_creativeSearch" placeholder="🔍 소재명 검색" oninput="mcdFillCreative()" style="margin-bottom:5px"><div style="display:flex;gap:6px;margin-bottom:5px"><select id="mcd_crProduct" onchange="mcdFillCreative()" style="flex:1"><option value="">상품 전체</option></select><select id="mcd_crManager" onchange="mcdFillCreative()" style="flex:1"><option value="">담당자 전체</option></select></div><select id="mcd_creative" onchange="mcdSync()"></select></div>
               <div class="field"><label>자동 소재명</label><div id="mcd_autoname" class="mono mcd-auto"></div></div>
               <div class="field"><label>UTM (광고 링크에 url_tags로 주입)</label><div id="mcd_utm" class="mono mcd-auto"></div><button class="btn btn-xs" style="margin-top:6px" onclick="mcdApplyLanding()">⬇ 이 URL을 랜딩 URL에 적용</button></div>
             </div>
@@ -2440,6 +2440,8 @@ async function ucCreate(btn){
         var mout=$('mcd_out'); if(mout&&mout.parentNode){ mout.parentNode.insertBefore(foot, mout.nextSibling); } else { bbox.parentNode.appendChild(foot); }
       }
     }
+    window.n5SrcApply=function(){ var src=$('mcd_src'); if(!src) return; var adv=!!window.__srcAdv; [].forEach.call(src.querySelectorAll('button[data-v]'), function(b){ b.style.display=(b.getAttribute('data-v')==='reuse'||adv)?'':'none'; }); var ab=$('mcd_srcAdvBtn'); if(ab) ab.textContent=adv?'고급 ▴':'고급 ▾'; };
+    if($('mcd_src')&&!$('mcd_srcAdvBtn')){ var _sb=document.createElement('button'); _sb.id='mcd_srcAdvBtn'; _sb.type='button'; _sb.style.cssText='opacity:.65;font-size:11px'; _sb.textContent='고급 ▾'; _sb.onclick=function(){ window.__srcAdv=!window.__srcAdv; window.n5SrcApply(); }; $('mcd_src').appendChild(_sb); }
     window.n5Mode(MODE);
   }
   window.n5Mode=function(m){
@@ -2448,7 +2450,7 @@ async function ucCreate(btn){
     var box=$('n5_newBox'), ch=$('n5_cloneHint'), cf=$('mcd_creative'); var cfield=cf&&cf.closest?cf.closest('.field'):null;
     if(box)box.style.display=(m==='new')?'':'none';
     var cg=$('mcd_camp')&&$('mcd_camp').closest?$('mcd_camp').closest('.grid'):null; if(cg)cg.style.display=(m==='new')?'':'none';
-    var cp=$('mcd_cPanel'); if(cp)cp.style.display=(m==='new')?'none':'';
+    var cp=$('mcd_cPanel'); if(cp)cp.style.display=(m==='new'||m==='clone')?'none':''; if(m==='arch'){ if(!window.__srcAdv&&typeof mcdSrc!=='undefined'&&mcdSrc!=='reuse'&&typeof mcdSetSrc==='function'){ mcdSetSrc('reuse',true); } if(typeof window.n5SrcApply==='function')window.n5SrcApply(); }
     if(ch)ch.style.display='none';
     var msP=$('ms_src')&&$('ms_src').closest?$('ms_src').closest('.panel'):null; if(msP)msP.style.display=(m==='clone')?'':'none'; if(m==='clone'){ try{ if(typeof msRenderSrc==='function')msRenderSrc(); if(typeof msRenderSets==='function')msRenderSets(); if(typeof msRenderPreview==='function')msRenderPreview(); }catch(e){} }
     if(cfield)cfield.style.display=(m==='arch')?'':'none';
@@ -2593,9 +2595,17 @@ function mcdRenderAdsets(){
 function mcdFillCreative(){
   const q=((document.getElementById('mcd_creativeSearch')||{}).value||'').toLowerCase();
   let arc=DB.archive.filter(a=>archiveArea(a)===areaScope);
+  const prodSel=document.getElementById('mcd_crProduct'), mgrSel=document.getElementById('mcd_crManager');
+  const prodOf=a=>String(a.name||'').split('_')[2]||'';
+  const mgrOf=a=>{const p=itemPayload(a);return (p&&p.manager)||'';};
+  if(prodSel){ const prods=[...new Set(arc.map(prodOf).filter(Boolean))].sort(); const cp=prodSel.value; prodSel.innerHTML='<option value="">상품 전체</option>'+prods.map(p=>_opt(p,p)).join(''); if(cp&&prods.indexOf(cp)>=0)prodSel.value=cp; }
+  if(mgrSel){ const mgrs=[...new Set(arc.map(mgrOf).filter(Boolean))].sort(); const cm=mgrSel.value; mgrSel.innerHTML='<option value="">담당자 전체</option>'+mgrs.map(m=>_opt(m,m)).join(''); if(cm&&mgrs.indexOf(cm)>=0)mgrSel.value=cm; }
+  const fp=prodSel?prodSel.value:'', fm=mgrSel?mgrSel.value:'';
   if(q) arc=arc.filter(a=>(a.name||'').toLowerCase().includes(q));
+  if(fp) arc=arc.filter(a=>prodOf(a)===fp);
+  if(fm) arc=arc.filter(a=>mgrOf(a)===fm);
   const sel=$('mcd_creative'); if(!sel) return; const prev=sel.value;
-  sel.innerHTML=arc.length?arc.map(a=>_opt(a.id,a.name)).join(''):_opt('',q?'(검색 결과 없음)':'(아카이브 소재 없음)');
+  sel.innerHTML=arc.length?arc.map(a=>_opt(a.id,a.name)).join(''):_opt('',(q||fp||fm)?'(검색 결과 없음)':'(아카이브 소재 없음)');
   if(prev&&arc.some(a=>a.id===prev)) sel.value=prev;
 }
 function renderMetaCreate(){
