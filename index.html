@@ -510,7 +510,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
           <div>
             <!-- A. 소재명·UTM -->
             <div class="panel">
-              <div class="panel-h">A. 소재명 · UTM <span class="bdg bdg-ok">규칙 자동생성</span></div>
+              <div class="panel-h">소재 · 세트 선택 <span class="bdg bdg-ok">규칙 자동생성</span></div>
               <div class="grid g2">
                 <div class="field"><label>① 대상 캠페인 (Meta 라이브) <label style="display:inline;font-weight:400;color:var(--text3)"><input type="checkbox" id="mcd_campActive" checked onchange="mcdRenderCamps()" style="width:auto;vertical-align:middle"> 활성만</label></label><input id="mcd_campSearch" placeholder="🔎 캠페인 검색" oninput="mcdRenderCamps()" style="margin-bottom:6px"><select id="mcd_camp" onchange="mcdRenderAdsets();mcdSync()"></select></div>
                 <div class="field"><label>② 대상 광고세트 <label style="display:inline;font-weight:400;color:var(--text3)"><input type="checkbox" id="mcd_adsetActive" checked onchange="mcdRenderAdsets()" style="width:auto;vertical-align:middle"> 활성만</label></label><input id="mcd_adsetSearch" placeholder="🔎 광고세트 검색" oninput="mcdRenderAdsets()" style="margin-bottom:6px"><select id="mcd_adset" onchange="mcdSync()"></select><div id="mcd_adsetDecode" class="hint" style="margin-top:4px"></div></div>
@@ -521,7 +521,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
             </div>
             <!-- B. 대표 계정 -->
             <div class="panel">
-              <div class="panel-h">B. 대표 계정 (프로필) <span class="bdg bdg-ok">Meta 동기화</span></div>
+              <div class="panel-h">③ 대표 계정 · 페이지 <span class="bdg bdg-ok">Meta 동기화</span></div>
               <div class="field"><label>Facebook 페이지 <span style="color:#ff7b72">*</span> <label style="display:inline;font-weight:400;color:var(--text3)"><input type="checkbox" id="mcd_pageAll" onchange="mcdRenderProfiles()" style="width:auto;vertical-align:middle"> 전체 페이지</label></label><select id="mcd_page" onchange="mcdPreview()"></select></div>
               <div class="grid g2">
                 <div class="field"><label>Instagram 프로필 <span class="bdg bdg-warn">자체 sync</span></label><select id="mcd_ig" onchange="mcdPreview()"></select></div>
@@ -530,7 +530,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
             </div>
             <!-- C. 크리에이티브 -->
             <div class="panel" id="mcd_cPanel">
-              <div class="panel-h">C. 크리에이티브 <span class="bdg bdg-warn">에셋 재사용 기반</span></div>
+              <div class="panel-h">④ 크리에이티브 <span class="bdg bdg-warn">에셋 재사용 기반</span></div>
               <div class="field"><label>포맷</label><div class="seg-toggle" id="mcd_fmt"><button class="on" data-v="IMAGE" onclick="mcdSetFmt('IMAGE')">단일 이미지</button><button data-v="VIDEO" onclick="mcdSetFmt('VIDEO')">단일 영상</button><button data-v="CAROUSEL" onclick="mcdSetFmt('CAROUSEL')">카탈로그 캐러셀</button></div></div>
               <div class="field"><label>에셋 소스</label><div class="seg-toggle" id="mcd_src"><button class="on" data-v="reuse" onclick="mcdSetSrc('reuse')">애셋 라이브러리</button><button data-v="creative" onclick="mcdSetSrc('creative')">기존 소재 불러오기</button><button data-v="story" onclick="mcdSetSrc('story')">기존 게시물</button><button data-v="hash" onclick="mcdSetSrc('hash')">이미지 해시</button></div><div class="hint">소재 업로드는 <b>메타 광고 관리자 → 애셋 라이브러리</b>에서 하고, 여기선 선택한 캠페인 계정의 소재를 골라 씁니다.</div></div>
               <div id="mcd_reuseWrap" class="field"><label>소재 선택 (계정 라이브러리 · 검색)</label><input id="mcd_assetSearch" placeholder="🔎 소재명 검색 ([★최대 77%★] / 600원대 / 100won …)" oninput="mcdRenderAssets()" style="margin-bottom:8px"><div id="mcd_assets" class="mcd-assetgrid"></div></div>
@@ -2429,6 +2429,17 @@ async function ucCreate(btn){
       +'<div style="text-align:center;margin-top:10px"><button class="btn btn-primary" id="n5b_gen" onclick="n5bCreate(this)">⚡ 신규 세팅 생성 (PAUSED)</button></div>';
     creativeField.parentNode.insertBefore(bbox, creativeField.nextSibling);
     var msP=$('ms_src')&&$('ms_src').closest?$('ms_src').closest('.panel'):null; if(msP&&!msP.__abs){ msP.__abs=1; msP.style.display='none'; ch.parentNode.insertBefore(msP, ch.nextSibling); }
+    if(!$('n5b_foot')){
+      var pv=$('n5b_preview'), pr=$('n5b_pre'), gn=$('n5b_gen');
+      if(pv&&pr&&gn){
+        var oldLbl=pv.previousElementSibling; if(oldLbl&&oldLbl.id!=='n5b_setlist'){ oldLbl.parentNode.removeChild(oldLbl); }
+        var foot=document.createElement('div'); foot.id='n5b_foot'; foot.className='panel'; foot.style.cssText='display:none;margin-top:14px';
+        var h5=document.createElement('div'); h5.className='panel-h'; h5.textContent='⑤ 세팅 미리보기'; foot.appendChild(h5); foot.appendChild(pv);
+        var h6=document.createElement('div'); h6.className='panel-h'; h6.style.marginTop='14px'; h6.textContent='⑥ 사전 점검 & 세팅'; foot.appendChild(h6); foot.appendChild(pr);
+        foot.appendChild(gn.parentNode);
+        var mout=$('mcd_out'); if(mout&&mout.parentNode){ mout.parentNode.insertBefore(foot, mout.nextSibling); } else { bbox.parentNode.appendChild(foot); }
+      }
+    }
     window.n5Mode(MODE);
   }
   window.n5Mode=function(m){
@@ -2445,6 +2456,7 @@ async function ucCreate(btn){
     if(anF)anF.style.display='none'; if(umF)umF.style.display='none';
     var lf=$('mcd_landing')&&$('mcd_landing').closest?$('mcd_landing').closest('.field'):null; if(lf)lf.style.display='none';
     var bb=$('n5b_box'); if(bb)bb.style.display=(m==='arch')?'':'none';
+    var bf=$('n5b_foot'); if(bf)bf.style.display=(m==='arch')?'':'none';
     if(m==='new') window.n5Compose();
     else if(m==='arch'){ if(typeof mcdSync==='function'){ try{ mcdSync(); }catch(e){} } try{ window.n5bRender(); window.n5bPreview(); window.n5bPre(); }catch(e){} }
   };
