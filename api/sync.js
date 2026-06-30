@@ -89,12 +89,28 @@ async function fetchIgAccounts(actId, token) {
 }
 // 세팅된 활성 광고(구조화된 광고 소재명 FB_... 기준 검색용) + 그 광고의 크리에이티브
 async function fetchActiveAds(actId, token) {
-  const cfields = 'id,body,title,call_to_action_type,image_hash,image_url,video_id,object_story_id,effective_object_story_id,thumbnail_url,object_type,url_tags,object_story_spec{link_data{link},video_data{call_to_action{value{link}}}}';
+  const cfields = 'id,body,title,call_to_action_type,image_hash,image_url,video_id,object_story_id,effective_object_story_id,thumbnail_url,object_type,url_tags,asset_feed_spec{bodies{text},titles{text},descriptions{text},call_to_action_types},object_story_spec{link_data{message,name,description,link,call_to_action{type}},video_data{message,title,link_description,call_to_action{type,value{link}}}}';
   const fields = 'name,effective_status,adset{name},creative{' + cfields + '}';
   const filt = '[{"field":"effective_status","operator":"IN","value":["ACTIVE"]}]';
   const url = GRAPH + '/act_' + actId + '/ads?fields=' + enc(fields) + '&filtering=' + enc(filt) + '&limit=40&access_token=' + enc(token);
   const raw = await fetchOne(url, actId);
-  return raw.map(a => { const c = a.creative || {}; const _link=(c.object_story_spec&&((c.object_story_spec.link_data&&c.object_story_spec.link_data.link)||(c.object_story_spec.video_data&&c.object_story_spec.video_data.call_to_action&&c.object_story_spec.video_data.call_to_action.value&&c.object_story_spec.video_data.call_to_action.value.link)))||''; const _q=(c.url_tags||'')+'&'+((_link.split('?')[1])||''); const _utm=function(k){var m=_q.match(new RegExp('[?&]'+k+'=([^&]*)'));return m?decodeURIComponent(m[1]):'';}; return { name: a.name || '(이름없음)', cid: c.id || '', type: c.video_id ? 'VIDEO' : 'IMAGE', thumb: c.thumbnail_url || '', full: c.image_url || '', body: c.body || '', title: c.title || '', cta: c.call_to_action_type || '', image_hash: c.image_hash || '', video_id: c.video_id || '', story: c.effective_object_story_id || c.object_story_id || '', link: _link, adsetName: (a.adset&&a.adset.name)||'', utm_campaign: _utm('utm_campaign'), utm_content: _utm('utm_content') }; });
+  return raw.map(a => {
+    const c = a.creative || {};
+    const oss = c.object_story_spec || {}; const ld = oss.link_data || {}; const vd = oss.video_data || {};
+    const afs = c.asset_feed_spec || {};
+    const afsBody = (afs.bodies && afs.bodies[0] && afs.bodies[0].text) || '';
+    const afsTitle = (afs.titles && afs.titles[0] && afs.titles[0].text) || '';
+    const afsDesc = (afs.descriptions && afs.descriptions[0] && afs.descriptions[0].text) || '';
+    const afsCta = (afs.call_to_action_types && afs.call_to_action_types[0]) || '';
+    const body = c.body || ld.message || vd.message || afsBody || '';
+    const title = c.title || ld.name || vd.title || afsTitle || '';
+    const desc = ld.description || vd.link_description || afsDesc || '';
+    const cta = c.call_to_action_type || (ld.call_to_action && ld.call_to_action.type) || (vd.call_to_action && vd.call_to_action.type) || afsCta || '';
+    const _link = (ld.link) || (vd.call_to_action && vd.call_to_action.value && vd.call_to_action.value.link) || '';
+    const _q = (c.url_tags || '') + '&' + ((_link.split('?')[1]) || '');
+    const _utm = function(k){ var m=_q.match(new RegExp('[?&]'+k+'=([^&]*)')); return m?decodeURIComponent(m[1]):''; };
+    return { name: a.name || '(이름없음)', cid: c.id || '', type: c.video_id ? 'VIDEO' : 'IMAGE', thumb: c.thumbnail_url || '', full: c.image_url || '', body: body, title: title, desc: desc, cta: cta, image_hash: c.image_hash || '', video_id: c.video_id || '', story: c.effective_object_story_id || c.object_story_id || '', link: _link, adsetName: (a.adset&&a.adset.name)||'', utm_campaign: _utm('utm_campaign'), utm_content: _utm('utm_content') };
+  });
 }
 
 function aggregate(ads, adsetList) {
