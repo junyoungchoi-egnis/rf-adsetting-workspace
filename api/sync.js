@@ -14,6 +14,31 @@
 
 const GRAPH = 'https://graph.facebook.com/v21.0';
 const enc = encodeURIComponent;
+const crypto = require('crypto');
+const PROJECT_ID = 'cloop-sprint-adops';
+let _certCache = null, _certAt = 0;
+async function getCerts() {
+  if (_certCache && (Date.now() - _certAt) < 3600000) return _certCache;
+  const r = await fetch('https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com');
+  _certCache = await r.json(); _certAt = Date.now(); return _certCache;
+}
+async function verifyUser(req) {
+  try {
+    const auth = (req.headers && (req.headers.authorization || req.headers.Authorization)) || '';
+    const m = /^Bearer (.+)$/.exec(auth); if (!m) return null;
+    const parts = m[1].split('.'); if (parts.length !== 3) return null;
+    const header = JSON.parse(Buffer.from(parts[0], 'base64url').toString());
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
+    if (payload.aud !== PROJECT_ID) return null;
+    if (payload.iss !== 'https://securetoken.google.com/' + PROJECT_ID) return null;
+    if (!payload.exp || payload.exp * 1000 < Date.now()) return null;
+    if (!payload.email || !/@egnis\.kr$/i.test(payload.email)) return null;
+    const certs = await getCerts(); const cert = certs[header.kid]; if (!cert) return null;
+    const v = crypto.createVerify('RSA-SHA256'); v.update(parts[0] + '.' + parts[1]); v.end();
+    if (!v.verify(crypto.createPublicKey(cert), Buffer.from(parts[2], 'base64url'))) return null;
+    return payload;
+  } catch (e) { return null; }
+}
 
 async function fetchPaged(url, actId) {
   const out = [];
@@ -153,10 +178,14 @@ module.exports = async (req, res) => {
     const dbUrl = (process.env.FIREBASE_DB_URL || '').replace(/\/+$/, '');
     const secret = process.env.SYNC_SECRET;
 
-    if (secret) {
-      const key = (req.query && req.query.key) || '';
-      if (key !== secret) return res.status(401).json({ ok: false, error: 'unauthorized' });
+    // 허용: Vercel 크론(자동 동기화) · 로그인된 회사 사용자 · (설정 시) SYNC_SECRET 키
+    const isCron = /vercel-cron/i.test((req.headers && req.headers['user-agent']) || '');
+    const userOk = isCron ? true : !!(await verifyUser(req));
+    const secretOk = !!(secret && req.query && req.query.key === secret);
+    if (!isCron && !userOk && !secretOk) {
+      return res.status(401).json({ ok: false, error: '권한 없음 — 회사 계정 로그인이 필요합니다.' });
     }
+
     if (!token || !accounts.length || !dbUrl) {
       return res.status(500).json({ ok: false, error: '환경변수 누락 (META_TOKEN, META_ACCOUNTS, FIREBASE_DB_URL)' });
     }

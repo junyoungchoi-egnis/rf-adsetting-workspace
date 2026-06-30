@@ -11,6 +11,32 @@
 
 const GRAPH = 'https://graph.facebook.com/v21.0';
 const enc = encodeURIComponent;
+const crypto = require('crypto');
+const PROJECT_ID = 'cloop-sprint-adops';
+let _certCache = null, _certAt = 0;
+async function getCerts() {
+  if (_certCache && (Date.now() - _certAt) < 3600000) return _certCache;
+  const r = await fetch('https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com');
+  _certCache = await r.json(); _certAt = Date.now(); return _certCache;
+}
+// 로그인된 회사(@egnis.kr) 사용자만 허용 — Firebase ID 토큰 검증
+async function verifyUser(req) {
+  try {
+    const auth = (req.headers && (req.headers.authorization || req.headers.Authorization)) || '';
+    const m = /^Bearer (.+)$/.exec(auth); if (!m) return null;
+    const parts = m[1].split('.'); if (parts.length !== 3) return null;
+    const header = JSON.parse(Buffer.from(parts[0], 'base64url').toString());
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
+    if (payload.aud !== PROJECT_ID) return null;
+    if (payload.iss !== 'https://securetoken.google.com/' + PROJECT_ID) return null;
+    if (!payload.exp || payload.exp * 1000 < Date.now()) return null;
+    if (!payload.email || !/@egnis\.kr$/i.test(payload.email)) return null;
+    const certs = await getCerts(); const cert = certs[header.kid]; if (!cert) return null;
+    const v = crypto.createVerify('RSA-SHA256'); v.update(parts[0] + '.' + parts[1]); v.end();
+    if (!v.verify(crypto.createPublicKey(cert), Buffer.from(parts[2], 'base64url'))) return null;
+    return payload;
+  } catch (e) { return null; }
+}
 
 async function readJson(req) {
   if (req.body) {
@@ -110,6 +136,8 @@ function cleanFromNew(ns, utmCampaign, utmContent) {
 module.exports = async function (req, res) {
   try {
     if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'POST 요청만 허용' });
+    const _user = await verifyUser(req);
+    if (!_user) return res.status(401).json({ ok: false, error: '로그인이 필요합니다 — 회사 구글 계정(@egnis.kr)으로 로그인 후 사용하세요.' });
     const token = process.env.META_TOKEN;
     if (!token) return res.status(500).json({ ok: false, error: '서버에 META_TOKEN 없음' });
 
