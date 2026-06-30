@@ -25,16 +25,23 @@ async function readJson(req) {
   });
 }
 
+function friendlyErr(e) {
+  // Meta 오류를 사람이 읽을 수 있는 메시지로
+  if (!e) return '알 수 없는 오류';
+  if (e.code === 10 || e.error_subcode === 1341012) return '이 소재의 페이지에 게시 권한이 없습니다 — 권한 있는 페이지의 소재를 쓰거나 관리자에게 페이지 권한을 요청하세요.';
+  if (e.code === 200 || e.code === 190) return '광고 계정/토큰 권한 문제입니다 — 관리자에게 문의하세요.';
+  return e.error_user_msg || e.message || JSON.stringify(e);
+}
 async function gget(url) {
   const r = await fetch(url);
   const j = await r.json();
-  if (j.error) throw new Error('[read] ' + JSON.stringify(j.error));
+  if (j.error) throw new Error(friendlyErr(j.error));
   return j;
 }
 async function gpost(url, body) {
   const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   const j = await r.json();
-  if (j.error) throw new Error('[write] ' + JSON.stringify(j.error));
+  if (j.error) throw new Error(friendlyErr(j.error));
   return j;
 }
 
@@ -137,6 +144,8 @@ module.exports = async function (req, res) {
       clean = cleanFromNew(newSpec, utmCampaign, utmContent);
       if (!clean) return res.status(422).json({ ok: false, error: 'newSpec 필수값 부족 (page_id 등)' });
       if (!clean.link_data && !clean.video_data) return res.status(422).json({ ok: false, error: 'newSpec 에 에셋(image_hash/video_id) 또는 링크 필요' });
+      var _hasAsset = (clean.link_data && (clean.link_data.image_hash || clean.link_data.link)) || (clean.video_data && clean.video_data.video_id);
+      if (!_hasAsset) return res.status(422).json({ ok: false, error: '에셋(이미지 해시·영상) 또는 랜딩 링크가 필요합니다' });
       newTags = 'utm_campaign=' + enc(utmCampaign) + '&utm_content=' + enc(utmContent);
     }
 
