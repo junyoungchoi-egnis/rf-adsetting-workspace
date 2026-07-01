@@ -34,7 +34,7 @@ module.exports = async function (req, res) {
     const uid = user.user_id || user.sub || user.uid;
     const authQ = dbSecret ? ('?auth=' + enc(dbSecret)) : '';
     const rec = await fetch(dbUrl + '/meta_tokens/' + enc(uid) + '.json' + authQ).then(r => r.json());
-    if (!rec || !rec.token) return res.status(200).json({ ok: true, connected: false });
+    if (!rec || !rec.tokenEnc) return res.status(200).json({ ok: true, connected: false });
     const expired = !rec.expiresAt || rec.expiresAt < Date.now();
     return res.status(200).json({ ok: true, connected: !expired, expired: expired, metaName: rec.metaName || '', metaUserId: rec.metaUserId || '', expiresAt: rec.expiresAt || 0 });
   } catch (e) {
