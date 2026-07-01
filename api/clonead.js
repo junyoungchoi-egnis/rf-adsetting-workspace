@@ -138,8 +138,22 @@ module.exports = async function (req, res) {
     if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'POST 요청만 허용' });
     const _user = await verifyUser(req);
     if (!_user) return res.status(401).json({ ok: false, error: '로그인이 필요합니다 — 회사 구글 계정(@egnis.kr)으로 로그인 후 사용하세요.' });
-    const token = process.env.META_TOKEN;
-    if (!token) return res.status(500).json({ ok: false, error: '서버에 META_TOKEN 없음' });
+    let token = null, tokenSource = 'personal';
+    try {
+      const _dbUrl = (process.env.FIREBASE_DB_URL || '').replace(/\/+$/, '');
+      const _dbSecret = process.env.FIREBASE_DB_SECRET || '';
+      const _uid = _user.user_id || _user.sub || _user.uid;
+      const _authQ = _dbSecret ? ('?auth=' + enc(_dbSecret)) : '';
+      const _rec = await fetch(_dbUrl + '/meta_tokens/' + enc(_uid) + '.json' + _authQ).then(r => r.json());
+      if (_rec && _rec.tokenEnc && _rec.iv && _rec.tag && (!_rec.expiresAt || _rec.expiresAt > Date.now()) && process.env.TOKEN_ENC_KEY) {
+        const _k = crypto.createHash('sha256').update(process.env.TOKEN_ENC_KEY).digest();
+        const _d = crypto.createDecipheriv('aes-256-gcm', _k, Buffer.from(_rec.iv, 'base64'));
+        _d.setAuthTag(Buffer.from(_rec.tag, 'base64'));
+        token = _d.update(_rec.tokenEnc, 'base64', 'utf8') + _d.final('utf8');
+      }
+    } catch (e) { token = null; }
+    if (!token) { token = process.env.META_TOKEN; tokenSource = 'server'; }
+    if (!token) return res.status(403).json({ ok: false, error: 'Meta 계정을 연동해야 광고를 생성할 수 있습니다 — 좌측 하단에서 연동하세요.', needConnect: true });
 
     const b = await readJson(req);
     const act = String(b.act || '').replace(/^act_/, '').trim();
@@ -189,7 +203,7 @@ module.exports = async function (req, res) {
     }
 
     if (!apply) {
-      return res.status(200).json({ ok: true, dryRun: true, mode: srcCreativeId ? 'clone' : 'new', targetAdsetId: targetAdsetId, newName: newName });
+      return res.status(200).json({ ok: true, dryRun: true, mode: srcCreativeId ? 'clone' : 'new', targetAdsetId: targetAdsetId, newName: newName, tokenSource: tokenSource });
     }
 
     // 새 소재 생성
@@ -207,7 +221,7 @@ module.exports = async function (req, res) {
       status: 'PAUSED'
     });
 
-    return res.status(200).json({ ok: true, mode: srcCreativeId ? 'clone' : 'new', newAdId: adRes.id, newCreative: newCid, targetAdsetId: targetAdsetId });
+    return res.status(200).json({ ok: true, mode: srcCreativeId ? 'clone' : 'new', newAdId: adRes.id, newCreative: newCid, targetAdsetId: targetAdsetId, tokenSource: tokenSource });
   } catch (e) {
     return res.status(500).json({ ok: false, error: String((e && e.message) || e) });
   }

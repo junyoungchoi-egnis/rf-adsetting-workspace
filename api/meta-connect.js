@@ -51,6 +51,9 @@ module.exports = async function (req, res) {
     const dbSecret = process.env.FIREBASE_DB_SECRET || '';
     if (!appId || !appSecret) return res.status(500).json({ ok: false, error: '서버에 META_APP_ID/META_APP_SECRET 없음' });
     if (!dbUrl) return res.status(500).json({ ok: false, error: 'FIREBASE_DB_URL 없음' });
+    const encKeyRaw = process.env.TOKEN_ENC_KEY;
+    if (!encKeyRaw) return res.status(500).json({ ok: false, error: '서버에 TOKEN_ENC_KEY 없음 (토큰 암호화 키)' });
+    const encKey = crypto.createHash('sha256').update(encKeyRaw).digest();
 
     const b = await readJson(req);
     const shortToken = String(b.shortToken || b.accessToken || '').trim();
@@ -74,7 +77,11 @@ module.exports = async function (req, res) {
     // 3) Firebase 저장 (서버 전용 경로)
     const uid = user.user_id || user.sub || user.uid;
     const authQ = dbSecret ? ('?auth=' + enc(dbSecret)) : '';
-    const rec = { token: longToken, expiresAt: expiresAt, metaUserId: me.id || '', metaName: me.name || '', email: user.email || '', updatedAt: new Date().toISOString() };
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv('aes-256-gcm', encKey, iv);
+    const tokenEnc = cipher.update(longToken, 'utf8', 'base64') + cipher.final('base64');
+    const tag = cipher.getAuthTag().toString('base64');
+    const rec = { tokenEnc: tokenEnc, iv: iv.toString('base64'), tag: tag, expiresAt: expiresAt, metaUserId: me.id || '', metaName: me.name || '', email: user.email || '', updatedAt: new Date().toISOString() };
     const w = await fetch(dbUrl + '/meta_tokens/' + enc(uid) + '.json' + authQ, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rec)
     });
