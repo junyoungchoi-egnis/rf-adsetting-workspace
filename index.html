@@ -1334,7 +1334,7 @@ function parseLiveSet(a){
   const toks=String(a.adsetName||'').split('_');
   if(toks.length<7) return null;
   let e=toks.length-1;
-  if(/^\d{4,6}$/.test(toks[e])) e--;            // 끝 날짜 토큰 제거
+  if(/^\d{4,6}([-_][A-Za-z0-9]+)?$/.test(toks[e])) e--;            // 끝 날짜 토큰 제거
   if(e<5) return null;
   const tam=toks[e], scheme=toks[e-1], targeting=toks[e-2];
   const media=toks[0], product=toks[1], goal=toks[2], bid=toks[3];
@@ -2032,7 +2032,7 @@ function msRenderSets(){
   const q=((document.getElementById('ms_setSearch')||{}).value||'').toLowerCase();
   const actOnly=(document.getElementById('ms_setActive')||{}).checked;
   let cands=msCandidates();
-  if(actOnly) cands=cands.filter(function(c){ return (c.live&&c.live.active>0)||c.campStatus==='ACTIVE'; });
+  if(actOnly) cands=cands.filter(function(c){ return (c.live && c.live.status==='ACTIVE'); });
   const seen={}; cands=cands.filter(function(c){ if(seen[c.adsetId])return false; seen[c.adsetId]=1; return true; });
   if(q) cands=cands.filter(function(c){ return (c.name||'').toLowerCase().includes(q); });
   window.__msCands=cands;
@@ -2261,7 +2261,7 @@ function ucRenderSets(){
   var q=((document.getElementById('uc_setSearch')||{}).value||'').toLowerCase();
   var actOnly=(document.getElementById('uc_setActive')||{}).checked;
   var cands=ucCandidates();
-  if(actOnly) cands=cands.filter(function(c){ return (c.live&&c.live.active>0)||c.campStatus==='ACTIVE'; });
+  if(actOnly) cands=cands.filter(function(c){ return (c.live && c.live.status==='ACTIVE'); });
   var seen={}; cands=cands.filter(function(c){ if(seen[c.adsetId])return false; seen[c.adsetId]=1; return true; });
   if(q) cands=cands.filter(function(c){ return (c.name||'').toLowerCase().indexOf(q)>=0; });
   window.__ucCands=cands;
@@ -2433,7 +2433,7 @@ async function ucCreate(btn){
       +'<div class="grid" style="grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">'
         +'<div class="field" style="margin:0"><label>\ud615\uc2dd</label><select id="n5_fmt" onchange="n5Compose()">'+opts(fmts,'')+'</select></div>'
         +'<div class="field" style="margin:0"><label>\uc18c\uc7ac\uba85</label><input id="n5_soje" oninput="n5Compose()" placeholder="\uc608: cs.e"></div>'
-        +'<div class="field" style="margin:0"><label>\ub2f4\ub2f9\uc790</label><input id="n5_mgr" oninput="n5Compose()" placeholder="\uc608: ssh"></div>'
+        +'<div class="field" style="margin:0"><label>\ub2f4\ub2f9\uc790(\ud544\uc218)</label><input id="n5_mgr" oninput="n5Compose()" placeholder="\uc608: ssh"></div>'
       +'</div>'
       +'<div id="n5_namePreview" class="mono" style="font-size:12px;margin:8px 0 0;padding:7px 9px;border:1px dashed rgba(255,255,255,.14);border-radius:8px;word-break:break-all;color:#3df0c8">소재명 미리보기</div>'
       +'<div style="margin-top:10px"><button class="btn btn-primary btn-sm" onclick="n5Save(this)">\ud83d\udcbe \uc800\uc7a5 \u2192 \uc0dd\uc131 \uc544\uce74\uc774\ube0c(\u2462)</button> <a href="https://business.facebook.com/asset-library" target="_blank" rel="noopener" class="btn btn-ghost btn-sm" style="margin-left:6px;text-decoration:none">🖼 메타 미디어 라이브러리 열기 ↗</a></div>';
@@ -2495,11 +2495,11 @@ async function ucCreate(btn){
     var msg=[(($('n5_msg1')||{}).value),(($('n5_msg2')||{}).value),(($('n5_msg3')||{}).value)].filter(Boolean).join('-');
     var cr={fmt:(($('n5_fmt')||{}).value)||'', msg:msg, soje:(($('n5_soje')||{}).value)||''};
     var mgr=(($('n5_mgr')||{}).value)||'';
-    var name=''; try{ name=buildCreativeName(set,date,cr,mgr); }catch(e){ name=''; }
+    var name=''; if(mgr){ try{ name=buildCreativeName(set,date,cr,mgr); }catch(e){ name=''; } }
     var utm=buildUtm(set.landing,set.name,name);
     if(an)an.textContent=name;
     if(um)um.textContent=utm;
-    var pv=$('n5_namePreview'); if(pv)pv.textContent=name||'소재명 미리보기';
+    var pv=$('n5_namePreview'); if(pv)pv.textContent=name||(mgr?'소재명 미리보기':'담당자명을 입력하세요 (필수)');
   };
   window.n5Save=function(){
     if(MODE!=='new') return;
