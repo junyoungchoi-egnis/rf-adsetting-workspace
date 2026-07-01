@@ -952,6 +952,7 @@ function setSyncUI(state){ // 'on' | 'off' | 'local'
   else {dot.className='sync-dot off';lab.textContent='연결 중…';if(st)st.textContent='';}
 }
 function save(){
+  try{ if(typeof _arcDeleted!=='undefined' && _arcDeleted && Array.isArray(DB.archive)) DB.archive=DB.archive.filter(function(x){return !_arcDeleted[x.id];}); }catch(e){}
   localStorage.setItem(LSK,JSON.stringify(DB));
   updateStats();
   if(DBREF){ DBREF.set(DB).catch(e=>{console.warn('동기화 실패',e);setSyncUI('local');}); }
