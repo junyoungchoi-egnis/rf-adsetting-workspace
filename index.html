@@ -2930,5 +2930,25 @@ window.addEventListener('load',init);
 <script>
 (function(){ try{ if(typeof window.mcdDiagnose==='function'){ var _d=window.mcdDiagnose; window.mcdDiagnose=function(){ var it=_d.apply(this,arguments); try{ var _mC=document.getElementById('n5_mC'); if(_mC && (' '+_mC.className+' ').indexOf(' on ')>=0 && Array.isArray(it)){ var s=document.getElementById('ms_src'); var v=s&&s.value; for(var i=0;i<it.length;i++){ if(it[i]&&typeof it[i].label==='string' && it[i].label.indexOf('소재')===0){ it[i].ok=!!v; it[i].detail=v?('복제 소스 선택됨'):'복제할 기존 소재를 선택하세요'; } } } }catch(e){} return it; }; } }catch(e){} })();
 </script>
+
+<script>(function(){
+function mkPick(sel){ if(!sel)return; var id=sel.id; if(document.getElementById("n5mcm_"+id))return;
+  var wrap=document.createElement("div"); wrap.id="n5mcm_"+id; wrap.style.cssText="margin-top:8px;display:grid;grid-template-columns:1fr 1fr auto auto;gap:6px;align-items:end";
+  wrap.innerHTML='<div><div style="font-size:11px;color:#7aa7ff;margin-bottom:4px">컨셉 코드(영문/숫자)</div><input type="text" class="c" placeholder="newyear"></div><div><div style="font-size:11px;color:#9aa0aa;margin-bottom:4px">한글 정의</div><input type="text" class="k" placeholder="예: 새해 프로모션"></div><button type="button" class="ok">확인</button><button type="button" class="x" title="취소">✕</button>';
+  var warn=document.createElement("div"); warn.style.cssText="grid-column:1/-1;font-size:11px;color:#ef6b6b;display:none;margin-top:2px"; wrap.appendChild(warn);
+  (sel.closest?(sel.closest(".field")||sel.parentNode):sel.parentNode).appendChild(wrap);
+  var cE=wrap.querySelector(".c"), kE=wrap.querySelector(".k"); try{cE.focus();}catch(e){}
+  function wm(m){ warn.textContent="⚠ "+m; warn.style.display="block"; }
+  function ex(c){ try{ if(!window.DB||!DB.maps||!Array.isArray(DB.maps.msgpool))return false; var lc=c.toLowerCase(); return DB.maps.msgpool.some(function(x){ var cc=(x&&(x.code!==undefined?x.code:x))||""; return String(cc).toLowerCase()===lc; }); }catch(e){return false;} }
+  wrap.querySelector(".x").onclick=function(){ wrap.remove(); sel.value=""; try{n5Compose();}catch(e){} };
+  function commit(){ var v=(cE.value||"").trim(); if(!v){ wm("컨셉 코드를 입력하세요."); cE.focus(); return; } if(/[가-힣]/.test(v)){ wm("코드는 영문/숫자만 사용하세요. (한글은 정의 칸에)"); cE.focus(); return; } if(ex(v)){ wm("이미 존재하는 코드입니다: "+v); cE.focus(); return; } try{ if(!DB.maps)DB.maps={}; if(!Array.isArray(DB.maps.msgpool))DB.maps.msgpool=[]; DB.maps.msgpool.push({code:v,kr:(kE.value||"").trim()}); save(); }catch(e){} var kr=(kE.value||"").trim(); ["n5_msg1","n5_msg2","n5_msg3"].forEach(function(mid){ var s=document.getElementById(mid); if(!s)return; if(s.querySelector('option[value="'+v+'"]'))return; var o=document.createElement("option"); o.value=v; o.textContent=v+(kr?" · "+kr:""); s.appendChild(o); }); wrap.remove(); sel.value=v; try{n5Compose();}catch(e){} }
+  wrap.querySelector(".ok").onclick=commit;
+  cE.addEventListener("keydown",function(e){ if(e.key==="Enter"){ if(kE.value.trim())commit(); else kE.focus(); } });
+  kE.addEventListener("keydown",function(e){ if(e.key==="Enter")commit(); });
+}
+function enh(){ ["n5_msg1","n5_msg2","n5_msg3"].forEach(function(id){ var sel=document.getElementById(id); if(!sel)return; if(!sel.querySelector('option[value="__manual__"]')){ var o=document.createElement("option"); o.value="__manual__"; o.textContent="＋ 직접 입력…"; if(sel.options.length>1)sel.insertBefore(o,sel.options[1]); else sel.appendChild(o); } if(!sel.__mcHk){ sel.__mcHk=1; sel.addEventListener("change",function(){ if(sel.value==="__manual__")mkPick(sel); }); } }); }
+try{ if(typeof window.renderMetaCreate==="function"){ var _r=window.renderMetaCreate; window.renderMetaCreate=function(){ var x=_r.apply(this,arguments); try{setTimeout(enh,0);}catch(e){} return x; }; } }catch(e){}
+setTimeout(enh,800); setInterval(function(){ if(document.getElementById("n5_msg1"))enh(); },2000);
+})();</script>
 </body>
 </html>
