@@ -597,9 +597,9 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
           <div class="grid g2">
             <div class="field"><label>계정</label><select id="uc_acct" onchange="ucFillAssets();ucRenderSets();ucRenderPreview()"></select></div>
             <div class="field"><label>형식</label><select id="uc_fmt" onchange="ucFillAssets();ucRenderPreview()"></select></div>
-            <div class="field"><label>메시지1</label><select id="uc_msg1" onchange="ucRenderPreview()"></select></div>
-            <div class="field"><label>메시지2 (선택)</label><select id="uc_msg2" onchange="ucRenderPreview()"></select></div>
-            <div class="field"><label>메시지3 (선택)</label><select id="uc_msg3" onchange="ucRenderPreview()"></select></div>
+            <div class="field"><label>메시지1</label><select id="uc_msg1" onchange="ucMsgPick('uc_msg1')"></select></div>
+            <div class="field"><label>메시지2 (선택)</label><select id="uc_msg2" onchange="ucMsgPick('uc_msg2')"></select></div>
+            <div class="field"><label>메시지3 (선택)</label><select id="uc_msg3" onchange="ucMsgPick('uc_msg3')"></select></div>
             <div class="field"><label>소재명 (수동 입력)</label><input id="uc_soje" oninput="ucRenderPreview()" placeholder="예: cs.e"></div>
             <div class="field"><label>날짜</label><input type="date" id="uc_date" onchange="ucRenderPreview()" style="color-scheme:dark"></div>
             <div class="field"><label>담당자</label><input id="uc_manager" oninput="ucRenderPreview()" placeholder="예: ssh"></div>
@@ -2128,13 +2128,15 @@ function ucInit(){
 }
 function ucScopeRefresh(){ var pg=document.getElementById('page-unified'); if(!pg||!pg.classList.contains('active'))return; UC.srcs={}; UC.targets={}; ucFillAcct(); ucFillSrcCamp(); ucFillAssets(); ucRenderSrcList(); ucRenderSets(); ucRenderPreview(); }
 
+function ucAddMsgOption(code,kr){ ['uc_msg1','uc_msg2','uc_msg3'].forEach(function(mid){ var s=document.getElementById(mid); if(!s)return; if(s.querySelector('option[value="'+code+'"]'))return; var opt=document.createElement('option'); opt.value=code; opt.textContent=code+(kr?' · '+kr:''); var man=s.querySelector('option[value="__manual__"]'); if(man)s.insertBefore(opt,man); else s.appendChild(opt); }); }
+function ucMsgPick(id){ var sel=document.getElementById(id); if(sel && sel.value==='__manual__'){ var code=(prompt('메시지 컨셉 코드를 직접 입력하세요 (영문/숫자, 예: newyear)')||'').trim(); if(!code){ sel.value=''; ucRenderPreview(); return; } if(/[가-힣]/.test(code)){ alert('⚠ 메시지 컨셉 코드는 영문/숫자만 사용하세요.\n한글 뜻은 다음 입력창에서 설명으로 저장됩니다.'); sel.value=''; ucRenderPreview(); return; } if(!DB.maps) DB.maps={}; if(!Array.isArray(DB.maps.msgpool)) DB.maps.msgpool=[]; var exists=DB.maps.msgpool.some(function(x){ return String((x&&(x.code!==undefined?x.code:x))||'')===code; }); if(!exists){ var kr=(prompt('한글 의미(선택) — 매핑에 저장됩니다','')||'').trim(); DB.maps.msgpool.push({code:code,kr:kr}); save(); ucAddMsgOption(code,kr); } sel.value=code; } ucRenderPreview(); }
 function ucFillMaps(){
   var fmt=document.getElementById('uc_fmt');
   if(fmt&&!fmt.options.length){ var fl=ucMapList('formats'); fmt.innerHTML=fl.map(function(o){ return '<option value="'+o.code+'">'+esc(o.label||o.code)+' ('+o.code+')</option>'; }).join(''); }
   var ml=ucMapList('msgpool');
   ['uc_msg1','uc_msg2','uc_msg3'].forEach(function(id,idx){
     var sel=document.getElementById(id);
-    if(sel&&!sel.options.length){ sel.innerHTML='<option value="">'+(idx===0?'메시지1 선택':'(없음)')+'</option>'+ml.map(function(o){ return '<option value="'+o.code+'">'+esc(o.code)+(o.label?' · '+esc(o.label):'')+'</option>'; }).join(''); }
+    if(sel&&!sel.options.length){ sel.innerHTML='<option value="">'+(idx===0?'메시지1 선택':'(없음)')+'</option>'+ml.map(function(o){ return '<option value="'+o.code+'">'+esc(o.code)+(o.label?' · '+esc(o.label):'')+'</option>'; }).join('')+'<option value="__manual__">＋ 직접 입력…</option>'; }
   });
 }
 function ucFillCta(){ var c=document.getElementById('uc_cta'); if(c&&!c.options.length){ c.innerHTML=UC_CTA.map(function(v){ return '<option value="'+v+'">'+v+'</option>'; }).join(''); } }
