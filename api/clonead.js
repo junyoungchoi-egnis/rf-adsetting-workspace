@@ -184,6 +184,7 @@ module.exports = async function (req, res) {
         const list = (th && th.data) || [];
         const pick = list.filter(function (x) { return x.is_preferred; })[0] || list[0];
         if (pick && pick.uri) clean.video_data.image_url = pick.uri;
+        else { try { const _vp = await gget(GRAPH + '/' + clean.video_data.video_id + '?fields=picture&access_token=' + enc(token)); if (_vp && _vp.picture) clean.video_data.image_url = _vp.picture; } catch (e2) {} }
       } catch (e) {}
     }
 
