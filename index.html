@@ -966,7 +966,7 @@ function startSync(){
     if(!v || !v.maps){ DBREF.set(DB); return; }          // 원격이 비어있으면 현재 데이터 업로드
     ensureMaps(v.maps);                                  // 구버전 형식 정규화 후 비교
     if(JSON.stringify(v)===JSON.stringify(DB)) return;    // 내 변경 echo / 동일 → 무시
-    DB=v;
+    DB=v; if(Array.isArray(DB.archive))DB.archive=DB.archive.filter(function(x){return !_arcDeleted[x.id];});
     if(!Array.isArray(DB.changes)) DB.changes=[];
     if(!DB.seen||typeof DB.seen!=='object') DB.seen={adsets:{},campaigns:{}};
     if(!DB.seen.adsets) DB.seen.adsets={}; if(!DB.seen.campaigns) DB.seen.campaigns={};
@@ -1481,11 +1481,11 @@ function validateReasons(name){
   else if(segs.length>12) r.push(`토큰 ${segs.length}개(정상 10~12) — 소재명에 _ 가 들어갔는지 확인`);
   return r;
 }
-function arcBadge(a){
-  if(a.status==='ok') return '<span class="bdg bdg-ok">검증 OK</span>';
+function arcBadge(a){ var _st=validateName(a.name||'');
+  if(_st==='ok') return '<span class="bdg bdg-ok">검증 OK</span>';
   const rs=validateReasons(a.name);
-  const tip=`⚠ 검증 ${a.status==='err'?'오류':'경고'}\n사유: ${rs.join(' / ')||'-'}\n담당자: ${a.manager||'?'}`;
-  return `<span class="bdg bdg-${a.status==='err'?'err':'warn'}" style="cursor:help" title="${esc(tip)}">${a.status==='err'?'오류':'검토 필요'} ⓘ</span>`;
+  const tip=`⚠ 검증 ${_st==='err'?'오류':'경고'}\n사유: ${rs.join(' / ')||'-'}\n담당자: ${a.manager||'?'}`;
+  return `<span class="bdg bdg-${_st==='err'?'err':'warn'}" style="cursor:help" title="${esc(tip)}">${_st==='err'?'오류':'검토 필요'} ⓘ</span>`;
 }
 function creativePreview(){
   const sets=[...cSel].map(curSet).filter(Boolean);
@@ -1664,7 +1664,7 @@ function renderArchive(){
   $('kTotal').textContent=base.length;
   $('kDone').textContent=base.filter(a=>a.done).length;
   $('kSets').textContent=new Set(base.map(a=>a.setId)).size;
-  $('kErr').textContent=base.filter(a=>a.status!=='ok').length;
+  $('kErr').textContent=base.filter(a=>validateName(a.name||'')!=='ok').length;
   const keyFn=arcView==='manager'?(a=>a.manager||'미상'):(a=>a.brand||'미분류');
   // ── 제품·담당자 다중 필터 (각각 여러 개 선택 가능, AND 조합) ──
   const prods=[...new Set(base.map(a=>a.brand||'미분류'))].sort();
@@ -1727,7 +1727,8 @@ function toggleSetMemo(sn){ openSetMemo.has(sn)?openSetMemo.delete(sn):openSetMe
 function setGroupMemo(sn,v){ if(!DB.setMemo)DB.setMemo={}; v=v.trim(); if((DB.setMemo[sn]||'')===v)return; if(v)DB.setMemo[sn]=v; else delete DB.setMemo[sn]; save(); renderArchive(); }
 function toggleSetDone(sn){const items=DB.archive.filter(a=>a.setName===sn&&archiveArea(a)===areaScope);if(!items.length)return;const allDone=items.every(a=>a.done);items.forEach(a=>a.done=!allDone);save();renderArchive();}
 function editArc(id,f,v){const a=DB.archive.find(x=>x.id===id);if(!a)return;v=v.trim();if(!v||v===a[f])return;a[f]=v;if(f==='name'){a.status=validateName(v);if(a.utm)a.utm=a.utm.replace(/utm_content=[^&\s]*/,'utm_content='+v);}save();renderArchive();}
-function delArc(id){DB.archive=DB.archive.filter(x=>x.id!==id);save();renderArchive();}
+var _arcDeleted={};
+function delArc(id){_arcDeleted[id]=1;DB.archive=DB.archive.filter(x=>x.id!==id);save();renderArchive();}
 function clearArchive(){if(!confirm('아카이브를 모두 삭제하시겠습니까? (팀 전체에서 삭제됩니다)'))return;DB.archive=[];save();renderArchive();}
 
 /* ════════════════════════ 변경 아카이브 (이름변경 이력) ════════════════════════ */
@@ -2298,7 +2299,7 @@ function ucRenderPreview(){
 
 function ucArchPush(set,name,utm,p,cloned){
   try{ DB.archive=DB.archive||[];
-    DB.archive.push({ id:Date.now()+'-'+Math.floor(Math.random()*1000), ts:new Date().toISOString(), setId:set.adsetId, setName:set.name, brand:(set.brand||''), manager:p.manager||'', name:name, utm:utm, status:'PAUSED', done:false, fmt:p.fmt, msg:p.msg, soje:p.soje, date:p.date, cloned:!!cloned });
+    DB.archive.push({ id:Date.now()+'-'+Math.floor(Math.random()*1000), ts:new Date().toISOString(), setId:set.adsetId, setName:set.name, brand:(set.brand||''), manager:p.manager||'', name:name, utm:utm, status:validateName(name), done:false, fmt:p.fmt, msg:p.msg, soje:p.soje, date:p.date, cloned:!!cloned });
   }catch(e){}
 }
 
