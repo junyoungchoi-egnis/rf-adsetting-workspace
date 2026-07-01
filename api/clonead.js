@@ -177,6 +177,16 @@ module.exports = async function (req, res) {
       newTags = 'utm_campaign=' + enc(utmCampaign) + '&utm_content=' + enc(utmContent);
     }
 
+    // ìì ìì¬ë ì¸ë¤ì¼ ì´ë¯¸ì§ê° íì â ìì¼ë©´ ììì ìë ì¸ë¤ì¼(image_url)ì ë¶ì¸ë¤.
+    if (clean.video_data && clean.video_data.video_id && !clean.video_data.image_hash && !clean.video_data.image_url) {
+      try {
+        const th = await gget(GRAPH + '/' + clean.video_data.video_id + '/thumbnails?fields=uri,is_preferred&access_token=' + enc(token));
+        const list = (th && th.data) || [];
+        const pick = list.filter(function (x) { return x.is_preferred; })[0] || list[0];
+        if (pick && pick.uri) clean.video_data.image_url = pick.uri;
+      } catch (e) {}
+    }
+
     if (!apply) {
       return res.status(200).json({ ok: true, dryRun: true, mode: srcCreativeId ? 'clone' : 'new', targetAdsetId: targetAdsetId, newName: newName });
     }
