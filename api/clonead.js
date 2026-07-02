@@ -174,14 +174,18 @@ module.exports = async function (req, res) {
     if (Array.isArray(b.pagesIg)) {
       const ids = b.pagesIg.map(String).filter(Boolean).slice(0, 300);
       const out = {};
+      // Graph Batch API: 페이지별 개별 요청 → 접근 불가 페이지가 있어도 나머지는 정상 반환.
       for (let i = 0; i < ids.length; i += 50) {
         const chunk = ids.slice(i, i + 50);
+        const batch = chunk.map(id => ({ method: 'GET', relative_url: id + '?fields=name,instagram_business_account{id,username},connected_instagram_account{id,username}' }));
         try {
-          const j = await (await fetch(GRAPH + '/?ids=' + chunk.map(enc).join(',') + '&fields=name,instagram_business_account{id,username},connected_instagram_account{id,username}&access_token=' + enc(token))).json();
-          if (j && !j.error) Object.keys(j).forEach(pid => {
-            const p = j[pid] || {};
+          const r = await fetch(GRAPH + '/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'access_token=' + enc(token) + '&batch=' + enc(JSON.stringify(batch)) });
+          const arr = await r.json();
+          if (Array.isArray(arr)) arr.forEach((item, idx) => {
+            if (!item || item.code !== 200 || !item.body) return;
+            let p; try { p = JSON.parse(item.body); } catch (e) { return; }
             const ig = p.instagram_business_account || p.connected_instagram_account || null;
-            if (ig && ig.id) out[pid] = { name: p.name || '', ig: { id: ig.id, username: ig.username || '' } };
+            if (ig && ig.id) out[chunk[idx]] = { name: p.name || '', ig: { id: ig.id, username: ig.username || '' } };
           });
         } catch (e) {}
       }
