@@ -3114,8 +3114,8 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
 #rbAcctBlock{margin:6px 14px 0;padding:10px 12px;border:1px solid #2a3340;border-radius:10px;background:#12151d}
 #rbAcctBlock .rb-acct-lab{font-size:11px;color:#8b98a8;margin-bottom:6px;display:flex;align-items:center;gap:5px}
 #rbAcctBlock #rbAcctSel{width:100%;margin:0;padding:7px 10px;border-radius:7px}
-/* 미리보기 sticky가 상단 고정 바(활동/계정)와 겹치지 않게 offset 확보 */
-#page-metacreate .mcd-grid > div:last-child > .panel[style*="sticky"]{top:64px !important}
+/* 미리보기 패널 sticky 해제 — 뷰포트보다 커서 상단 고정 바와 겹쳐 보이던 문제 방지(정상 스크롤) */
+#page-metacreate .mcd-grid > div:last-child > .panel{position:static !important}
 </style>
 <script id="RB_LAYOUT_TWEAKS">
 (function(){
@@ -3126,7 +3126,7 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
     var sel=document.getElementById('rbAcctSel');
     if(!side||!foot) return false;
     // sticky 겹침 보정(계정 이동과 독립적으로 항상 적용)
-    try{ var pv=document.getElementById('mcd_prev'); if(pv){ var pp=pv.closest('.panel'); if(pp && /sticky/.test(getComputedStyle(pp).position)) pp.style.top='64px'; } }catch(e){}
+    try{ var pv=document.getElementById('mcd_prev'); if(pv){ var pp=pv.closest('.panel'); if(pp) pp.style.position='static'; } }catch(e){}
     if(!sel) return false;                          // 계정 드롭다운 생성 대기
     if(document.getElementById('rbAcctBlock')) return true;
     var block=document.createElement('div'); block.id='rbAcctBlock';
