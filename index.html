@@ -3229,8 +3229,9 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
     if(typeof sel.__rbPaint==='function') sel.__rbPaint();
   }
   window.RB_rebuildIg=rebuildIg;
+  function igLoaded(){ return window.RB_PAGE_IG && Object.keys(window.RB_PAGE_IG).length>0; }
   async function loadPageIg(){
-    if(window.__rbPageIgLoading||window.RB_PAGE_IG) return;
+    if(window.__rbPageIgLoading || igLoaded()) return;   // 비어있지 않게 로드됐을 때만 완료로 간주
     if(typeof META_PAGES==='undefined'||!META_PAGES.length) return;
     var u; try{u=firebase.auth().currentUser;}catch(e){} if(!u) return;
     window.__rbPageIgLoading=1;
@@ -3238,9 +3239,10 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
       var t=await u.getIdToken();
       var ids=META_PAGES.map(function(p){return p.id;});
       var r=await fetch('/api/clonead',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+t},body:JSON.stringify({pagesIg:ids})});
-      var j=await r.json(); window.RB_PAGE_IG=(j&&j.pagesIg)||{};
-      rebuildIg();
-    }catch(e){ window.__rbPageIgLoading=0; }
+      var j=await r.json(); var m=(j&&j.pagesIg)||{};
+      if(Object.keys(m).length){ window.RB_PAGE_IG=m; rebuildIg(); }   // 비었으면 확정 안 함 → 다음 틱 재시도
+    }catch(e){}
+    window.__rbPageIgLoading=0;
   }
   function hook(){
     if(window.__rbIgHooked) return true;
@@ -3251,7 +3253,7 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
     var pg=document.getElementById('mcd_page'); if(pg) pg.addEventListener('change',function(){ try{ rebuildIg(); if(typeof mcdPreview==='function')mcdPreview(); }catch(e){} });
     return true;
   }
-  function boot(){ var n=0,iv=setInterval(function(){ hook(); loadPageIg(); if(++n>90||(window.__rbIgHooked&&window.RB_PAGE_IG)) clearInterval(iv); },1000); }
+  function boot(){ var n=0,iv=setInterval(function(){ hook(); loadPageIg(); if(++n>90||(window.__rbIgHooked&&igLoaded())) clearInterval(iv); },1000); }
   if(document.readyState!=="loading")boot();else document.addEventListener("DOMContentLoaded",boot);
 })();
 </script>
