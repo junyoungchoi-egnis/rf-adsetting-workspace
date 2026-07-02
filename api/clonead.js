@@ -174,10 +174,14 @@ module.exports = async function (req, res) {
     if (b.igDiag === true) {
       const out = {};
       async function tryGet(k, u) { try { out[k] = await (await fetch(u)).json(); } catch (e) { out[k] = { _err: String((e && e.message) || e) }; } }
-      await tryGet('act_instagram_accounts', GRAPH + '/act_' + act + '/instagram_accounts?fields=id,username&limit=50&access_token=' + enc(token));
-      await tryGet('act_fields', GRAPH + '/act_' + act + '?fields=instagram_accounts{id,username},connected_instagram_accounts{id,username}&access_token=' + enc(token));
+      await tryGet('act_connected_ig', GRAPH + '/act_' + act + '?fields=connected_instagram_accounts.limit(200){id,username},instagram_accounts.limit(200){id,username}&access_token=' + enc(token));
+      if (b.businessId) {
+        const bid = String(b.businessId);
+        await tryGet('biz_owned_ig', GRAPH + '/' + bid + '/owned_instagram_accounts?fields=id,username&limit=200&access_token=' + enc(token));
+        await tryGet('biz_instagram_accounts', GRAPH + '/' + bid + '/instagram_accounts?fields=id,username&limit=200&access_token=' + enc(token));
+      }
       if (b.pageId) await tryGet('page_ig', GRAPH + '/' + String(b.pageId) + '?fields=name,instagram_business_account{id,username},connected_instagram_account{id,username}&access_token=' + enc(token));
-      return res.status(200).json({ ok: true, igDiag: true, act: act, pageId: b.pageId || null, tokenSource: tokenSource, result: out });
+      return res.status(200).json({ ok: true, igDiag: true, act: act, pageId: b.pageId || null, businessId: b.businessId || null, tokenSource: tokenSource, result: out });
     }
 
     if (!act || !targetAdsetId || !newName || !utmCampaign || !utmContent) {
