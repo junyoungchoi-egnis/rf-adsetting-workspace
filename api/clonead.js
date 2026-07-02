@@ -231,7 +231,16 @@ module.exports = async function (req, res) {
       status: 'PAUSED'
     });
 
-    return res.status(200).json({ ok: true, mode: srcCreativeId ? 'clone' : 'new', newAdId: adRes.id, newCreative: newCid, targetAdsetId: targetAdsetId, tokenSource: tokenSource });
+    // 검증용(opt-in): 생성된 소재에 실제 적용된 어드밴티지+ 개별 기능(enroll_status)을 되읽어 반환.
+    // verify!==true 이면 추가 호출 없음(운영 부하 0). 향후 개별 토글 UI에서 적용결과 표시에도 활용 가능.
+    var appliedFeatures = null;
+    if (b.verify === true) {
+      try {
+        const _vc = await gget(GRAPH + '/' + newCid + '?fields=degrees_of_freedom_spec&access_token=' + enc(token));
+        appliedFeatures = (_vc && _vc.degrees_of_freedom_spec) || {};
+      } catch (e) { appliedFeatures = { readError: String((e && e.message) || e) }; }
+    }
+    return res.status(200).json({ ok: true, mode: srcCreativeId ? 'clone' : 'new', newAdId: adRes.id, newCreative: newCid, targetAdsetId: targetAdsetId, tokenSource: tokenSource, appliedFeatures: appliedFeatures });
   } catch (e) {
     return res.status(500).json({ ok: false, error: String((e && e.message) || e) });
   }
