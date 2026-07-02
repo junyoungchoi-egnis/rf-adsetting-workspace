@@ -209,6 +209,16 @@ module.exports = async function (req, res) {
     // 새 소재 생성
     const cpayload = { name: newName + (srcCreativeId ? ' [clone]' : ' [new]'), object_story_spec: clean };
     if (newTags) cpayload.url_tags = newTags;
+    // 어드밴티지+ 크리에이티브(스탠다드 향상)와 상품연동(제품태그·카탈로그·Shop)을 기본 OFF.
+    //  - standard_enhancements: 이미지 보정/텍스트 개선 등 어드밴티지+ 자동 향상 번들 비활성.
+    //  - product_extensions: 소재에 카탈로그 제품 정보(제품태그/샵)를 자동 첨부하는 기능 비활성.
+    // creative_features_spec 는 GRAPH v21.0 기준. 개별 항목 세부 토글은 추후 UI에서 제어 예정.
+    cpayload.degrees_of_freedom_spec = {
+      creative_features_spec: {
+        standard_enhancements: { enroll_status: 'OPT_OUT' },
+        product_extensions: { enroll_status: 'OPT_OUT' }
+      }
+    };
     const created = await gpost(GRAPH + '/act_' + act + '/adcreatives?access_token=' + enc(token), cpayload);
     const newCid = created.id;
     if (!newCid) throw new Error('새 소재 생성 실패');
