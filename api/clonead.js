@@ -168,6 +168,18 @@ module.exports = async function (req, res) {
     const utmContent = String(b.utmContent || '').trim();
     const newSpec = b.newSpec || null;
     const apply = b.apply === true;
+
+    // 진단(읽기 전용): 계정/페이지에서 Meta가 어떤 IG 계정을 돌려주는지 raw 확인용.
+    // { igDiag:true, act, pageId? } → 생성 없이 조회 결과만 반환.
+    if (b.igDiag === true) {
+      const out = {};
+      async function tryGet(k, u) { try { out[k] = await (await fetch(u)).json(); } catch (e) { out[k] = { _err: String((e && e.message) || e) }; } }
+      await tryGet('act_instagram_accounts', GRAPH + '/act_' + act + '/instagram_accounts?fields=id,username&limit=50&access_token=' + enc(token));
+      await tryGet('act_fields', GRAPH + '/act_' + act + '?fields=instagram_accounts{id,username},connected_instagram_accounts{id,username}&access_token=' + enc(token));
+      if (b.pageId) await tryGet('page_ig', GRAPH + '/' + String(b.pageId) + '?fields=name,instagram_business_account{id,username},connected_instagram_account{id,username}&access_token=' + enc(token));
+      return res.status(200).json({ ok: true, igDiag: true, act: act, pageId: b.pageId || null, tokenSource: tokenSource, result: out });
+    }
+
     if (!act || !targetAdsetId || !newName || !utmCampaign || !utmContent) {
       return res.status(400).json({ ok: false, error: '필수값 누락 (act, targetAdsetId, newName, utmCampaign, utmContent)' });
     }
