@@ -887,7 +887,7 @@ let areaScope='클룹';
 function areaOf(productCode){const p=M().products.find(x=>x.code===productCode);return p?(p.area||'클룹'):'클룹';}
 function tamKr(code){const t=(M().tams||[]).find(x=>x.code===code);return (t&&t.kr)?t.kr:(TAM_KR[code]||code);}
 function setArea(a){
-  areaScope=a;
+  areaScope=a;try{var _ac=(typeof META_ACCOUNTS!=='undefined')?META_ACCOUNTS.find(function(x){return x.area===a;}):null;var _ml=[].slice.call(document.querySelectorAll('a')).filter(function(e){return /메타 미디어 라이브러리 열기/.test(e.textContent||'');})[0];if(_ml&&_ac&&_ac.id)_ml.href='https://adsmanager.facebook.com/adsmanager/manage/admedia?act='+_ac.id;}catch(e){}
   document.querySelectorAll('#areaNav [data-area]').forEach(b=>{const on=b.dataset.area===a;b.classList.toggle('btn-primary',on);b.classList.toggle('btn-ghost',!on);});
   fillBuilderSelects(); buildPreview(); renderSetLib(); renderCreativeCampaigns(); renderCreativeSets(); renderArchive(); renderChanges(); renderMetaCreate();
 }
