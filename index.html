@@ -3140,5 +3140,46 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
   if(document.readyState!=="loading")boot();else document.addEventListener("DOMContentLoaded",boot);
 })();
 </script>
+<style id="RB_PROFILE_STYLE">
+.rb-isel{position:relative}
+.rb-isel-btn{width:100%;display:flex;align-items:center;gap:8px;background:#1e2530;border:1px solid #38424f;border-radius:8px;padding:7px 10px;color:#e8eef7;font-size:13px;cursor:pointer;text-align:left}
+.rb-isel-btn .rb-chev{margin-left:auto;color:#8b98a8;flex:none}
+.rb-isel-pop{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:60;background:#1e2530;border:1px solid #38424f;border-radius:8px;max-height:240px;overflow:auto;box-shadow:0 10px 26px rgba(0,0,0,.45);display:none}
+.rb-isel-pop.open{display:block}
+.rb-isel-opt{display:flex;align-items:center;gap:8px;padding:8px 10px;font-size:13px;color:#e8eef7;cursor:pointer}
+.rb-isel-opt:hover{background:#2a3340}
+.rb-isel-opt.sel{background:#16233f}
+.rb-av{width:22px;height:22px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff}
+.rb-av.ig{background:#c13584}
+.rb-av.auto{background:#3a4553;color:#cdd6e0}
+.rb-isel-lab{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+</style>
+<script id="RB_PROFILE_SELECT">
+(function(){
+  // Instagram 프로필(광고 프로필)을 아이콘 드롭다운으로 개선 + "자체 sync" 배지 제거.
+  // 원본 <select id=mcd_ig>는 숨겨 값/텍스트 소스로 유지(미리보기·생성 코드 그대로 동작).
+  function avFor(opt){ if(!opt||!opt.value) return '<span class="rb-av auto">↩</span>'; var m=(opt.textContent||'').trim().replace(/^@/,''); return '<span class="rb-av ig">'+((m[0]||'?').toUpperCase())+'</span>'; }
+  function labFor(opt){ return (opt?(opt.textContent||''):'').trim(); }
+  function enhance(sel){
+    if(!sel||sel.__rbEnh) return; sel.__rbEnh=1; sel.style.display='none';
+    var wrap=document.createElement('div'); wrap.className='rb-isel';
+    var btn=document.createElement('button'); btn.type='button'; btn.className='rb-isel-btn';
+    btn.innerHTML='<span class="rb-isel-cur" style="display:flex;align-items:center;gap:8px;flex:1;min-width:0"></span><span class="rb-chev">▾</span>';
+    var pop=document.createElement('div'); pop.className='rb-isel-pop';
+    wrap.appendChild(btn); wrap.appendChild(pop); sel.parentNode.insertBefore(wrap, sel.nextSibling);
+    function curOpt(){ return sel.selectedOptions[0]||sel.options[sel.selectedIndex]||sel.options[0]||null; }
+    function paint(){ var o=curOpt(); btn.querySelector('.rb-isel-cur').innerHTML=o?(avFor(o)+'<span class="rb-isel-lab">'+labFor(o)+'</span>'):'<span class="rb-isel-lab" style="color:#8b98a8">선택</span>'; }
+    function close(){ pop.classList.remove('open'); document.removeEventListener('click',outside); }
+    function outside(e){ if(!wrap.contains(e.target)) close(); }
+    function open(){ pop.innerHTML=''; [].slice.call(sel.options).forEach(function(o){ var r=document.createElement('div'); r.className='rb-isel-opt'+(o.selected?' sel':''); r.innerHTML=avFor(o)+'<span class="rb-isel-lab">'+labFor(o)+'</span>'; r.addEventListener('click',function(){ sel.value=o.value; sel.dispatchEvent(new Event('change',{bubbles:true})); paint(); close(); }); pop.appendChild(r); }); pop.classList.add('open'); setTimeout(function(){document.addEventListener('click',outside);},0); }
+    btn.addEventListener('click',function(e){ e.stopPropagation(); if(pop.classList.contains('open'))close(); else open(); });
+    sel.addEventListener('change',paint); sel.__rbPaint=paint; paint();
+  }
+  function killBadge(){ [].slice.call(document.querySelectorAll('#page-metacreate .bdg')).forEach(function(b){ if(/자체\s*sync/.test(b.textContent||'')) b.remove(); }); }
+  function tick(){ var ig=document.getElementById('mcd_ig'); if(ig){ enhance(ig); if(ig.__rbPaint)ig.__rbPaint(); } killBadge(); }
+  function loop(){ tick(); var n=0,iv=setInterval(function(){ tick(); if(++n>40)clearInterval(iv); },800); }
+  if(document.readyState!=="loading")loop();else document.addEventListener("DOMContentLoaded",loop);
+})();
+</script>
 </body>
 </html>
