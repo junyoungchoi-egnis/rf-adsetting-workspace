@@ -3083,7 +3083,7 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
     if(document.getElementById('rbCfPanel')) return true;
     var prev=document.getElementById('mcd_prev'); if(!prev) return false;
     var host=prev.closest('.panel'); if(!host||!host.parentNode) return false;
-    var p=document.createElement('div'); p.className='panel'; p.id='rbCfPanel'; p.style.marginTop='14px';
+    var p=document.createElement('div'); p.className='panel'; p.id='rbCfPanel'; p.style.marginBottom='14px';
     var rows=GROUPS.map(function(g){
       return '<div class="rb-cf-row"><span class="rb-cf-em">'+g.em+'</span><span class="rb-cf-t">'+g.t+'<span class="rb-cf-tag '+g.aff+'">'+(g.aff==='pv'?'미리보기 반영':'게재 시 적용')+'</span></span>'
         +'<button class="rb-sw" role="switch" aria-checked="false" aria-label="'+g.t+'" data-k="'+g.k+'" disabled><span class="k"></span></button></div>';
@@ -3094,7 +3094,7 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
       +rows
       +'<div class="hint" style="margin-top:8px"><span style="color:#5fd08a">미리보기 반영</span> = 화면 즉시 · <span style="color:#fbbf24">게재 시 적용</span> = 노출 때 메타가 자동. 매 생성마다 기본은 모두 꺼짐.</div>'
       +'</div>';
-    host.parentNode.insertBefore(p, host.nextSibling);
+    host.parentNode.insertBefore(p, host);  // 미리보기 패널 '위'에 배치 → 우측 열 최상단, 즉시 보임
     var head=p.querySelector('#rbCfHead'), sub=p.querySelector('#rbCfSub'), chev=p.querySelector('.rb-chev');
     head.addEventListener('click',function(){ var o=sub.classList.toggle('open'); chev.classList.toggle('open',o); });
     var rec=p.querySelector('#rbCfRec'), cus=p.querySelector('#rbCfCus');
