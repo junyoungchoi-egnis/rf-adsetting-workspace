@@ -92,7 +92,9 @@ function stripEmpty(o) {
 // (A) 기존 소재 스펙 → 생성 가능한 clean 스펙 + 링크 utm 교정
 function cleanFromSource(spec, utmCampaign, utmContent) {
   const clean = { page_id: spec.page_id };
-  if (spec.instagram_actor_id) clean.instagram_actor_id = spec.instagram_actor_id;
+  // instagram_actor_id 는 v22(2025)부터 지원 중단 → instagram_user_id 로 전송해야 IG 계정이 붙음.
+  var _igSrc = spec.instagram_user_id || spec.instagram_actor_id;
+  if (_igSrc) clean.instagram_user_id = _igSrc;
   if (spec.link_data) {
     const d = spec.link_data;
     clean.link_data = { link: fixUtm(d.link, utmCampaign, utmContent), message: d.message, name: d.name, description: d.description, image_hash: d.image_hash };
@@ -122,7 +124,9 @@ function cleanFromNew(ns, utmCampaign, utmContent) {
   const link = fixUtm(ns.link || '', utmCampaign, utmContent);
   const cta = ns.cta ? { type: ns.cta, value: (link ? { link: link } : {}) } : null;
   const clean = { page_id: ns.page_id };
-  if (ns.instagram_actor_id) clean.instagram_actor_id = ns.instagram_actor_id;
+  // instagram_actor_id 지원 중단 → instagram_user_id 로 전송(선택된 IG가 실제로 붙게).
+  var _igNew = ns.instagram_user_id || ns.instagram_actor_id;
+  if (_igNew) clean.instagram_user_id = _igNew;
   if (ns.video_id) {
     clean.video_data = { video_id: ns.video_id, message: ns.message, title: ns.name, link_description: ns.description, image_hash: ns.image_hash };
     if (cta) clean.video_data.call_to_action = cta;
@@ -202,8 +206,19 @@ module.exports = async function (req, res) {
       } catch (e) {}
     }
 
+    // 인스타그램 계정(광고 프로필) 자동 결정: 명시된 IG가 없으면 페이지에 연결된 IG를 사용.
+    // → Meta의 "Instagram 계정 필드를 추가하세요" 경고 방지 + IG 게재 정상화.
+    if (clean && clean.page_id && !clean.instagram_user_id) {
+      try {
+        const _pg = await gget(GRAPH + '/' + clean.page_id + '?fields=instagram_business_account,connected_instagram_account&access_token=' + enc(token));
+        const _iid = (_pg && _pg.instagram_business_account && _pg.instagram_business_account.id)
+                  || (_pg && _pg.connected_instagram_account && _pg.connected_instagram_account.id) || null;
+        if (_iid) clean.instagram_user_id = _iid;
+      } catch (e) {}
+    }
+
     if (!apply) {
-      return res.status(200).json({ ok: true, dryRun: true, mode: srcCreativeId ? 'clone' : 'new', targetAdsetId: targetAdsetId, newName: newName, tokenSource: tokenSource });
+      return res.status(200).json({ ok: true, dryRun: true, mode: srcCreativeId ? 'clone' : 'new', targetAdsetId: targetAdsetId, newName: newName, tokenSource: tokenSource, instagramUserId: clean.instagram_user_id || null });
     }
 
     // 새 소재 생성
@@ -240,7 +255,7 @@ module.exports = async function (req, res) {
         appliedFeatures = (_vc && _vc.degrees_of_freedom_spec) || {};
       } catch (e) { appliedFeatures = { readError: String((e && e.message) || e) }; }
     }
-    return res.status(200).json({ ok: true, mode: srcCreativeId ? 'clone' : 'new', newAdId: adRes.id, newCreative: newCid, targetAdsetId: targetAdsetId, tokenSource: tokenSource, appliedFeatures: appliedFeatures });
+    return res.status(200).json({ ok: true, mode: srcCreativeId ? 'clone' : 'new', newAdId: adRes.id, newCreative: newCid, targetAdsetId: targetAdsetId, tokenSource: tokenSource, appliedFeatures: appliedFeatures, instagramUserId: clean.instagram_user_id || null });
   } catch (e) {
     return res.status(500).json({ ok: false, error: String((e && e.message) || e) });
   }
