@@ -2016,7 +2016,9 @@ function msCandidates(){
     var _sel=(typeof mcdTargetAccount==='function')?String(mcdTargetAccount()||'').replace(/^act_/,''):'';
     if(_sel){
       var _scoped=out.filter(function(c){ return String(c._acct||'').replace(/^act_/,'')===_sel; });
-      if(_scoped.length) return _scoped;   // 매칭 세트가 있을 때만 적용(스냅샷 지연 등으로 0건이면 과필터 방지)
+      // 스냅샷이 로드된 상태면 계정 필터 결과를 그대로 신뢰(0건이면 "해당 계정 세트 없음"이 정답 —
+      // 다른 계정 세트를 대신 보여주면 오계정 생성 위험). 스냅샷 자체가 없을 때(로드 지연)만 폴백.
+      if(_scoped.length || (metaSnap && metaSnap.adsets)) return _scoped;
     }
   }catch(e){}
   return out;
