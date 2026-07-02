@@ -3156,7 +3156,14 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
     if(privacy) foot.appendChild(privacy);
     return true;
   }
-  function boot(){ if(build())return; var n=0,iv=setInterval(function(){ if(build()||++n>40)clearInterval(iv); },800); }
+  function moveAct(){  // 상단 고정 '활동' 버튼을 사이드바 리스트(계정 선택 아래)로 이동
+    var foot=document.querySelector('.side-foot'); var act=document.getElementById('mcActBtnEl'); var anchor=document.getElementById('rbFootAcct');
+    if(!foot||!act||!anchor) return false;
+    if(act.closest('.side-foot')) return true;
+    act.classList.add('rb-foot-actmoved'); anchor.parentNode.insertBefore(act, anchor.nextSibling);
+    return true;
+  }
+  function boot(){ build(); moveAct(); var n=0,iv=setInterval(function(){ var a=build(), b=moveAct(); if((a&&b)||++n>60)clearInterval(iv); },600); }
   if(document.readyState!=="loading")boot();else document.addEventListener("DOMContentLoaded",boot);
 })();
 </script>
