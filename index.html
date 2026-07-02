@@ -2007,7 +2007,19 @@ function msCandidates(){
   if(typeof creativeCandidates!=='function') return [];
   const rows=(metaSnap&&metaSnap.adsets)?(Array.isArray(metaSnap.adsets)?metaSnap.adsets:Object.values(metaSnap.adsets)):[];
   const acctOf={}; rows.forEach(function(a){ if(a.adsetId)acctOf[a.adsetId]=a.account; });
-  return creativeCandidates().filter(function(c){ return c.adsetId; }).map(function(c){ c._acct=acctOf[c.adsetId]||''; return c; });
+  var out=creativeCandidates().filter(function(c){ return c.adsetId; }).map(function(c){ c._acct=acctOf[c.adsetId]||''; return c; });
+  // 대상 광고세트를 "선택 계정"(계정 드롭다운 = RB_SELACCT / mcdTargetAccount)으로 좁힌다.
+  // 한 브랜드(예: 클룹)에 계정이 둘(메인·서브)이라 area 필터만으로는 두 계정 세트가 섞이는데,
+  // 소재 그리드는 선택 계정의 에셋만 보여주므로 → 다른 계정 세트를 고르면 image_hash 불일치로
+  // 생성이 실패한다. 대상 세트를 선택 계정으로 일치시켜 그 불일치를 원천 차단.
+  try{
+    var _sel=(typeof mcdTargetAccount==='function')?String(mcdTargetAccount()||'').replace(/^act_/,''):'';
+    if(_sel){
+      var _scoped=out.filter(function(c){ return String(c._acct||'').replace(/^act_/,'')===_sel; });
+      if(_scoped.length) return _scoped;   // 매칭 세트가 있을 때만 적용(스냅샷 지연 등으로 0건이면 과필터 방지)
+    }
+  }catch(e){}
+  return out;
 }
 function msRenderSrc(){
   const sel=document.getElementById('ms_src'); if(!sel) return;
@@ -2520,6 +2532,8 @@ async function ucCreate(btn){
   function n5bCands(){ try{ var c=(typeof msCandidates==='function')?msCandidates():[]; if((($('n5b_active')||{}).checked)){ c=c.filter(function(x){ return (x.live&&x.live.active>0)||x.campStatus==='ACTIVE'; }); } var q=(($('n5b_search')||{}).value||'').toLowerCase(); if(q)c=c.filter(function(x){return (x.name||'').toLowerCase().indexOf(q)>=0;}); var seen={}; return c.filter(function(x){ if(seen[x.adsetId])return false; seen[x.adsetId]=1; return true; }); }catch(e){ return []; } }
   window.n5bToggle=function(i){ var c=(window.__n5bCands||[])[i]; if(!c)return; if(n5bTargets[c.adsetId])delete n5bTargets[c.adsetId]; else n5bTargets[c.adsetId]=c; window.n5bRender(); window.n5bPreview(); try{ window.n5bPre(); }catch(e){} };
   window.n5bRender=function(){ var wrap=$('n5b_setlist'); if(!wrap)return; var cs=n5bCands(); window.__n5bCands=cs;
+    // 선택 계정과 다른 계정의 (이전에 선택된) 세트는 선택에서 제외 → 다른 계정 에셋과의 불일치 방지
+    try{ var _selA=(typeof mcdTargetAccount==='function')?String(mcdTargetAccount()||'').replace(/^act_/,''):''; if(_selA){ Object.keys(n5bTargets).forEach(function(k){ var t=n5bTargets[k]; if(t&&String(t._acct||'').replace(/^act_/,'')!==_selA) delete n5bTargets[k]; }); } }catch(e){}
     wrap.innerHTML=cs.length?cs.map(function(c,i){ var on=!!n5bTargets[c.adsetId];
       return '<div onclick="n5bToggle('+i+')" style="display:flex;align-items:center;gap:9px;cursor:pointer;padding:9px 10px;margin:5px;border-radius:8px;border:1px solid '+(on?'var(--accent)':'var(--border)')+';background:'+(on?'var(--surface)':'transparent')+'"><span style="font-size:15px;color:'+(on?'var(--accent2)':'var(--text3)')+'">'+(on?'☑':'☐')+'</span><div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:600;color:'+(on?'var(--text)':'var(--text2)')+'">'+esc((c.brand||c.product||''))+' · '+esc(schemeKr(c.scheme))+' <span style="color:var(--accent2)">/ '+esc(tamKr(c.tam)||'')+'</span></div><div style="font-size:10px;font-family:monospace;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(c.name)+'</div></div><span style="font-size:10px;white-space:nowrap;color:'+(((c.landing||'').trim())?'var(--green)':'var(--yellow)')+'">'+(((c.landing||'').trim())?'랜딩 ✓':'랜딩 ⚠')+'</span></div>';
     }).join(''):'<div class="hint" style="padding:10px">\uc870\uac74\uc5d0 \ub9de\ub294 \uc138\ud2b8 \uc5c6\uc74c</div>';
@@ -2989,7 +3003,10 @@ function build(){
   accts.forEach(function(a){var o=document.createElement("option");o.value=a.id;o.textContent=label(a);o.setAttribute("data-area",a.area||"클룹");sel.appendChild(o);});
   [].slice.call(nav.querySelectorAll("[data-area]")).forEach(function(b){b.style.display="none";});
   nav.appendChild(sel);
-  function apply(){var id=sel.value;var a=accts.filter(function(x){return x.id===id;})[0];window.RB_SELACCT=id;try{if(typeof setArea==="function"&&a)setArea(a.area||"클룹");}catch(e){}try{if(typeof mcdRenderAssets==="function")mcdRenderAssets();}catch(e){}}
+  function apply(){var id=sel.value;var a=accts.filter(function(x){return x.id===id;})[0];window.RB_SELACCT=id;try{if(typeof setArea==="function"&&a)setArea(a.area||"클룹");}catch(e){}try{if(typeof mcdRenderAssets==="function")mcdRenderAssets();}catch(e){}
+    // 계정 전환 시 대상 세트 목록도 선택 계정 기준으로 즉시 갱신(msCandidates가 선택 계정으로 필터)
+    try{ if(typeof window.n5bRender==="function"){ window.n5bRender(); if(typeof window.n5bPreview==="function")window.n5bPreview(); if(typeof window.n5bPre==="function")window.n5bPre(); } }catch(e){}
+    try{ if(typeof msRenderSrc==="function")msRenderSrc(); if(typeof msRenderSets==="function")msRenderSets(); }catch(e){}}
   sel.addEventListener("change",apply);
   sel.value=accts[0].id;apply();
 }
