@@ -3015,5 +3015,100 @@ function build(){
 if(document.readyState!=="loading")build();else document.addEventListener("DOMContentLoaded",build);
 })();
 </script>
+<style id="RB_CF_STYLE">
+#rbCfPanel .rb-cf-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+#rbCfPanel .rb-cf-row:last-child{border-bottom:none}
+#rbCfPanel .rb-cf-em{width:24px;flex:none;text-align:center;font-size:15px;filter:saturate(.6)}
+#rbCfPanel .rb-cf-t{flex:1;min-width:0;font-size:13px;color:#e8eef7}
+#rbCfPanel .rb-cf-tag{font-size:10px;padding:1px 6px;border-radius:20px;margin-left:6px;white-space:nowrap}
+#rbCfPanel .rb-cf-tag.pv{background:#173226;color:#5fd08a}
+#rbCfPanel .rb-cf-tag.dl{background:#332a12;color:#fbbf24}
+#rbCfPanel .rb-sw{width:40px;height:23px;flex:none;border-radius:20px;border:1px solid #38424f;background:#1e2530;position:relative;cursor:pointer;padding:0}
+#rbCfPanel .rb-sw .k{position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#657081;transition:left .15s,background .15s}
+#rbCfPanel .rb-sw.on{background:#3d7dfc;border-color:#3d7dfc}
+#rbCfPanel .rb-sw.on .k{left:19px;background:#fff}
+#rbCfPanel .rb-sw:disabled{cursor:not-allowed}
+#rbCfPanel .rb-seg{display:flex;gap:6px;margin:4px 0 8px}
+#rbCfPanel .rb-seg button{flex:1;height:30px;border-radius:6px;border:1px solid #38424f;background:#1e2530;color:#9aa7b6;font-size:12px;cursor:pointer}
+#rbCfPanel .rb-seg button.on{border:1px solid #3d7dfc;background:#16233f;color:#8fb6ff}
+#rbCfHead{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+#rbCfHead .rb-chev{margin-left:auto;transition:transform .15s;color:#9aa7b6}
+#rbCfHead .rb-chev.open{transform:rotate(180deg)}
+#rbCfState{font-size:11px;color:#9aa7b6;font-weight:400}
+#rbCfSub{display:none;margin-top:6px}
+#rbCfSub.open{display:block}
+</style>
+<script id="RB_CREATIVE_FEATURES">
+(function(){
+  // 어드밴티지+ 개별 기능 컨트롤 — 소재 세팅 우측 열에 접이식 패널 주입 + /api/clonead 바디에 creativeFeatures 주입.
+  // 기본(권장)은 아무 것도 주입하지 않아 서버 기본값(product_extensions:OPT_OUT = 전부 OFF) 사용.
+  var GROUPS=[
+    {k:'image',em:'🖼️',t:'이미지 자동 보정',aff:'dl',keys:['image_touchups','image_brightness_and_contrast','image_auto_crop','image_uncrop','image_enhancement','image_templates','adapt_to_placement']},
+    {k:'text',em:'✍️',t:'문구·텍스트 개선',aff:'dl',keys:['text_optimizations','text_generation','description_automation','text_translation','text_extraction_for_headline']},
+    {k:'overlay',em:'🔠',t:'오버레이·CTA 자동',aff:'pv',keys:['add_text_overlay','enhance_cta','generate_cta','dynamic_cta_text']},
+    {k:'motion',em:'🎵',t:'음악·애니메이션',aff:'dl',keys:['audio','music_generation','image_animation','video_highlights']},
+    {k:'product',em:'🛒',t:'상품연동 (Shop·제품태그)',aff:'pv',keys:['product_extensions','product_tags','catalog_feed_tag','site_extensions','local_store_extension','customize_product_recommendation','standard_enhancements_catalog']}
+  ];
+  var custom=false, on={image:false,text:false,overlay:false,motion:false,product:false};
+  function buildCF(){
+    if(!custom) return null;                 // 권장 → 서버 기본값 사용(주입 안 함)
+    var cf={};
+    GROUPS.forEach(function(g){ if(on[g.k]) g.keys.forEach(function(key){ cf[key]={enroll_status:'OPT_IN'}; }); });
+    if(!on.product) cf['product_extensions']={enroll_status:'OPT_OUT'};  // 상품연동 미선택 시 명시적 OFF
+    return cf;
+  }
+  window.__rbBuildCF=buildCF;
+  // /api/clonead 호출 바디에 creativeFeatures 주입 (모든 생성 경로 n5b/uc/ms 공통 커버)
+  if(!window.__rbCfFetchHooked){
+    window.__rbCfFetchHooked=1;
+    var _f=window.fetch;
+    window.fetch=function(url,opts){
+      try{
+        var u=(typeof url==='string')?url:(url&&url.url)||'';
+        if(u.indexOf('/api/clonead')>=0 && opts && typeof opts.body==='string'){
+          var cf=buildCF();
+          if(cf){ var b=JSON.parse(opts.body); if(b && typeof b==='object' && b.creativeFeatures==null){ b.creativeFeatures=cf; opts=Object.assign({},opts,{body:JSON.stringify(b)}); } }
+        }
+      }catch(e){}
+      return _f.call(this,url,opts);
+    };
+  }
+  function stateLabel(){
+    if(!custom) return '· 권장(모두 끄기)';
+    var n=GROUPS.filter(function(g){return on[g.k];}).length;
+    return n? ('· 직접 설정 '+n+'개 켜짐') : '· 직접 설정(모두 끄기)';
+  }
+  function refreshLabel(){ var s=document.getElementById('rbCfState'); if(s)s.textContent=stateLabel(); }
+  function build(){
+    if(document.getElementById('rbCfPanel')) return true;
+    var prev=document.getElementById('mcd_prev'); if(!prev) return false;
+    var host=prev.closest('.panel'); if(!host||!host.parentNode) return false;
+    var p=document.createElement('div'); p.className='panel'; p.id='rbCfPanel'; p.style.marginTop='14px';
+    var rows=GROUPS.map(function(g){
+      return '<div class="rb-cf-row"><span class="rb-cf-em">'+g.em+'</span><span class="rb-cf-t">'+g.t+'<span class="rb-cf-tag '+g.aff+'">'+(g.aff==='pv'?'미리보기 반영':'게재 시 적용')+'</span></span>'
+        +'<button class="rb-sw" role="switch" aria-checked="false" aria-label="'+g.t+'" data-k="'+g.k+'" disabled><span class="k"></span></button></div>';
+    }).join('');
+    p.innerHTML='<div class="panel-h" id="rbCfHead">크리에이티브 자동 기능 <span id="rbCfState">· 권장(모두 끄기)</span><span class="rb-chev">▾</span></div>'
+      +'<div id="rbCfSub">'
+      +'<div class="rb-seg"><button id="rbCfRec" class="on">권장 · 모두 끄기</button><button id="rbCfCus">직접 설정</button></div>'
+      +rows
+      +'<div class="hint" style="margin-top:8px"><span style="color:#5fd08a">미리보기 반영</span> = 화면 즉시 · <span style="color:#fbbf24">게재 시 적용</span> = 노출 때 메타가 자동. 매 생성마다 기본은 모두 꺼짐.</div>'
+      +'</div>';
+    host.parentNode.insertBefore(p, host.nextSibling);
+    var head=p.querySelector('#rbCfHead'), sub=p.querySelector('#rbCfSub'), chev=p.querySelector('.rb-chev');
+    head.addEventListener('click',function(){ var o=sub.classList.toggle('open'); chev.classList.toggle('open',o); });
+    var rec=p.querySelector('#rbCfRec'), cus=p.querySelector('#rbCfCus');
+    function setMode(c){ custom=c; rec.classList.toggle('on',!c); cus.classList.toggle('on',c);
+      [].slice.call(p.querySelectorAll('.rb-sw')).forEach(function(b){ b.disabled=!c; if(!c){ b.classList.remove('on'); b.setAttribute('aria-checked','false'); on[b.getAttribute('data-k')]=false; } });
+      refreshLabel(); }
+    rec.addEventListener('click',function(){setMode(false);});
+    cus.addEventListener('click',function(){setMode(true);});
+    [].slice.call(p.querySelectorAll('.rb-sw')).forEach(function(b){ b.addEventListener('click',function(){ if(b.disabled)return; var o=b.classList.toggle('on'); b.setAttribute('aria-checked',o?'true':'false'); on[b.getAttribute('data-k')]=o; refreshLabel(); }); });
+    return true;
+  }
+  function boot(){ if(build())return; var n=0,iv=setInterval(function(){ if(build()||++n>40)clearInterval(iv); },800); }
+  if(document.readyState!=="loading")boot();else document.addEventListener("DOMContentLoaded",boot);
+})();
+</script>
 </body>
 </html>
