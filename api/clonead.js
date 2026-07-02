@@ -179,8 +179,9 @@ module.exports = async function (req, res) {
         j => ({ connected: arr(j.connected_instagram_accounts && j.connected_instagram_accounts.data), legacy: arr(j.instagram_accounts && j.instagram_accounts.data) }));
       if (b.businessId) {
         const bid = String(b.businessId);
-        await q('biz_owned', GRAPH + '/' + bid + '/owned_instagram_accounts?fields=id,username&limit=500&access_token=' + enc(token), j => arr(j.data));
-        await q('biz_ig', GRAPH + '/' + bid + '/instagram_accounts?fields=id,username&limit=500&access_token=' + enc(token), j => arr(j.data));
+        const lim = Math.max(1, Math.min(500, parseInt(b.igLimit, 10) || 25));
+        await q('biz_owned', GRAPH + '/' + bid + '/owned_instagram_accounts?fields=id,username&limit=' + lim + '&access_token=' + enc(token), j => arr(j.data));
+        await q('biz_ig', GRAPH + '/' + bid + '/instagram_accounts?fields=id,username&limit=' + lim + '&access_token=' + enc(token), j => arr(j.data));
       }
       if (b.pageId) await q('page_ig', GRAPH + '/' + String(b.pageId) + '?fields=name,instagram_business_account{username},connected_instagram_account{username}&access_token=' + enc(token),
         j => ({ page: j.name, ig_business: j.instagram_business_account && j.instagram_business_account.username, ig_connected: j.connected_instagram_account && j.connected_instagram_account.username }));
