@@ -108,9 +108,17 @@ async function fetchVideos(actId, token) {
   });
 }
 async function fetchIgAccounts(actId, token) {
-  const url = GRAPH + '/act_' + actId + '/instagram_accounts?fields=id,username&limit=50&access_token=' + enc(token);
-  const raw = await fetchOne(url, actId);
-  return raw.map(g => ({ id: g.id, username: g.username || '(unknown)' }));
+  // connected_instagram_accounts(신규 연결) + instagram_accounts(레거시)를 함께 조회·병합.
+  // 광고계정에 어떤 방식으로 IG가 연결됐든 잡히도록(레거시 필드만 보면 신규 연결 IG가 누락됨).
+  const url = GRAPH + '/act_' + actId + '?fields=connected_instagram_accounts.limit(50){id,username},instagram_accounts.limit(50){id,username}&access_token=' + enc(token);
+  let j = null;
+  try { j = await (await fetch(url)).json(); } catch (e) { return []; }
+  if (!j || j.error) return [];   // rate-limit/에러 시 빈 배열 → 호출부에서 이전 값 유지
+  const seen = {}, out = [];
+  const add = arr => (arr || []).forEach(g => { if (g && g.id && !seen[g.id]) { seen[g.id] = 1; out.push({ id: g.id, username: g.username || '(unknown)' }); } });
+  add(j.connected_instagram_accounts && j.connected_instagram_accounts.data);
+  add(j.instagram_accounts && j.instagram_accounts.data);
+  return out;
 }
 // 세팅된 활성 광고(구조화된 광고 소재명 FB_... 기준 검색용) + 그 광고의 크리에이티브
 async function fetchActiveAds(actId, token) {
@@ -226,7 +234,8 @@ module.exports = async (req, res) => {
         fetchActiveAds(act, token).catch(() => null)
       ]);
       const pa = prevAssets[act] || {};
-      assets[act] = { creatives: aRes[0] || pa.creatives || [], images: aRes[1] || pa.images || [], videos: aRes[2] || pa.videos || [], ig: aRes[3] || pa.ig || [], ads: aRes[4] || pa.ads || [] };
+      // IG는 rate-limit/일시오류로 빈 배열이 오면 이전 값 유지(간헐적으로 목록이 사라지는 것 방지).
+      assets[act] = { creatives: aRes[0] || pa.creatives || [], images: aRes[1] || pa.images || [], videos: aRes[2] || pa.videos || [], ig: (aRes[3] && aRes[3].length) ? aRes[3] : (pa.ig || []), ads: aRes[4] || pa.ads || [] };
     }));
 
     let adsets = aggregate(all, allAdsets);
