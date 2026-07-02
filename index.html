@@ -3110,5 +3110,35 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
   if(document.readyState!=="loading")boot();else document.addEventListener("DOMContentLoaded",boot);
 })();
 </script>
+<style id="RB_LAYOUT_TWEAKS_STYLE">
+#rbAcctBlock{margin:6px 14px 0;padding:10px 12px;border:1px solid #2a3340;border-radius:10px;background:#12151d}
+#rbAcctBlock .rb-acct-lab{font-size:11px;color:#8b98a8;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+#rbAcctBlock #rbAcctSel{width:100%;margin:0;padding:7px 10px;border-radius:7px}
+/* 미리보기 sticky가 상단 고정 바(활동/계정)와 겹치지 않게 offset 확보 */
+#page-metacreate .mcd-grid > div:last-child > .panel[style*="sticky"]{top:64px !important}
+</style>
+<script id="RB_LAYOUT_TWEAKS">
+(function(){
+  // ① 계정 드롭다운을 좌측 사이드바 빈 공간으로 이동(상단 중복 바 숨김) ② 미리보기 sticky 겹침 보정.
+  function tweak(){
+    var side=document.querySelector('aside.side');
+    var foot=side&&side.querySelector('.side-foot');
+    var sel=document.getElementById('rbAcctSel');
+    if(!side||!foot) return false;
+    // sticky 겹침 보정(계정 이동과 독립적으로 항상 적용)
+    try{ var pv=document.getElementById('mcd_prev'); if(pv){ var pp=pv.closest('.panel'); if(pp && /sticky/.test(getComputedStyle(pp).position)) pp.style.top='64px'; } }catch(e){}
+    if(!sel) return false;                          // 계정 드롭다운 생성 대기
+    if(document.getElementById('rbAcctBlock')) return true;
+    var block=document.createElement('div'); block.id='rbAcctBlock';
+    block.innerHTML='<div class="rb-acct-lab">📊 계정</div>';
+    block.appendChild(sel);                          // 기존 select 이동(리스너 유지)
+    side.insertBefore(block, foot);                  // nav 아래 빈 공간(= side-foot 앞)에 삽입
+    var an=document.getElementById('areaNav'); if(an) an.style.display='none';  // 상단 중복 계정 바 숨김
+    return true;
+  }
+  function boot(){ if(tweak())return; var n=0,iv=setInterval(function(){ if(tweak()||++n>40)clearInterval(iv); },800); }
+  if(document.readyState!=="loading")boot();else document.addEventListener("DOMContentLoaded",boot);
+})();
+</script>
 </body>
 </html>
