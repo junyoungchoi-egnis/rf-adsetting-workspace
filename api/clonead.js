@@ -169,23 +169,23 @@ module.exports = async function (req, res) {
     const newSpec = b.newSpec || null;
     const apply = b.apply === true;
 
-    // 진단(읽기 전용): 계정/페이지에서 Meta가 어떤 IG 계정을 돌려주는지 raw 확인용.
-    // { igDiag:true, act, pageId? } → 생성 없이 조회 결과만 반환.
-    if (b.igDiag === true) {
+    // 페이지별 연결 IG 조회: { pagesIg: [pageId,...] } → { [pageId]: { name, ig:{id,username} } }
+    // 페이지 선택 시 그 페이지의 인스타그램 계정을 UI/자동첨부에 쓰기 위함.
+    if (Array.isArray(b.pagesIg)) {
+      const ids = b.pagesIg.map(String).filter(Boolean).slice(0, 300);
       const out = {};
-      const arr = (d) => Array.isArray(d) ? { count: d.length, sample: d.slice(0, 15).map(x => x.username || x.id) } : null;
-      async function q(k, u, extract) { try { const j = await (await fetch(u)).json(); out[k] = (j && j.error) ? ('ERR:' + String(j.error.message || '').slice(0, 90)) : extract(j); } catch (e) { out[k] = 'ERR:' + String((e && e.message) || e); } }
-      await q('act_connected', GRAPH + '/act_' + act + '?fields=connected_instagram_accounts.limit(500){id,username},instagram_accounts.limit(500){id,username}&access_token=' + enc(token),
-        j => ({ connected: arr(j.connected_instagram_accounts && j.connected_instagram_accounts.data), legacy: arr(j.instagram_accounts && j.instagram_accounts.data) }));
-      if (b.businessId) {
-        const bid = String(b.businessId);
-        const lim = Math.max(1, Math.min(500, parseInt(b.igLimit, 10) || 25));
-        await q('biz_owned', GRAPH + '/' + bid + '/owned_instagram_accounts?fields=id,username&limit=' + lim + '&access_token=' + enc(token), j => arr(j.data));
-        await q('biz_ig', GRAPH + '/' + bid + '/instagram_accounts?fields=id,username&limit=' + lim + '&access_token=' + enc(token), j => arr(j.data));
+      for (let i = 0; i < ids.length; i += 50) {
+        const chunk = ids.slice(i, i + 50);
+        try {
+          const j = await (await fetch(GRAPH + '/?ids=' + chunk.map(enc).join(',') + '&fields=name,instagram_business_account{id,username},connected_instagram_account{id,username}&access_token=' + enc(token))).json();
+          if (j && !j.error) Object.keys(j).forEach(pid => {
+            const p = j[pid] || {};
+            const ig = p.instagram_business_account || p.connected_instagram_account || null;
+            if (ig && ig.id) out[pid] = { name: p.name || '', ig: { id: ig.id, username: ig.username || '' } };
+          });
+        } catch (e) {}
       }
-      if (b.pageId) await q('page_ig', GRAPH + '/' + String(b.pageId) + '?fields=name,instagram_business_account{username},connected_instagram_account{username}&access_token=' + enc(token),
-        j => ({ page: j.name, ig_business: j.instagram_business_account && j.instagram_business_account.username, ig_connected: j.connected_instagram_account && j.connected_instagram_account.username }));
-      return res.status(200).json({ ok: true, igDiag: true, result: out });
+      return res.status(200).json({ ok: true, pagesIg: out });
     }
 
     if (!act || !targetAdsetId || !newName || !utmCampaign || !utmContent) {

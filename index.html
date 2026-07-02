@@ -3208,5 +3208,52 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
   if(document.readyState!=="loading")loop();else document.addEventListener("DOMContentLoaded",loop);
 })();
 </script>
+<script id="RB_PAGE_IG">
+(function(){
+  // 페이지별 연결 IG를 불러와 IG 드롭다운에 목록화 + 선택 페이지의 IG를 기본값으로.
+  function rebuildIg(){
+    var sel=document.getElementById('mcd_ig'); if(!sel) return;
+    var map=window.RB_PAGE_IG||{};
+    var pageId=(document.getElementById('mcd_page')||{}).value||'';
+    var pageIg=(map[pageId]&&map[pageId].ig)||null;
+    var cat={};
+    Object.keys(map).forEach(function(pid){ var g=map[pid].ig; if(g&&g.id&&cat[g.id]==null) cat[g.id]=g.username||''; });
+    try{ var act=(typeof mcdTargetAccount==='function')?mcdTargetAccount():''; var A=(typeof metaSnap!=='undefined'&&metaSnap)?metaSnap.assets:null; var ig=(A&&A[act]&&A[act].ig)||[]; ig.forEach(function(g){ if(g&&g.id&&cat[g.id]==null) cat[g.id]=g.username||''; }); }catch(e){}
+    var prev=sel.value, opts=[];
+    if(pageIg&&pageIg.id) opts.push('<option value="'+pageIg.id+'">@'+(pageIg.username||pageIg.id)+' · 이 페이지 IG</option>');
+    Object.keys(cat).forEach(function(id){ if(!pageIg||id!==pageIg.id) opts.push('<option value="'+id+'">@'+(cat[id]||id)+'</option>'); });
+    opts.push('<option value="">Instagram: 페이지 연결 계정 자동 사용 (권장)</option>');
+    sel.innerHTML=opts.join('');
+    if(pageIg&&pageIg.id) sel.value=pageIg.id;
+    else if(prev && [].slice.call(sel.options).some(function(o){return o.value===prev;})) sel.value=prev;
+    if(typeof sel.__rbPaint==='function') sel.__rbPaint();
+  }
+  window.RB_rebuildIg=rebuildIg;
+  async function loadPageIg(){
+    if(window.__rbPageIgLoading||window.RB_PAGE_IG) return;
+    if(typeof META_PAGES==='undefined'||!META_PAGES.length) return;
+    var u; try{u=firebase.auth().currentUser;}catch(e){} if(!u) return;
+    window.__rbPageIgLoading=1;
+    try{
+      var t=await u.getIdToken();
+      var ids=META_PAGES.map(function(p){return p.id;});
+      var r=await fetch('/api/clonead',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+t},body:JSON.stringify({pagesIg:ids})});
+      var j=await r.json(); window.RB_PAGE_IG=(j&&j.pagesIg)||{};
+      rebuildIg();
+    }catch(e){ window.__rbPageIgLoading=0; }
+  }
+  function hook(){
+    if(window.__rbIgHooked) return true;
+    if(typeof window.mcdRenderProfiles!=='function' || !document.getElementById('mcd_ig')) return false;
+    window.__rbIgHooked=1;
+    var orig=window.mcdRenderProfiles;
+    window.mcdRenderProfiles=function(){ var r=orig.apply(this,arguments); try{ rebuildIg(); }catch(e){} return r; };
+    var pg=document.getElementById('mcd_page'); if(pg) pg.addEventListener('change',function(){ try{ rebuildIg(); if(typeof mcdPreview==='function')mcdPreview(); }catch(e){} });
+    return true;
+  }
+  function boot(){ var n=0,iv=setInterval(function(){ hook(); loadPageIg(); if(++n>90||(window.__rbIgHooked&&window.RB_PAGE_IG)) clearInterval(iv); },1000); }
+  if(document.readyState!=="loading")boot();else document.addEventListener("DOMContentLoaded",boot);
+})();
+</script>
 </body>
 </html>
