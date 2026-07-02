@@ -3111,32 +3111,52 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
 })();
 </script>
 <style id="RB_LAYOUT_TWEAKS_STYLE">
-#rbAcctBlock{margin:6px 14px 0;padding:10px 12px;border:1px solid #2a3340;border-radius:10px;background:#12151d}
-#rbAcctBlock .rb-acct-lab{font-size:11px;color:#8b98a8;margin-bottom:6px;display:flex;align-items:center;gap:5px}
-#rbAcctBlock #rbAcctSel{width:100%;margin:0;padding:7px 10px;border-radius:7px}
 /* 미리보기 패널 sticky 해제 — 뷰포트보다 커서 상단 고정 바와 겹쳐 보이던 문제 방지(정상 스크롤) */
 #page-metacreate .mcd-grid > div:last-child > .panel{position:static !important}
+/* 사이드바 하단 통합 리스트 */
+.side-foot .rb-foot-link{display:flex;align-items:center;gap:7px;font-size:11px;color:#8fb6ff;text-decoration:none;padding:6px 0;cursor:pointer;background:none;border:none;width:100%;text-align:left;line-height:1.4}
+.side-foot .rb-foot-link:hover{color:#b9d3ff}
+.side-foot .rb-foot-acct{padding:8px 0 4px}
+.side-foot .rb-foot-acct label{display:block;font-size:10px;color:#657081;margin-bottom:4px}
+.side-foot #rbAcctSel{width:100%!important;margin:0!important;padding:6px 9px!important;border-radius:7px;background:#1e2530;color:#e8eef7;border:1px solid #38424f;font-size:12px}
+.side-foot .rb-foot-actmoved{display:flex!important;position:static!important;top:auto!important;right:auto!important;z-index:auto!important;background:none!important;border:none!important;box-shadow:none!important;color:#8fb6ff!important;font-size:11px!important;padding:6px 0!important;width:100%!important;margin:0!important;justify-content:flex-start!important;gap:7px}
 </style>
 <script id="RB_LAYOUT_TWEAKS">
 (function(){
-  // ① 계정 드롭다운을 좌측 사이드바 빈 공간으로 이동(상단 중복 바 숨김) ② 미리보기 sticky 겹침 보정.
-  function tweak(){
+  // 사이드바 하단을 통합 리스트로 재구성: 제미나이 · 미디어 라이브러리 · 계정선택 · 활동 · 동기화상태 · 개인정보.
+  // + 상단 중복 계정 바(areaNav) 숨김, '세트·소재·제품' 카운트 제거, 미리보기 sticky 해제.
+  function build(){
     var side=document.querySelector('aside.side');
     var foot=side&&side.querySelector('.side-foot');
-    var sel=document.getElementById('rbAcctSel');
     if(!side||!foot) return false;
-    // sticky 겹침 보정(계정 이동과 독립적으로 항상 적용)
     try{ var pv=document.getElementById('mcd_prev'); if(pv){ var pp=pv.closest('.panel'); if(pp) pp.style.position='static'; } }catch(e){}
-    if(!sel) return false;                          // 계정 드롭다운 생성 대기
-    if(document.getElementById('rbAcctBlock')) return true;
-    var block=document.createElement('div'); block.id='rbAcctBlock';
-    block.innerHTML='<div class="rb-acct-lab">📊 계정</div>';
-    block.appendChild(sel);                          // 기존 select 이동(리스너 유지)
-    side.insertBefore(block, foot);                  // nav 아래 빈 공간(= side-foot 앞)에 삽입
-    var an=document.getElementById('areaNav'); if(an) an.style.display='none';  // 상단 중복 계정 바 숨김
+    var sel=document.getElementById('rbAcctSel');
+    if(!sel) return false;
+    if(document.getElementById('rbFootAcct')) return true;
+    var an=document.getElementById('areaNav'); if(an) an.style.display='none';
+    var counts=document.getElementById('stCounts'); if(counts){ var cr=counts.closest('.side-stat'); if(cr) cr.style.display='none'; }
+    var gemini=[].slice.call(foot.querySelectorAll('a')).filter(function(a){return /제미나이/.test(a.textContent||'');})[0];
+    var lastSync=document.getElementById('stSyncTime'); lastSync=lastSync?lastSync.closest('.side-stat'):null;
+    var syncStat=document.getElementById('syncLabel'); syncStat=syncStat?syncStat.closest('div'):null;
+    var act=document.getElementById('mcActBtnEl');
+    var privacy=[].slice.call(foot.querySelectorAll('a,button')).filter(function(a){return /개인정보처리방침/.test(a.textContent||'');})[0];
+    var media=document.createElement('a'); media.id='rbMediaLink'; media.className='rb-foot-link'; media.target='_blank'; media.rel='noopener';
+    media.textContent='🖼 메타 미디어 라이브러리 열기 ↗';
+    function updMedia(){ var id=(document.getElementById('rbAcctSel')||{}).value||''; media.href=id?('https://adsmanager.facebook.com/adsmanager/manage/admedia?act='+id):'https://business.facebook.com/asset-library'; }
+    updMedia(); sel.addEventListener('change',updMedia);
+    var acctRow=document.createElement('div'); acctRow.id='rbFootAcct'; acctRow.className='rb-foot-acct';
+    acctRow.innerHTML='<label>📊 계정 선택</label>'; acctRow.appendChild(sel);
+    if(act) act.classList.add('rb-foot-actmoved');           // 상단 고정 '활동' 버튼을 사이드바로 이동
+    if(gemini){ gemini.removeAttribute('style'); gemini.className='rb-foot-link'; foot.appendChild(gemini); }
+    foot.appendChild(media);
+    foot.appendChild(acctRow);
+    if(act) foot.appendChild(act);
+    if(lastSync) foot.appendChild(lastSync);
+    if(syncStat) foot.appendChild(syncStat);
+    if(privacy) foot.appendChild(privacy);
     return true;
   }
-  function boot(){ if(tweak())return; var n=0,iv=setInterval(function(){ if(tweak()||++n>40)clearInterval(iv); },800); }
+  function boot(){ if(build())return; var n=0,iv=setInterval(function(){ if(build()||++n>40)clearInterval(iv); },800); }
   if(document.readyState!=="loading")boot();else document.addEventListener("DOMContentLoaded",boot);
 })();
 </script>
