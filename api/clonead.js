@@ -177,7 +177,7 @@ module.exports = async function (req, res) {
       // Graph Batch API: 페이지별 개별 요청 → 접근 불가 페이지가 있어도 나머지는 정상 반환.
       for (let i = 0; i < ids.length; i += 50) {
         const chunk = ids.slice(i, i + 50);
-        const batch = chunk.map(id => ({ method: 'GET', relative_url: id + '?fields=name,instagram_business_account{id,username},connected_instagram_account{id,username}' }));
+        const batch = chunk.map(id => ({ method: 'GET', relative_url: id + '?fields=name,picture{url},instagram_business_account{id,username,profile_picture_url},connected_instagram_account{id,username,profile_picture_url}' }));
         try {
           const r = await fetch(GRAPH + '/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'access_token=' + enc(token) + '&batch=' + enc(JSON.stringify(batch)) });
           const arr = await r.json();
@@ -185,7 +185,9 @@ module.exports = async function (req, res) {
             if (!item || item.code !== 200 || !item.body) return;
             let p; try { p = JSON.parse(item.body); } catch (e) { return; }
             const ig = p.instagram_business_account || p.connected_instagram_account || null;
-            if (ig && ig.id) out[chunk[idx]] = { name: p.name || '', ig: { id: ig.id, username: ig.username || '' } };
+            const ppic = (p.picture && p.picture.data && p.picture.data.url) || '';
+            if (ig && ig.id) out[chunk[idx]] = { name: p.name || '', pic: ppic, ig: { id: ig.id, username: ig.username || '', pic: ig.profile_picture_url || '' } };
+            else if (ppic) out[chunk[idx]] = { name: p.name || '', pic: ppic, ig: null };
           });
         } catch (e) {}
       }
@@ -197,13 +199,13 @@ module.exports = async function (req, res) {
     if (b.bizIg === true) {
       const seen = {}, out = [];
       const T = (u) => fetch(u, { signal: AbortSignal.timeout(8000) }).then(r => r.json()).catch(() => null);
-      const drain = async (base) => { let url = base; for (let p = 0; p < 6 && url; p++) { const j = await T(url); if (!j || j.error) break; (j.data || []).forEach(g => { if (g && g.id && !seen[g.id]) { seen[g.id] = 1; out.push({ id: g.id, username: g.username || '' }); } }); url = (j.paging && j.paging.next) || null; } };
+      const drain = async (base) => { let url = base; for (let p = 0; p < 6 && url; p++) { const j = await T(url); if (!j || j.error) break; (j.data || []).forEach(g => { if (g && g.id && !seen[g.id]) { seen[g.id] = 1; out.push({ id: g.id, username: g.username || '', pic: g.profile_picture_url || '' }); } }); url = (j.paging && j.paging.next) || null; } };
       try {
         const ac = await T(GRAPH + '/act_' + act + '?fields=business&access_token=' + enc(token));
         const bid = ac && ac.business && ac.business.id;
         if (bid) {
-          await drain(GRAPH + '/' + bid + '/owned_instagram_accounts?fields=id,username&limit=100&access_token=' + enc(token));
-          await drain(GRAPH + '/' + bid + '/instagram_accounts?fields=id,username&limit=100&access_token=' + enc(token));
+          await drain(GRAPH + '/' + bid + '/owned_instagram_accounts?fields=id,username,profile_picture_url&limit=100&access_token=' + enc(token));
+          await drain(GRAPH + '/' + bid + '/instagram_accounts?fields=id,username,profile_picture_url&limit=100&access_token=' + enc(token));
         }
       } catch (e) {}
       return res.status(200).json({ ok: true, bizIg: out });
