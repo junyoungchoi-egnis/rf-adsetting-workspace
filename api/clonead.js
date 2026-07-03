@@ -211,6 +211,46 @@ module.exports = async function (req, res) {
       return res.status(200).json({ ok: true, bizIg: out });
     }
 
+    // 실시간 메타 미리보기: { preview:true, act, previewSpec:{object_story_spec 내용}, previewFormats:[게재위치...] }
+    // 생성하지 않고 generatepreviews 로 실제 렌더링 iframe(HTML)을 게재위치별로 반환.
+    // 생성 검증(targetAdsetId/newName 등)과 무관하므로 초기 분기에서 바로 처리.
+    if (b.preview === true && b.previewSpec && typeof b.previewSpec === 'object') {
+      if (!act) return res.status(400).json({ ok: false, error: '미리보기: 광고 계정(act)이 필요합니다' });
+      const oss = b.previewSpec;
+      let specForPrev;
+      if (oss.object_story_id) {
+        // 기존 게시물(스토리) 소재
+        specForPrev = { object_story_id: oss.object_story_id };
+      } else {
+        // instagram_actor_id 지원 중단 → instagram_user_id 로 정규화
+        if (oss.instagram_actor_id && !oss.instagram_user_id) oss.instagram_user_id = oss.instagram_actor_id;
+        delete oss.instagram_actor_id;
+        // 명시 IG 없으면 페이지 연결 IG 자동 첨부(생성과 동일 동작) → IG 게재 미리보기 정상화
+        if (oss.page_id && !oss.instagram_user_id) {
+          try {
+            const _pg = await gget(GRAPH + '/' + oss.page_id + '?fields=instagram_business_account,connected_instagram_account&access_token=' + enc(token));
+            const _iid = (_pg && _pg.instagram_business_account && _pg.instagram_business_account.id)
+                      || (_pg && _pg.connected_instagram_account && _pg.connected_instagram_account.id) || null;
+            if (_iid) oss.instagram_user_id = _iid;
+          } catch (e) {}
+        }
+        specForPrev = { object_story_spec: oss };
+      }
+      const fmts = (Array.isArray(b.previewFormats) ? b.previewFormats : []).map(String).filter(Boolean).slice(0, 8);
+      if (!fmts.length) return res.status(400).json({ ok: false, error: '미리보기: previewFormats 가 필요합니다' });
+      const previews = {};
+      await Promise.all(fmts.map(async function (fmt) {
+        try {
+          const purl = GRAPH + '/act_' + act + '/generatepreviews?ad_format=' + enc(fmt)
+                     + '&creative=' + enc(JSON.stringify(specForPrev)) + '&access_token=' + enc(token);
+          const pr = await gget(purl);
+          const body = (pr && pr.data && pr.data[0] && pr.data[0].body) || '';
+          previews[fmt] = body ? { body: body } : { error: '이 게재위치는 미리보기를 만들 수 없습니다' };
+        } catch (e) { previews[fmt] = { error: String((e && e.message) || e) }; }
+      }));
+      return res.status(200).json({ ok: true, previews: previews, instagramUserId: oss.instagram_user_id || null });
+    }
+
     if (!act || !targetAdsetId || !newName || !utmCampaign || !utmContent) {
       return res.status(400).json({ ok: false, error: '필수값 누락 (act, targetAdsetId, newName, utmCampaign, utmContent)' });
     }

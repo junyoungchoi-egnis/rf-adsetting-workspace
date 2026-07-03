@@ -3309,5 +3309,101 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
   if(document.readyState!=="loading")boot();else document.addEventListener("DOMContentLoaded",boot);
 })();
 </script>
+<script>
+/* RB_REAL_PREVIEW — 소재 세팅 미리보기 영역에 "실제 메타 렌더링"(generatepreviews) 주입.
+   목업 옆에서 게재위치별(IG 피드/스토리/릴스, FB 피드) 진짜 렌더링을 불러온다. */
+(function(){
+  var FMTS=[
+    {k:'INSTAGRAM_STANDARD', t:'IG 피드'},
+    {k:'INSTAGRAM_STORY',    t:'IG 스토리'},
+    {k:'INSTAGRAM_REELS',    t:'IG 릴스'},
+    {k:'MOBILE_FEED_STANDARD', t:'FB 피드'}
+  ];
+  var cur='INSTAGRAM_STANDARD', data=null, loading=false;
+  function hasPh(v){ return v==null || (''+v).indexOf('<')>=0; }
+  // 현재 세팅으로부터 미리보기용 스펙 구성 + 유효성 검사
+  function gather(){
+    if(typeof mcdCreativeSpec!=='function') return {err:'준비 중'};
+    var cs; try{ cs=mcdCreativeSpec(); }catch(e){ return {err:'소재 정보를 읽지 못했어요'}; }
+    if(cs && cs.object_story_id) return {spec:{object_story_id:cs.object_story_id}};
+    var oss=cs && cs.object_story_spec; if(!oss) return {err:'소재 정보가 부족해요'};
+    var miss=[];
+    if(hasPh(oss.page_id)) miss.push('페이지');
+    var ld=oss.link_data, vd=oss.video_data;
+    var hasAsset=(ld&&!hasPh(ld.image_hash))||(vd&&!hasPh(vd.video_id));
+    if(!hasAsset) miss.push('이미지/영상 소재');
+    var msg=(ld&&ld.message)||(vd&&vd.message);
+    if(hasPh(msg)) miss.push('광고 문구');
+    if(ld && hasPh(ld.link)) miss.push('랜딩 URL');
+    if(miss.length) return {err:'다음을 채우면 실제 미리보기를 볼 수 있어요 — '+miss.join(', ')};
+    // 플레이스홀더(<...>) 문자열 제거 → 미리보기에 노출 방지
+    function clean(o){ if(o&&typeof o==='object'){ Object.keys(o).forEach(function(k){ var v=o[k]; if(typeof v==='string'){ if(v.indexOf('<')>=0) delete o[k]; } else if(v&&typeof v==='object') clean(v); }); } return o; }
+    return {spec:clean(JSON.parse(JSON.stringify(oss)))};
+  }
+  function box(){ return document.getElementById('rbRpBox'); }
+  function paintTabs(){
+    var wrap=document.getElementById('rbRpTabs'); if(!wrap) return;
+    Array.prototype.forEach.call(wrap.querySelectorAll('button'),function(b){ b.classList.toggle('on', b.getAttribute('data-f')===cur); });
+  }
+  function renderCur(){
+    var el=box(); if(!el) return;
+    if(!data){ return; }
+    var d=data[cur];
+    if(!d){ el.innerHTML='<div style="color:var(--text3);font-size:12px;padding:14px">이 게재위치는 불러오지 않았어요.</div>'; return; }
+    if(d.error){ el.innerHTML='<div style="color:#fbbf24;font-size:12px;padding:14px;line-height:1.6">⚠️ '+ (''+d.error).replace(/</g,'&lt;') +'</div>'; return; }
+    // Meta 미리보기 iframe(HTML)을 그대로 삽입 (src 에 토큰 포함되어 단독 렌더)
+    el.innerHTML='<div style="display:flex;justify-content:center;overflow:auto;padding:6px 0">'+(d.body||'')+'</div>';
+    var f=el.querySelector('iframe'); if(f){ f.style.maxWidth='100%'; f.setAttribute('scrolling','yes'); }
+  }
+  async function load(){
+    if(loading) return;
+    var g=gather();
+    var el=box();
+    if(g.err){ if(el) el.innerHTML='<div style="color:var(--text3);font-size:12px;padding:14px;line-height:1.6">🔎 '+g.err+'</div>'; return; }
+    var act=''; try{ act=(typeof mcdTargetAccount==='function')?String(mcdTargetAccount()||'').replace(/^act_/,''):''; }catch(e){}
+    if(!act){ if(el) el.innerHTML='<div style="color:#fbbf24;font-size:12px;padding:14px">계정을 먼저 선택하세요.</div>'; return; }
+    loading=true;
+    var btn=document.getElementById('rbRpLoad'); if(btn){ btn.disabled=true; btn.textContent='불러오는 중…'; }
+    if(el) el.innerHTML='<div style="color:var(--text3);font-size:12px;padding:14px">실제 렌더링을 메타에서 불러오는 중…</div>';
+    try{
+      var r=await fetch('/api/clonead',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({preview:true, act:act, previewSpec:g.spec, previewFormats:FMTS.map(function(x){return x.k;})})});
+      var j=await r.json();
+      if(j&&j.ok&&j.previews){ data=j.previews; renderCur(); }
+      else { if(el) el.innerHTML='<div style="color:#fbbf24;font-size:12px;padding:14px;line-height:1.6">⚠️ '+((j&&j.error)||'미리보기를 불러오지 못했어요').replace(/</g,'&lt;')+'</div>'; }
+    }catch(e){ if(el) el.innerHTML='<div style="color:#fbbf24;font-size:12px;padding:14px">네트워크 오류로 불러오지 못했어요.</div>'; }
+    loading=false; if(btn){ btn.disabled=false; btn.textContent='🔄 실제 렌더링 불러오기'; }
+  }
+  function build(){
+    if(document.getElementById('rbRealPrev')) return true;
+    var prev=document.getElementById('mcd_prev'); if(!prev||!prev.parentNode) return false;
+    var wrap=document.createElement('div'); wrap.id='rbRealPrev';
+    wrap.style.cssText='margin-top:12px;border-top:1px solid var(--line);padding-top:12px';
+    var tabsHtml=FMTS.map(function(x,i){ return '<button data-f="'+x.k+'"'+(i===0?' class="on"':'')+'>'+x.t+'</button>'; }).join('');
+    wrap.innerHTML=
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">'
+      + '<div style="font-size:12px;font-weight:600;color:var(--accent2)">실제 메타 렌더링 <span style="font-weight:400;color:var(--text3)">· 게재위치별 진짜 모습</span></div>'
+      + '<button id="rbRpLoad" style="font-size:11px;padding:5px 10px;border-radius:7px;border:1px solid var(--accent2);background:transparent;color:var(--accent2);cursor:pointer;white-space:nowrap">🔄 실제 렌더링 불러오기</button>'
+      + '</div>'
+      + '<div class="seg-toggle" id="rbRpTabs" style="margin-bottom:0">'+tabsHtml+'</div>'
+      + '<div id="rbRpBox" style="margin-top:8px;min-height:60px;background:var(--card,#0b0f16);border:1px solid var(--line);border-radius:8px">'
+      + '<div style="color:var(--text3);font-size:12px;padding:14px;line-height:1.6">위 목업은 즉시 반영, 여기 <b>실제 렌더링</b>은 메타가 그려주는 진짜 모습이에요. 소재·문구·랜딩을 채운 뒤 <b>불러오기</b>를 누르세요.</div>'
+      + '</div>';
+    prev.parentNode.insertBefore(wrap, prev.nextSibling);
+    document.getElementById('rbRpLoad').addEventListener('click', load);
+    wrap.querySelector('#rbRpTabs').addEventListener('click', function(e){
+      var b=e.target.closest('button'); if(!b) return; cur=b.getAttribute('data-f'); paintTabs(); renderCur();
+    });
+    return true;
+  }
+  // 세팅 화면이 뜰 때마다 주입 시도. 입력이 바뀌면 이전 결과는 무효화(재불러오기 유도).
+  function invalidate(){ if(data){ data=null; var el=box(); if(el&&document.getElementById('rbRealPrev')){ el.innerHTML='<div style="color:var(--text3);font-size:12px;padding:14px;line-height:1.6">설정이 바뀌었어요 — <b>불러오기</b>를 다시 눌러 실제 렌더링을 갱신하세요.</div>'; } } }
+  if(typeof window.mcdPreview==='function' && !window.__rbRpHooked){
+    window.__rbRpHooked=1; var _mp=window.mcdPreview;
+    window.mcdPreview=function(){ var r; try{ r=_mp.apply(this,arguments); }catch(e){} try{ build(); invalidate(); }catch(e){} return r; };
+  }
+  var n=0, iv=setInterval(function(){ if(build()||++n>120) clearInterval(iv); },1000);
+})();
+</script>
 </body>
 </html>
