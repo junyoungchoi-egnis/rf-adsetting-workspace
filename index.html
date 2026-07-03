@@ -3037,24 +3037,63 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
 #rbCfState{font-size:11px;color:#9aa7b6;font-weight:400}
 #rbCfSub{display:none;margin-top:6px}
 #rbCfSub.open{display:block}
+#rbCfPanel .rb-grp{border-bottom:1px solid rgba(255,255,255,.06)}
+#rbCfPanel .rb-grp:last-child{border-bottom:none}
+#rbCfPanel .rb-grp .rb-cf-row{border-bottom:none}
+#rbCfPanel .rb-cf-txt{flex:1;min-width:0}
+#rbCfPanel .rb-cf-sub-sum{display:block;font-size:10px;color:#657081;margin-top:2px}
+#rbCfPanel .rb-exp{background:none;border:none;color:#9aa7b6;cursor:pointer;font-size:12px;width:16px;flex:none;padding:0;transition:transform .15s}
+#rbCfPanel .rb-exp.open{transform:rotate(90deg)}
+#rbCfPanel .rb-subs{display:none;flex-direction:column;gap:9px;padding:2px 0 10px 40px}
+#rbCfPanel .rb-subs.open{display:flex}
+#rbCfPanel .rb-sub{display:flex;align-items:center;gap:8px}
+#rbCfPanel .rb-sub .rb-sub-t{flex:1;font-size:12px;color:#c7d0db}
+#rbCfPanel .rb-sw-sm{width:34px;height:20px}
+#rbCfPanel .rb-sw-sm .k{width:15px;height:15px}
+#rbCfPanel .rb-sw-sm.on .k{left:16px}
+#rbCfPanel .rb-sw.part{background:#16233f;border-color:#3d7dfc}
+#rbCfPanel .rb-sw.part .k{left:10px;background:#8fb6ff}
 </style>
 <script id="RB_CREATIVE_FEATURES">
 (function(){
   // 어드밴티지+ 개별 기능 컨트롤 — 소재 세팅 우측 열에 접이식 패널 주입 + /api/clonead 바디에 creativeFeatures 주입.
   // 기본(권장)은 아무 것도 주입하지 않아 서버 기본값(product_extensions:OPT_OUT = 전부 OFF) 사용.
   var GROUPS=[
-    {k:'image',em:'🖼️',t:'이미지 자동 보정',aff:'dl',keys:['image_touchups','image_brightness_and_contrast','image_auto_crop','image_uncrop','image_enhancement','image_templates','adapt_to_placement']},
-    {k:'text',em:'✍️',t:'문구·텍스트 개선',aff:'dl',keys:['text_optimizations','text_generation','description_automation','text_translation','text_extraction_for_headline']},
-    {k:'overlay',em:'🔠',t:'오버레이·CTA 자동',aff:'pv',keys:['add_text_overlay','enhance_cta','generate_cta','dynamic_cta_text']},
-    {k:'motion',em:'🎵',t:'음악·애니메이션',aff:'dl',keys:['audio','music_generation','image_animation','video_highlights']},
-    {k:'product',em:'🛒',t:'상품연동 (Shop·제품태그)',aff:'pv',keys:['product_extensions','product_tags','catalog_feed_tag','site_extensions','local_store_extension','customize_product_recommendation','standard_enhancements_catalog']}
+    {k:'image',em:'🖼️',t:'이미지 자동 보정',aff:'dl',subs:[
+      {t:'밝기·대비 보정',keys:['image_brightness_and_contrast']},
+      {t:'화질 향상',keys:['image_touchups','image_enhancement']},
+      {t:'자동 크롭·배치 맞춤',keys:['image_auto_crop','image_uncrop','adapt_to_placement']},
+      {t:'템플릿 적용',keys:['image_templates']}
+    ]},
+    {k:'text',em:'✍️',t:'문구·텍스트 개선',aff:'dl',subs:[
+      {t:'문구 다듬기',keys:['text_optimizations']},
+      {t:'헤드라인 자동',keys:['text_generation','text_extraction_for_headline']},
+      {t:'번역',keys:['text_translation']},
+      {t:'설명 자동 생성',keys:['description_automation']}
+    ]},
+    {k:'overlay',em:'🔠',t:'오버레이·CTA 자동',aff:'pv',subs:[
+      {t:'이미지 위 텍스트 오버레이',keys:['add_text_overlay']},
+      {t:'버튼 문구 자동',keys:['enhance_cta','generate_cta','dynamic_cta_text']}
+    ]},
+    {k:'motion',em:'🎵',t:'음악·애니메이션',aff:'dl',subs:[
+      {t:'배경 음악',keys:['audio','music_generation']},
+      {t:'이미지 애니메이션',keys:['image_animation']},
+      {t:'영상 하이라이트',keys:['video_highlights']}
+    ]},
+    {k:'product',em:'🛒',t:'상품연동 (Shop·제품태그)',aff:'pv',subs:[
+      {t:'제품 태그',keys:['product_tags']},
+      {t:'카탈로그 피드',keys:['catalog_feed_tag','standard_enhancements_catalog','customize_product_recommendation']},
+      {t:'Shop·스토어 익스텐션',keys:['site_extensions','local_store_extension']},
+      {t:'제품 정보 확장',keys:['product_extensions','product_browsing']}
+    ]}
   ];
-  var custom=false, on={image:false,text:false,overlay:false,motion:false,product:false};
+  var custom=false, subOn={};   // subOn['groupKey:subIndex'] = true
+  function totalOn(){ var n=0; for(var k in subOn){ if(subOn[k])n++; } return n; }
   function buildCF(){
     if(!custom) return null;                 // 권장 → 서버 기본값 사용(주입 안 함)
-    var cf={};
-    GROUPS.forEach(function(g){ if(on[g.k]) g.keys.forEach(function(key){ cf[key]={enroll_status:'OPT_IN'}; }); });
-    if(!on.product) cf['product_extensions']={enroll_status:'OPT_OUT'};  // 상품연동 미선택 시 명시적 OFF
+    var cf={}, productOn=false;
+    GROUPS.forEach(function(g){ g.subs.forEach(function(s,i){ if(subOn[g.k+':'+i]){ if(g.k==='product')productOn=true; s.keys.forEach(function(key){ cf[key]={enroll_status:'OPT_IN'}; }); } }); });
+    if(!productOn) cf['product_extensions']={enroll_status:'OPT_OUT'};  // 상품연동 미선택 시 명시적 OFF
     return cf;
   }
   window.__rbBuildCF=buildCF;
@@ -3073,37 +3112,49 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
       return _f.call(this,url,opts);
     };
   }
-  function stateLabel(){
-    if(!custom) return '· 권장(모두 끄기)';
-    var n=GROUPS.filter(function(g){return on[g.k];}).length;
-    return n? ('· 직접 설정 '+n+'개 켜짐') : '· 직접 설정(모두 끄기)';
-  }
+  function stateLabel(){ if(!custom) return '· 권장(모두 끄기)'; var n=totalOn(); return n?('· 직접 설정 '+n+'개 켜짐'):'· 직접 설정(모두 끄기)'; }
   function refreshLabel(){ var s=document.getElementById('rbCfState'); if(s)s.textContent=stateLabel(); }
+  function grpCounts(g){ var on=0; g.subs.forEach(function(s,i){ if(subOn[g.k+':'+i])on++; }); return {on:on,tot:g.subs.length}; }
+  function paintGrp(g,p){
+    var c=grpCounts(g);
+    var gs=p.querySelector('.rb-grp-sw[data-g="'+g.k+'"]'); if(gs){ gs.classList.remove('on','part'); if(c.on&&c.on===c.tot)gs.classList.add('on'); else if(c.on)gs.classList.add('part'); gs.setAttribute('aria-checked',c.on===0?'false':(c.on===c.tot?'true':'mixed')); }
+    var sum=p.querySelector('.rb-grp[data-g="'+g.k+'"] .rb-cf-sub-sum'); if(sum) sum.textContent=c.on?(c.on+'/'+c.tot+' 켜짐'):(c.tot+'개 세부 기능 · 모두 꺼짐');
+  }
   function build(){
     if(document.getElementById('rbCfPanel')) return true;
     var prev=document.getElementById('mcd_prev'); if(!prev) return false;
     var host=prev.closest('.panel'); if(!host||!host.parentNode) return false;
     var p=document.createElement('div'); p.className='panel'; p.id='rbCfPanel'; p.style.marginBottom='14px';
     var rows=GROUPS.map(function(g){
-      return '<div class="rb-cf-row"><span class="rb-cf-em">'+g.em+'</span><span class="rb-cf-t">'+g.t+'<span class="rb-cf-tag '+g.aff+'">'+(g.aff==='pv'?'미리보기 반영':'게재 시 적용')+'</span></span>'
-        +'<button class="rb-sw" role="switch" aria-checked="false" aria-label="'+g.t+'" data-k="'+g.k+'" disabled><span class="k"></span></button></div>';
+      var subs=g.subs.map(function(s,i){ return '<label class="rb-sub"><span class="rb-sub-t">'+s.t+'</span><button class="rb-sw rb-sw-sm rb-sub-sw" role="switch" aria-checked="false" aria-label="'+s.t+'" data-g="'+g.k+'" data-si="'+i+'" disabled><span class="k"></span></button></label>'; }).join('');
+      return '<div class="rb-grp" data-g="'+g.k+'"><div class="rb-cf-row">'
+        +'<button class="rb-exp open" data-g="'+g.k+'" aria-label="세부 기능 펼치기">▸</button>'
+        +'<span class="rb-cf-em">'+g.em+'</span>'
+        +'<span class="rb-cf-txt"><span class="rb-cf-t">'+g.t+'<span class="rb-cf-tag '+g.aff+'">'+(g.aff==='pv'?'미리보기 반영':'게재 시 적용')+'</span></span><span class="rb-cf-sub-sum">'+g.subs.length+'개 세부 기능 · 모두 꺼짐</span></span>'
+        +'<button class="rb-sw rb-grp-sw" role="switch" aria-checked="false" aria-label="'+g.t+' 전체" data-g="'+g.k+'" disabled><span class="k"></span></button>'
+        +'</div><div class="rb-subs open" data-g="'+g.k+'">'+subs+'</div></div>';
     }).join('');
-    p.innerHTML='<div class="panel-h" id="rbCfHead">크리에이티브 자동 기능 <span id="rbCfState">· 권장(모두 끄기)</span><span class="rb-chev">▾</span></div>'
-      +'<div id="rbCfSub">'
+    p.innerHTML='<div class="panel-h" id="rbCfHead">크리에이티브 자동 기능 <span id="rbCfState">· 권장(모두 끄기)</span><span class="rb-chev open">▾</span></div>'
+      +'<div id="rbCfSub" class="open">'
       +'<div class="rb-seg"><button id="rbCfRec" class="on">권장 · 모두 끄기</button><button id="rbCfCus">직접 설정</button></div>'
       +rows
       +'<div class="hint" style="margin-top:8px"><span style="color:#5fd08a">미리보기 반영</span> = 화면 즉시 · <span style="color:#fbbf24">게재 시 적용</span> = 노출 때 메타가 자동. 매 생성마다 기본은 모두 꺼짐.</div>'
       +'</div>';
-    host.parentNode.insertBefore(p, host);  // 미리보기 패널 '위'에 배치 → 우측 열 최상단, 즉시 보임
-    var head=p.querySelector('#rbCfHead'), sub=p.querySelector('#rbCfSub'), chev=p.querySelector('.rb-chev');
+    host.parentNode.insertBefore(p, host);  // 미리보기 패널 '위'에 배치 → 우측 열 최상단, 즉시 보임(기본 펼침)
+    var head=p.querySelector('#rbCfHead'), sub=p.querySelector('#rbCfSub'), chev=head.querySelector('.rb-chev');
     head.addEventListener('click',function(){ var o=sub.classList.toggle('open'); chev.classList.toggle('open',o); });
     var rec=p.querySelector('#rbCfRec'), cus=p.querySelector('#rbCfCus');
     function setMode(c){ custom=c; rec.classList.toggle('on',!c); cus.classList.toggle('on',c);
-      [].slice.call(p.querySelectorAll('.rb-sw')).forEach(function(b){ b.disabled=!c; if(!c){ b.classList.remove('on'); b.setAttribute('aria-checked','false'); on[b.getAttribute('data-k')]=false; } });
+      [].slice.call(p.querySelectorAll('.rb-sw')).forEach(function(b){ b.disabled=!c; });
+      if(!c){ subOn={}; [].slice.call(p.querySelectorAll('.rb-sub-sw')).forEach(function(b){ b.classList.remove('on'); b.setAttribute('aria-checked','false'); }); GROUPS.forEach(function(g){ paintGrp(g,p); }); }
       refreshLabel(); }
     rec.addEventListener('click',function(){setMode(false);});
     cus.addEventListener('click',function(){setMode(true);});
-    [].slice.call(p.querySelectorAll('.rb-sw')).forEach(function(b){ b.addEventListener('click',function(){ if(b.disabled)return; var o=b.classList.toggle('on'); b.setAttribute('aria-checked',o?'true':'false'); on[b.getAttribute('data-k')]=o; refreshLabel(); }); });
+    p.addEventListener('click',function(e){
+      var exp=e.target.closest('.rb-exp'); if(exp){ var se=p.querySelector('.rb-subs[data-g="'+exp.getAttribute('data-g')+'"]'); if(se){ var o=se.classList.toggle('open'); exp.classList.toggle('open',o); } return; }
+      var gsw=e.target.closest('.rb-grp-sw'); if(gsw&&!gsw.disabled){ var gk=gsw.getAttribute('data-g'); var g=GROUPS.filter(function(x){return x.k===gk;})[0]; var c=grpCounts(g); var turnOn=c.on!==c.tot; g.subs.forEach(function(s,i){ subOn[gk+':'+i]=turnOn; }); [].slice.call(p.querySelectorAll('.rb-sub-sw[data-g="'+gk+'"]')).forEach(function(b){ b.classList.toggle('on',turnOn); b.setAttribute('aria-checked',turnOn?'true':'false'); }); paintGrp(g,p); refreshLabel(); return; }
+      var ssw=e.target.closest('.rb-sub-sw'); if(ssw&&!ssw.disabled){ var gk2=ssw.getAttribute('data-g'), si=ssw.getAttribute('data-si'); var o2=ssw.classList.toggle('on'); ssw.setAttribute('aria-checked',o2?'true':'false'); subOn[gk2+':'+si]=o2; paintGrp(GROUPS.filter(function(x){return x.k===gk2;})[0],p); refreshLabel(); }
+    });
     return true;
   }
   function boot(){ if(build())return; var n=0,iv=setInterval(function(){ if(build()||++n>40)clearInterval(iv); },800); }
