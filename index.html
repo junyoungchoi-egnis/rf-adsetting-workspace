@@ -3149,6 +3149,13 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
     if(act) act.classList.add('rb-foot-actmoved');           // 상단 고정 '활동' 버튼을 사이드바로 이동
     if(gemini){ gemini.removeAttribute('style'); gemini.className='rb-foot-link'; foot.appendChild(gemini); }
     foot.appendChild(media);
+    // dev↔prod 전환 링크 (지정 계정만 노출)
+    var envLink=document.createElement('a'); envLink.id='rbEnvLink'; envLink.className='rb-foot-link'; envLink.target='_blank'; envLink.rel='noopener'; envLink.style.display='none';
+    var isDev=/-git-dev-/.test(location.host);
+    envLink.href=isDev?'https://rf-adsetting-workspace.vercel.app/':'https://rf-adsetting-workspace-git-dev-egnis-cloop.vercel.app/';
+    envLink.textContent=isDev?'🚀 실사용(prod) 열기 ↗':'🧪 dev 미리보기 열기 ↗';
+    foot.appendChild(envLink);
+    (function(){ function gate(){ try{ var e=firebase.auth().currentUser&&firebase.auth().currentUser.email; envLink.style.display=(e==='junyoung.choi@egnis.kr')?'':'none'; }catch(x){} } gate(); try{ firebase.auth().onAuthStateChanged(gate); }catch(x){} })();
     foot.appendChild(acctRow);
     if(act) foot.appendChild(act);
     if(lastSync) foot.appendChild(lastSync);
