@@ -3063,14 +3063,31 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
     window.__rbCfFetchHooked=1;
     var _f=window.fetch;
     window.fetch=function(url,opts){
+      var _isCloneadReq=false;
       try{
         var u=(typeof url==='string')?url:(url&&url.url)||'';
         if(u.indexOf('/api/clonead')>=0 && opts && typeof opts.body==='string'){
           var cf=buildCF();
           if(cf){ var b=JSON.parse(opts.body); if(b && typeof b==='object' && b.creativeFeatures==null){ b.creativeFeatures=cf; opts=Object.assign({},opts,{body:JSON.stringify(b)}); } }
+          _isCloneadReq=true;
         }
       }catch(e){}
-      return _f.call(this,url,opts);
+      var _pr=_f.call(this,url,opts);
+      // 계정↔소재 불일치(서버 최종 가드) 감지 → 명확한 안내(스팸 방지 throttle).
+      if(_isCloneadReq){
+        _pr.then(function(resp){
+          try{ resp.clone().json().then(function(j){
+            if(j && j.code==='IMAGE_ACCOUNT_MISMATCH'){
+              var now=+new Date();
+              if(now-(window.__rbMismatchAt||0)>4000){
+                window.__rbMismatchAt=now;
+                try{ if(typeof toast==='function') toast('⚠️ 다른 계정의 이미지 소재예요 — 같은 계정의 소재를 고르거나, 대상 세트를 그 소재와 같은 계정으로 바꿔 주세요.'); }catch(e){}
+              }
+            }
+          }).catch(function(){}); }catch(e){}
+        }).catch(function(){});
+      }
+      return _pr;
     };
   }
   function stateLabel(){
