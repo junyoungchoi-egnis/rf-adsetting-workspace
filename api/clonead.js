@@ -260,6 +260,27 @@ module.exports = async function (req, res) {
       } catch (e) {}
     }
 
+    // 계정↔소재 최종 가드: 소재에 쓰인 이미지(image_hash)가 대상 광고계정(act)에 실제로
+    // 존재하는지 확인. 다른 계정의 이미지로 생성 시도하면 생성 직전에 차단(오늘 목록 필터로
+    // 완화했지만, 그걸 우회한 요청까지 서버에서 최종 차단). 이미지가 없는 소재(영상만/링크만)는 통과.
+    var _imgHashes = [];
+    if (clean.link_data && clean.link_data.image_hash) _imgHashes.push(String(clean.link_data.image_hash));
+    if (clean.video_data && clean.video_data.image_hash) _imgHashes.push(String(clean.video_data.image_hash));
+    if (_imgHashes.length) {
+      var _uniq = _imgHashes.filter(function (h, i) { return _imgHashes.indexOf(h) === i; });
+      try {
+        const _ai = await gget(GRAPH + '/act_' + act + '/adimages?fields=hash&hashes=' + enc(JSON.stringify(_uniq)) + '&access_token=' + enc(token));
+        const _own = {}; ((_ai && _ai.data) || []).forEach(function (x) { if (x && x.hash) _own[x.hash] = 1; });
+        const _missing = _uniq.filter(function (h) { return !_own[h]; });
+        if (_missing.length) {
+          return res.status(409).json({
+            ok: false, code: 'IMAGE_ACCOUNT_MISMATCH', missingHashes: _missing,
+            error: '선택한 소재의 이미지가 이 광고 계정에 없습니다(다른 계정의 이미지). 다른 계정의 이미지로는 광고를 만들 수 없습니다 — 같은 계정의 소재를 고르거나, 대상 세트를 그 소재와 같은 계정으로 바꿔 주세요.'
+          });
+        }
+      } catch (e) { /* 조회 실패 시엔 차단하지 않음(생성 단계에서 Meta가 최종 검증) */ }
+    }
+
     if (!apply) {
       return res.status(200).json({ ok: true, dryRun: true, mode: srcCreativeId ? 'clone' : 'new', targetAdsetId: targetAdsetId, newName: newName, tokenSource: tokenSource, instagramUserId: clean.instagram_user_id || null });
     }
