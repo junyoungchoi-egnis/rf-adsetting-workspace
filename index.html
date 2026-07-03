@@ -3178,32 +3178,41 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
 .rb-isel-opt.sel{background:#16233f}
 .rb-av{width:22px;height:22px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff}
 .rb-av.ig{background:#c13584}
+.rb-av.page{background:#1877f2}
 .rb-av.auto{background:#3a4553;color:#cdd6e0}
+.rb-av-img{width:22px;height:22px;flex:none;border-radius:50%;object-fit:cover;background:#1e2530}
 .rb-isel-lab{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style>
 <script id="RB_PROFILE_SELECT">
 (function(){
   // Instagram 프로필(광고 프로필)을 아이콘 드롭다운으로 개선 + "자체 sync" 배지 제거.
   // 원본 <select id=mcd_ig>는 숨겨 값/텍스트 소스로 유지(미리보기·생성 코드 그대로 동작).
-  function avFor(opt){ if(!opt||!opt.value) return '<span class="rb-av auto">↩</span>'; var m=(opt.textContent||'').trim().replace(/^@/,''); return '<span class="rb-av ig">'+((m[0]||'?').toUpperCase())+'</span>'; }
+  function avImg(pic){ return '<img class="rb-av-img" src="'+pic+'" referrerpolicy="no-referrer" onerror="this.outerHTML=\'<span class=&quot;rb-av auto&quot;>·</span>\'">'; }
+  function avFor(opt, kind){
+    if(!opt) return '<span class="rb-av auto">·</span>';
+    if(kind==='page'){ var pp=(window.RB_PAGE_PIC||{})[opt.value]; if(pp) return avImg(pp); var nm=(opt.textContent||'').trim(); return '<span class="rb-av page">'+((nm[0]||'?').toUpperCase())+'</span>'; }
+    if(!opt.value) return '<span class="rb-av auto">↩</span>';
+    var ip=(window.RB_IG_PIC||{})[opt.value]; if(ip) return avImg(ip);
+    var m=(opt.textContent||'').trim().replace(/^@/,''); return '<span class="rb-av ig">'+((m[0]||'?').toUpperCase())+'</span>';
+  }
   function labFor(opt){ return (opt?(opt.textContent||''):'').trim(); }
-  function enhance(sel){
-    if(!sel||sel.__rbEnh) return; sel.__rbEnh=1; sel.style.display='none';
+  function enhance(sel, kind){
+    if(!sel||sel.__rbEnh) return; sel.__rbEnh=1; sel.__rbKind=kind||'ig'; sel.style.display='none';
     var wrap=document.createElement('div'); wrap.className='rb-isel';
     var btn=document.createElement('button'); btn.type='button'; btn.className='rb-isel-btn';
     btn.innerHTML='<span class="rb-isel-cur" style="display:flex;align-items:center;gap:8px;flex:1;min-width:0"></span><span class="rb-chev">▾</span>';
     var pop=document.createElement('div'); pop.className='rb-isel-pop';
     wrap.appendChild(btn); wrap.appendChild(pop); sel.parentNode.insertBefore(wrap, sel.nextSibling);
     function curOpt(){ return sel.selectedOptions[0]||sel.options[sel.selectedIndex]||sel.options[0]||null; }
-    function paint(){ var o=curOpt(); btn.querySelector('.rb-isel-cur').innerHTML=o?(avFor(o)+'<span class="rb-isel-lab">'+labFor(o)+'</span>'):'<span class="rb-isel-lab" style="color:#8b98a8">선택</span>'; }
+    function paint(){ var o=curOpt(); btn.querySelector('.rb-isel-cur').innerHTML=o?(avFor(o,kind)+'<span class="rb-isel-lab">'+labFor(o)+'</span>'):'<span class="rb-isel-lab" style="color:#8b98a8">선택</span>'; }
     function close(){ pop.classList.remove('open'); document.removeEventListener('click',outside); }
     function outside(e){ if(!wrap.contains(e.target)) close(); }
-    function open(){ pop.innerHTML=''; [].slice.call(sel.options).forEach(function(o){ var r=document.createElement('div'); r.className='rb-isel-opt'+(o.selected?' sel':''); r.innerHTML=avFor(o)+'<span class="rb-isel-lab">'+labFor(o)+'</span>'; r.addEventListener('click',function(){ sel.value=o.value; sel.dispatchEvent(new Event('change',{bubbles:true})); paint(); close(); }); pop.appendChild(r); }); pop.classList.add('open'); setTimeout(function(){document.addEventListener('click',outside);},0); }
+    function open(){ pop.innerHTML=''; [].slice.call(sel.options).forEach(function(o){ var r=document.createElement('div'); r.className='rb-isel-opt'+(o.selected?' sel':''); r.innerHTML=avFor(o,kind)+'<span class="rb-isel-lab">'+labFor(o)+'</span>'; r.addEventListener('click',function(){ sel.value=o.value; sel.dispatchEvent(new Event('change',{bubbles:true})); paint(); close(); }); pop.appendChild(r); }); pop.classList.add('open'); setTimeout(function(){document.addEventListener('click',outside);},0); }
     btn.addEventListener('click',function(e){ e.stopPropagation(); if(pop.classList.contains('open'))close(); else open(); });
     sel.addEventListener('change',paint); sel.__rbPaint=paint; paint();
   }
   function killBadge(){ [].slice.call(document.querySelectorAll('#page-metacreate .bdg')).forEach(function(b){ if(/자체\s*sync/.test(b.textContent||'')) b.remove(); }); }
-  function tick(){ var ig=document.getElementById('mcd_ig'); if(ig){ enhance(ig); if(ig.__rbPaint)ig.__rbPaint(); } killBadge(); }
+  function tick(){ var ig=document.getElementById('mcd_ig'); if(ig){ enhance(ig,'ig'); if(ig.__rbPaint)ig.__rbPaint(); } var pg=document.getElementById('mcd_page'); if(pg){ enhance(pg,'page'); if(pg.__rbPaint)pg.__rbPaint(); } killBadge(); }
   function loop(){ tick(); var n=0,iv=setInterval(function(){ tick(); if(++n>40)clearInterval(iv); },800); }
   if(document.readyState!=="loading")loop();else document.addEventListener("DOMContentLoaded",loop);
 })();
@@ -3241,7 +3250,11 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
       var ids=META_PAGES.map(function(p){return p.id;});
       var r=await fetch('/api/clonead',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+t},body:JSON.stringify({pagesIg:ids})});
       var j=await r.json(); var m=(j&&j.pagesIg)||{};
-      if(Object.keys(m).length){ window.RB_PAGE_IG=m; rebuildIg(); }   // 비었으면 확정 안 함 → 다음 틱 재시도
+      if(Object.keys(m).length){ window.RB_PAGE_IG=m;
+        window.RB_PAGE_PIC=window.RB_PAGE_PIC||{}; window.RB_IG_PIC=window.RB_IG_PIC||{};
+        Object.keys(m).forEach(function(pid){ if(m[pid].pic) window.RB_PAGE_PIC[pid]=m[pid].pic; var g=m[pid].ig; if(g&&g.id&&g.pic) window.RB_IG_PIC[g.id]=g.pic; });
+        rebuildIg();
+      }   // 비었으면 확정 안 함 → 다음 틱 재시도
     }catch(e){}
     window.__rbPageIgLoading=0;
   }
@@ -3250,7 +3263,7 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
     if(typeof window.mcdRenderProfiles!=='function' || !document.getElementById('mcd_ig')) return false;
     window.__rbIgHooked=1;
     var orig=window.mcdRenderProfiles;
-    window.mcdRenderProfiles=function(){ var r=orig.apply(this,arguments); try{ rebuildIg(); }catch(e){} return r; };
+    window.mcdRenderProfiles=function(){ var r=orig.apply(this,arguments); try{ rebuildIg(); var pgSel=document.getElementById('mcd_page'); if(pgSel&&pgSel.__rbPaint)pgSel.__rbPaint(); }catch(e){} return r; };
     var pg=document.getElementById('mcd_page'); if(pg) pg.addEventListener('change',function(){ try{ rebuildIg(); if(typeof mcdPreview==='function')mcdPreview(); }catch(e){} });
     return true;
   }
@@ -3264,7 +3277,7 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
       var act=(typeof mcdTargetAccount==='function'&&mcdTargetAccount())||(typeof META_ACCOUNTS!=='undefined'&&META_ACCOUNTS[0]&&META_ACCOUNTS[0].id)||'1462607070849777';
       var r=await fetch('/api/clonead',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+t},body:JSON.stringify({bizIg:true,act:String(act).replace(/^act_/,'')})});
       var j=await r.json(); var list=(j&&j.bizIg)||[];
-      if(list.length){ window.RB_BIZ_IG=list; rebuildIg(); }
+      if(list.length){ window.RB_BIZ_IG=list; window.RB_IG_PIC=window.RB_IG_PIC||{}; list.forEach(function(g){ if(g&&g.id&&g.pic) window.RB_IG_PIC[g.id]=g.pic; }); rebuildIg(); }
     }catch(e){}
     window.__rbBizLoading=0;
   }
