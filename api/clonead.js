@@ -195,21 +195,29 @@ module.exports = async function (req, res) {
     // 비즈니스 소유 IG 전체 조회: { bizIg:true, act } → { bizIg:[{id,username}] }
     // 계정/페이지 연결과 무관하게 비즈니스가 소유한 모든 IG를 나열(전체 목록용). 타임아웃 가드.
     if (b.bizIg === true) {
-      const seen = {}, out = [];
-      try {
-        const ac = await (await fetch(GRAPH + '/act_' + act + '?fields=business&access_token=' + enc(token), { signal: AbortSignal.timeout(8000) })).json();
-        const bid = ac && ac.business && ac.business.id;
-        if (bid) {
-          let url = GRAPH + '/' + bid + '/owned_instagram_accounts?fields=id,username&limit=100&access_token=' + enc(token);
-          for (let p = 0; p < 6 && url; p++) {
-            const j = await (await fetch(url, { signal: AbortSignal.timeout(8000) })).json();
-            if (!j || j.error) break;
-            (j.data || []).forEach(g => { if (g && g.id && !seen[g.id]) { seen[g.id] = 1; out.push({ id: g.id, username: g.username || '' }); } });
-            url = (j.paging && j.paging.next) || null;
-          }
+      const seen = {}, out = [], counts = {}, biz = [];
+      const T = (u) => fetch(u, { signal: AbortSignal.timeout(8000) }).then(r => r.json()).catch(() => null);
+      const drain = async (base, key) => {
+        let url = base, n = 0;
+        for (let p = 0; p < 6 && url; p++) {
+          const j = await T(url); if (!j || j.error) break;
+          (j.data || []).forEach(g => { n++; if (g && g.id && !seen[g.id]) { seen[g.id] = 1; out.push({ id: g.id, username: g.username || '' }); } });
+          url = (j.paging && j.paging.next) || null;
         }
+        counts[key] = n;
+      };
+      try {
+        const ac = await T(GRAPH + '/act_' + act + '?fields=business&access_token=' + enc(token));
+        const bid = ac && ac.business && ac.business.id;
+        counts.businessId = bid || null;
+        if (bid) {
+          await drain(GRAPH + '/' + bid + '/owned_instagram_accounts?fields=id,username&limit=100&access_token=' + enc(token), 'owned');
+          await drain(GRAPH + '/' + bid + '/instagram_accounts?fields=id,username&limit=100&access_token=' + enc(token), 'legacy');
+        }
+        const mb = await T(GRAPH + '/me/businesses?fields=id,name&limit=50&access_token=' + enc(token));
+        if (mb && mb.data) mb.data.forEach(x => biz.push({ id: x.id, name: x.name }));
       } catch (e) {}
-      return res.status(200).json({ ok: true, bizIg: out });
+      return res.status(200).json({ ok: true, bizIg: out, counts: counts, businesses: biz });
     }
 
     if (!act || !targetAdsetId || !newName || !utmCampaign || !utmContent) {
