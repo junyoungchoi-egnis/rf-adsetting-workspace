@@ -3219,6 +3219,7 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
     var cat={};
     Object.keys(map).forEach(function(pid){ var g=map[pid].ig; if(g&&g.id&&cat[g.id]==null) cat[g.id]=g.username||''; });
     try{ var act=(typeof mcdTargetAccount==='function')?mcdTargetAccount():''; var A=(typeof metaSnap!=='undefined'&&metaSnap)?metaSnap.assets:null; var ig=(A&&A[act]&&A[act].ig)||[]; ig.forEach(function(g){ if(g&&g.id&&cat[g.id]==null) cat[g.id]=g.username||''; }); }catch(e){}
+    (window.RB_BIZ_IG||[]).forEach(function(g){ if(g&&g.id&&cat[g.id]==null) cat[g.id]=g.username||''; });  // 비즈니스 소유 IG 전체
     var prev=sel.value, opts=[];
     if(pageIg&&pageIg.id) opts.push('<option value="'+pageIg.id+'">@'+(pageIg.username||pageIg.id)+' · 이 페이지 IG</option>');
     Object.keys(cat).forEach(function(id){ if(!pageIg||id!==pageIg.id) opts.push('<option value="'+id+'">@'+(cat[id]||id)+'</option>'); });
@@ -3253,7 +3254,21 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
     var pg=document.getElementById('mcd_page'); if(pg) pg.addEventListener('change',function(){ try{ rebuildIg(); if(typeof mcdPreview==='function')mcdPreview(); }catch(e){} });
     return true;
   }
-  function boot(){ var n=0,iv=setInterval(function(){ hook(); loadPageIg(); if(++n>90||(window.__rbIgHooked&&igLoaded())) clearInterval(iv); },1000); }
+  function bizLoaded(){ return window.RB_BIZ_IG && window.RB_BIZ_IG.length>0; }
+  async function loadBizIg(){
+    if(window.__rbBizLoading || bizLoaded()) return;
+    var u; try{u=firebase.auth().currentUser;}catch(e){} if(!u) return;
+    window.__rbBizLoading=1;
+    try{
+      var t=await u.getIdToken();
+      var act=(typeof mcdTargetAccount==='function'&&mcdTargetAccount())||(typeof META_ACCOUNTS!=='undefined'&&META_ACCOUNTS[0]&&META_ACCOUNTS[0].id)||'1462607070849777';
+      var r=await fetch('/api/clonead',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+t},body:JSON.stringify({bizIg:true,act:String(act).replace(/^act_/,'')})});
+      var j=await r.json(); var list=(j&&j.bizIg)||[];
+      if(list.length){ window.RB_BIZ_IG=list; rebuildIg(); }
+    }catch(e){}
+    window.__rbBizLoading=0;
+  }
+  function boot(){ var n=0,iv=setInterval(function(){ hook(); loadPageIg(); loadBizIg(); if(++n>90||(window.__rbIgHooked&&bizLoaded())) clearInterval(iv); },1000); }
   if(document.readyState!=="loading")boot();else document.addEventListener("DOMContentLoaded",boot);
 })();
 </script>
