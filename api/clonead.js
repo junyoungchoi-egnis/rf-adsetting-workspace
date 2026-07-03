@@ -209,15 +209,6 @@ module.exports = async function (req, res) {
       return res.status(200).json({ ok: true, bizIg: out });
     }
 
-    // 진단: 특정 페이지의 IG 관련 필드 raw 확인(연결 방식/권한 원인 규명용).
-    if (b.rawPage) {
-      const pid = String(b.rawPage);
-      const T = (u) => fetch(u, { signal: AbortSignal.timeout(8000) }).then(r => r.json()).catch(e => ({ _err: String(e && e.message || e) }));
-      const a = await T(GRAPH + '/' + pid + '?fields=name,instagram_business_account{id,username},connected_instagram_account{id,username}&access_token=' + enc(token));
-      const b2 = await T(GRAPH + '/' + pid + '/instagram_accounts?fields=id,username&access_token=' + enc(token));
-      return res.status(200).json({ ok: true, rawPage: pid, mainFields: a, instagram_accounts_edge: b2 });
-    }
-
     if (!act || !targetAdsetId || !newName || !utmCampaign || !utmContent) {
       return res.status(400).json({ ok: false, error: '필수값 누락 (act, targetAdsetId, newName, utmCampaign, utmContent)' });
     }
