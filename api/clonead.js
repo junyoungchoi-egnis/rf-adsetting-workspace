@@ -211,6 +211,24 @@ module.exports = async function (req, res) {
       return res.status(200).json({ ok: true, bizIg: out });
     }
 
+    // 복제 소스 온디맨드 검색: { searchAds:"<이름 일부>", act } → 활성·중지 무관하게 이름 매칭 광고 반환.
+    // (동기화 스냅샷은 활성 광고만 담아 일시중지 소재가 복제 목록에 안 뜸 → 이 검색으로 찾아 srcCreativeId로 복제)
+    if (typeof b.searchAds === 'string' && b.searchAds.trim()) {
+      if (!act) return res.status(400).json({ ok: false, error: '검색: 광고 계정(act)이 필요합니다' });
+      const q = b.searchAds.trim().slice(0, 100);
+      const filt = JSON.stringify([
+        { field: 'name', operator: 'CONTAIN', value: q },
+        { field: 'effective_status', operator: 'IN', value: ['ACTIVE', 'PAUSED', 'ADSET_PAUSED', 'CAMPAIGN_PAUSED'] }
+      ]);
+      const surl = GRAPH + '/act_' + act + '/ads?fields=name,effective_status,creative{id}&filtering=' + enc(filt) + '&limit=50&access_token=' + enc(token);
+      try {
+        const sr = await fetch(surl); const sj = await sr.json();
+        if (sj.error) return res.status(200).json({ ok: false, error: friendlyErr(sj.error) });
+        const out = (sj.data || []).map(function (a) { return { cid: (a.creative && a.creative.id) || '', name: a.name || '', status: a.effective_status || '' }; }).filter(function (a) { return a.cid; });
+        return res.status(200).json({ ok: true, searchedAds: out });
+      } catch (e) { return res.status(200).json({ ok: false, error: String((e && e.message) || e) }); }
+    }
+
     // 실시간 메타 미리보기: { preview:true, act, previewSpec:{object_story_spec 내용}, previewFormats:[게재위치...] }
     // 생성하지 않고 generatepreviews 로 실제 렌더링 iframe(HTML)을 게재위치별로 반환.
     // 생성 검증(targetAdsetId/newName 등)과 무관하므로 초기 분기에서 바로 처리.
