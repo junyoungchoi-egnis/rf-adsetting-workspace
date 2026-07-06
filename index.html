@@ -3146,19 +3146,19 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
     var rows=GROUPS.map(function(g){
       var subs=g.subs.map(function(s,i){ return '<label class="rb-sub"><span class="rb-sub-t">'+s.t+'</span><button class="rb-sw rb-sw-sm rb-sub-sw" role="switch" aria-checked="false" aria-label="'+s.t+'" data-g="'+g.k+'" data-si="'+i+'" disabled><span class="k"></span></button></label>'; }).join('');
       return '<div class="rb-grp" data-g="'+g.k+'"><div class="rb-cf-row">'
-        +'<button class="rb-exp open" data-g="'+g.k+'" aria-label="세부 기능 펼치기">▸</button>'
+        +'<button class="rb-exp" data-g="'+g.k+'" aria-label="세부 기능 펼치기">▸</button>'
         +'<span class="rb-cf-em">'+g.em+'</span>'
         +'<span class="rb-cf-txt"><span class="rb-cf-t">'+g.t+'<span class="rb-cf-tag '+g.aff+'">'+(g.aff==='pv'?'미리보기 반영':'게재 시 적용')+'</span></span><span class="rb-cf-sub-sum">'+g.subs.length+'개 세부 기능 · 모두 꺼짐</span></span>'
         +'<button class="rb-sw rb-grp-sw" role="switch" aria-checked="false" aria-label="'+g.t+' 전체" data-g="'+g.k+'" disabled><span class="k"></span></button>'
-        +'</div><div class="rb-subs open" data-g="'+g.k+'">'+subs+'</div></div>';
+        +'</div><div class="rb-subs" data-g="'+g.k+'">'+subs+'</div></div>';
     }).join('');
-    p.innerHTML='<div class="panel-h" id="rbCfHead">크리에이티브 자동 기능 <span id="rbCfState">· 권장(모두 끄기)</span><span class="rb-chev open">▾</span></div>'
-      +'<div id="rbCfSub" class="open">'
+    p.innerHTML='<div class="panel-h" id="rbCfHead">크리에이티브 자동 기능 <span id="rbCfState">· 권장(모두 끄기)</span><span class="rb-chev">▾</span></div>'
+      +'<div id="rbCfSub">'
       +'<div class="rb-seg"><button id="rbCfRec" class="on">권장 · 모두 끄기</button><button id="rbCfCus">직접 설정</button></div>'
       +rows
       +'<div class="hint" style="margin-top:8px"><span style="color:#5fd08a">미리보기 반영</span> = 화면 즉시 · <span style="color:#fbbf24">게재 시 적용</span> = 노출 때 메타가 자동. 매 생성마다 기본은 모두 꺼짐.</div>'
       +'</div>';
-    host.parentNode.insertBefore(p, host);  // 미리보기 패널 '위'에 배치 → 우측 열 최상단, 즉시 보임(기본 펼침)
+    host.parentNode.insertBefore(p, host);  // 미리보기 패널 '위'에 배치 → 우측 열 최상단 (기본 접힘, 헤더 클릭 시 펼침)
     var head=p.querySelector('#rbCfHead'), sub=p.querySelector('#rbCfSub'), chev=head.querySelector('.rb-chev');
     head.addEventListener('click',function(){ var o=sub.classList.toggle('open'); chev.classList.toggle('open',o); });
     var rec=p.querySelector('#rbCfRec'), cus=p.querySelector('#rbCfCus');
@@ -3371,7 +3371,9 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
     {k:'INSTAGRAM_REELS',    t:'IG 릴스'},
     {k:'MOBILE_FEED_STANDARD', t:'FB 피드'}
   ];
-  var cur='INSTAGRAM_STANDARD', data=null, loading=false;
+  var cur='INSTAGRAM_STANDARD';
+  var cache={}, lastSig=null, curSpec=null, curAct='', renderedKey=null, tmr=null;
+  function sigOf(spec,act){ try{ return act+'|'+JSON.stringify(spec); }catch(e){ return act+'|?'; } }
   function hasPh(v){ return v==null || (''+v).indexOf('<')>=0; }
   // 현재 세팅으로부터 미리보기용 스펙 구성 + 유효성 검사
   function gather(){
@@ -3397,64 +3399,86 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
     var wrap=document.getElementById('rbRpTabs'); if(!wrap) return;
     Array.prototype.forEach.call(wrap.querySelectorAll('button'),function(b){ b.classList.toggle('on', b.getAttribute('data-f')===cur); });
   }
-  function renderCur(){
-    var el=box(); if(!el) return;
-    if(!data){ return; }
-    var d=data[cur];
-    if(!d){ el.innerHTML='<div style="color:var(--text3);font-size:12px;padding:14px">이 게재위치는 불러오지 않았어요.</div>'; return; }
-    if(d.error){ el.innerHTML='<div style="color:#fbbf24;font-size:12px;padding:14px;line-height:1.6">⚠️ '+ (''+d.error).replace(/</g,'&lt;') +'</div>'; return; }
-    // Meta 미리보기 iframe(HTML)을 그대로 삽입 (src 에 토큰 포함되어 단독 렌더)
-    el.innerHTML='<div style="display:flex;justify-content:center;overflow:auto;padding:6px 0">'+(d.body||'')+'</div>';
-    var f=el.querySelector('iframe'); if(f){ f.style.maxWidth='100%'; f.setAttribute('scrolling','yes'); }
+  function msg(html){ var el=box(); if(el){ renderedKey=null; el.innerHTML='<div style="color:var(--text3);font-size:12px;padding:16px 14px;line-height:1.6">'+html+'</div>'; } }
+  function renderD(d){
+    var el=box(); if(!el||!d) return;
+    if(d.error){ renderedKey=null; el.innerHTML='<div style="color:#fbbf24;font-size:12px;padding:16px 14px;line-height:1.6">⚠️ '+(''+d.error).replace(/</g,'&lt;')+'</div>'; return; }
+    // Meta 미리보기 iframe(HTML)을 삽입하고, 컨테이너 폭에 맞춰 축소해 상하좌우 스크롤 제거.
+    el.innerHTML='<div class="rb-rp-wrap" style="overflow:hidden"></div>';
+    var wrap=el.querySelector('.rb-rp-wrap'); wrap.innerHTML=(d.body||'');
+    var f=wrap.querySelector('iframe');
+    if(f){
+      f.setAttribute('scrolling','no'); f.style.border='0'; f.style.display='block';
+      var w=parseFloat(f.getAttribute('width'))||320, h=parseFloat(f.getAttribute('height'))||480;
+      var avail=(el.clientWidth||320)-2;               // 컨테이너 내부 가용 폭
+      var scale=Math.min(1, avail/w);                  // 넘치면 축소(확대는 안 함 → 흐려짐 방지)
+      f.style.transformOrigin='top left'; f.style.transform='scale('+scale+')';
+      wrap.style.width=(w*scale)+'px'; wrap.style.height=(h*scale)+'px'; wrap.style.margin='6px auto';
+    }
   }
-  async function load(){
-    if(loading) return;
+  function showKey(key){ if(renderedKey===key) return true; var d=cache[key]; if(!d) return false; renderD(d); renderedKey=key; return true; }
+  // 게재위치 1개를 불러와 캐시(sig|fmt). active=지금 보는 탭이면 결과를 화면에 렌더.
+  function fetchFmt(fmt, sig, active){
+    var key=sig+'|'+fmt;
+    if(cache[key]){ if(active && cur===fmt && lastSig===sig) showKey(key); return; }
+    if(active && cur===fmt) msg('실제 렌더링 불러오는 중… <span style="opacity:.6">메타에서 그려오는 중이에요</span>');
+    fetch('/api/clonead',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({preview:true, act:curAct, previewSpec:curSpec, previewFormats:[fmt]})})
+      .then(function(r){return r.json();})
+      .then(function(j){ cache[key]=(j&&j.ok&&j.previews&&j.previews[fmt])?j.previews[fmt]:{error:(j&&j.error)||'이 게재위치는 미리보기를 만들 수 없어요'}; if(cur===fmt&&lastSig===sig) showKey(key); })
+      .catch(function(){ cache[key]={error:'네트워크 오류로 불러오지 못했어요'}; if(cur===fmt&&lastSig===sig) showKey(key); });
+  }
+  // 현재 세팅을 읽어 자동 렌더. 스펙이 바뀌었을 때만 요청(캐시), 지금 탭 먼저 + 나머지 백그라운드 프리페치.
+  function run(){
+    if(!document.getElementById('rbRealPrev')) return;
     var g=gather();
-    var el=box();
-    if(g.err){ if(el) el.innerHTML='<div style="color:var(--text3);font-size:12px;padding:14px;line-height:1.6">🔎 '+g.err+'</div>'; return; }
+    if(g.err){ lastSig=null; msg('🔎 '+g.err); return; }
     var act=''; try{ act=(typeof mcdTargetAccount==='function')?String(mcdTargetAccount()||'').replace(/^act_/,''):''; }catch(e){}
-    if(!act){ if(el) el.innerHTML='<div style="color:#fbbf24;font-size:12px;padding:14px">계정을 먼저 선택하세요.</div>'; return; }
-    loading=true;
-    var btn=document.getElementById('rbRpLoad'); if(btn){ btn.disabled=true; btn.textContent='불러오는 중…'; }
-    if(el) el.innerHTML='<div style="color:var(--text3);font-size:12px;padding:14px">실제 렌더링을 메타에서 불러오는 중…</div>';
-    try{
-      var r=await fetch('/api/clonead',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({preview:true, act:act, previewSpec:g.spec, previewFormats:FMTS.map(function(x){return x.k;})})});
-      var j=await r.json();
-      if(j&&j.ok&&j.previews){ data=j.previews; renderCur(); }
-      else { if(el) el.innerHTML='<div style="color:#fbbf24;font-size:12px;padding:14px;line-height:1.6">⚠️ '+((j&&j.error)||'미리보기를 불러오지 못했어요').replace(/</g,'&lt;')+'</div>'; }
-    }catch(e){ if(el) el.innerHTML='<div style="color:#fbbf24;font-size:12px;padding:14px">네트워크 오류로 불러오지 못했어요.</div>'; }
-    loading=false; if(btn){ btn.disabled=false; btn.textContent='🔄 실제 렌더링 불러오기'; }
+    if(!act){ lastSig=null; msg('계정을 먼저 선택하세요.'); return; }
+    var sig=sigOf(g.spec, act);
+    if(sig===lastSig){ showKey(lastSig+'|'+cur); return; }   // 변경 없음 → 재요청/깜빡임 없음
+    lastSig=sig; curSpec=g.spec; curAct=act;
+    fetchFmt(cur, sig, true);
+    FMTS.forEach(function(x){ if(x.k!==cur) fetchFmt(x.k, sig, false); });
   }
+  function schedule(){ if(tmr)clearTimeout(tmr); tmr=setTimeout(run,650); }  // 입력 멈춘 뒤 자동 로드(디바운스)
   function build(){
     if(document.getElementById('rbRealPrev')) return true;
     var prev=document.getElementById('mcd_prev'); if(!prev||!prev.parentNode) return false;
-    var wrap=document.createElement('div'); wrap.id='rbRealPrev';
-    wrap.style.cssText='margin-top:12px;border-top:1px solid var(--line);padding-top:12px';
+    var host=prev.closest('.panel');
+    // 목업을 감추고 실제 렌더링을 기본 미리보기로 사용 (#mcd_prev 는 DOM엔 남겨 mcdPreview 무해).
+    try{
+      prev.style.display='none';
+      var plc=document.getElementById('mcd_plc'); if(plc)plc.style.display='none';
+      if(host){
+        var ph=host.querySelector('.panel-h'); if(ph && /실시간 미리보기/.test(ph.textContent)) ph.textContent='미리보기';
+        [].slice.call(host.querySelectorAll('.hint')).forEach(function(h){ if(/즉시 반영/.test(h.textContent)) h.style.display='none'; });
+      }
+    }catch(e){}
+    var wrap=document.createElement('div'); wrap.id='rbRealPrev'; wrap.style.cssText='margin-top:2px';
     var tabsHtml=FMTS.map(function(x,i){ return '<button data-f="'+x.k+'"'+(i===0?' class="on"':'')+'>'+x.t+'</button>'; }).join('');
     wrap.innerHTML=
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">'
-      + '<div style="font-size:12px;font-weight:600;color:var(--accent2)">실제 메타 렌더링 <span style="font-weight:400;color:var(--text3)">· 게재위치별 진짜 모습</span></div>'
-      + '<button id="rbRpLoad" style="font-size:11px;padding:5px 10px;border-radius:7px;border:1px solid var(--accent2);background:transparent;color:var(--accent2);cursor:pointer;white-space:nowrap">🔄 실제 렌더링 불러오기</button>'
+      + '<div style="font-size:11px;color:var(--text3)">메타 실제 렌더링 · 게재위치별</div>'
+      + '<button id="rbRpLoad" title="새로고침" style="font-size:11px;padding:4px 9px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;white-space:nowrap">🔄 새로고침</button>'
       + '</div>'
       + '<div class="seg-toggle" id="rbRpTabs" style="margin-bottom:0">'+tabsHtml+'</div>'
-      + '<div id="rbRpBox" style="margin-top:8px;min-height:60px;background:var(--card,#0b0f16);border:1px solid var(--line);border-radius:8px">'
-      + '<div style="color:var(--text3);font-size:12px;padding:14px;line-height:1.6">위 목업은 즉시 반영, 여기 <b>실제 렌더링</b>은 메타가 그려주는 진짜 모습이에요. 소재·문구·랜딩을 채운 뒤 <b>불러오기</b>를 누르세요.</div>'
-      + '</div>';
+      + '<div id="rbRpBox" style="margin-top:8px;min-height:120px;background:var(--card,#0b0f16);border:1px solid var(--line,#232a36);border-radius:8px"></div>';
     prev.parentNode.insertBefore(wrap, prev.nextSibling);
-    document.getElementById('rbRpLoad').addEventListener('click', load);
+    document.getElementById('rbRpLoad').addEventListener('click', function(){ if(lastSig){ FMTS.forEach(function(x){ delete cache[lastSig+'|'+x.k]; }); } lastSig=null; renderedKey=null; run(); });
     wrap.querySelector('#rbRpTabs').addEventListener('click', function(e){
-      var b=e.target.closest('button'); if(!b) return; cur=b.getAttribute('data-f'); paintTabs(); renderCur();
+      var b=e.target.closest('button'); if(!b) return; cur=b.getAttribute('data-f'); paintTabs();
+      if(lastSig){ var key=lastSig+'|'+cur; if(cache[key]) showKey(key); else fetchFmt(cur, lastSig, true); }
     });
+    msg('소재·문구·랜딩을 채우면 실제 렌더링이 <b>자동으로</b> 표시돼요.');
     return true;
   }
-  // 세팅 화면이 뜰 때마다 주입 시도. 입력이 바뀌면 이전 결과는 무효화(재불러오기 유도).
-  function invalidate(){ if(data){ data=null; var el=box(); if(el&&document.getElementById('rbRealPrev')){ el.innerHTML='<div style="color:var(--text3);font-size:12px;padding:14px;line-height:1.6">설정이 바뀌었어요 — <b>불러오기</b>를 다시 눌러 실제 렌더링을 갱신하세요.</div>'; } } }
+  // 세팅 입력이 바뀔 때마다(mcdPreview 훅) 자동 로드를 예약(디바운스).
   if(typeof window.mcdPreview==='function' && !window.__rbRpHooked){
     window.__rbRpHooked=1; var _mp=window.mcdPreview;
-    window.mcdPreview=function(){ var r; try{ r=_mp.apply(this,arguments); }catch(e){} try{ build(); invalidate(); }catch(e){} return r; };
+    window.mcdPreview=function(){ var r; try{ r=_mp.apply(this,arguments); }catch(e){} try{ if(build())schedule(); }catch(e){} return r; };
   }
-  var n=0, iv=setInterval(function(){ if(build()||++n>120) clearInterval(iv); },1000);
+  var n=0, iv=setInterval(function(){ if(build()){ clearInterval(iv); schedule(); } else if(++n>120) clearInterval(iv); },1000);
 })();
 </script>
 </body>
