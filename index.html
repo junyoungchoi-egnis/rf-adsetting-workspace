@@ -3481,5 +3481,58 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
   var n=0, iv=setInterval(function(){ if(build()){ clearInterval(iv); schedule(); } else if(++n>120) clearInterval(iv); },1000);
 })();
 </script>
+<style id="RB_DEEPLINK_STYLE">
+  #rbDeepBanner{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:99999;max-width:min(560px,92vw);
+    background:#12331f;border:1px solid #2f7a4a;border-radius:12px;padding:13px 16px;box-shadow:0 12px 40px rgba(0,0,0,.5);
+    font-family:'Apple SD Gothic Neo',-apple-system,system-ui,sans-serif;color:#e6e9ef;display:flex;flex-direction:column;gap:8px}
+  #rbDeepBanner .rb-deep-t{font-size:13px;font-weight:700;color:#7ee0a0}
+  #rbDeepBanner .rb-deep-t span{font-weight:400;color:#9aa3b2;font-size:11.5px}
+  #rbDeepBanner .rb-deep-go{display:inline-block;font-size:12.5px;font-weight:700;color:#0e1116;background:#5fd08a;
+    padding:7px 12px;border-radius:8px;text-decoration:none}
+  #rbDeepBanner .rb-deep-go:hover{background:#7ee0a0}
+  #rbDeepBanner .rb-deep-x{position:absolute;top:8px;right:10px;background:transparent;border:0;color:#9aa3b2;font-size:13px;cursor:pointer}
+</style>
+<script>
+/* RB_DEEPLINK — 소재 생성 직후 "메타 광고관리자에서 열기/활성화" 바로가기 배너.
+   모든 생성 플로우가 /api/clonead(apply:true)를 거치므로, fetch 응답에서 newAdId를 모아
+   계정별로 광고관리자 딥링크를 만든다. (생성 코드 자체는 건드리지 않음) */
+(function(){
+  if(window.__rbDeepHooked) return; window.__rbDeepHooked=1;
+  var buf={}, tmr=null, el=null;
+  function acctName(act){ try{ var m=(typeof META_ACCOUNTS!=='undefined')?META_ACCOUNTS.filter(function(x){return String(x.id).replace(/^act_/,'')===String(act).replace(/^act_/,'');})[0]:null; return m?m.name:('계정 '+act); }catch(e){ return '광고관리자'; } }
+  function amUrl(act, ids){ return 'https://adsmanager.facebook.com/adsmanager/manage/ads?act='+encodeURIComponent(act)+'&selected_ad_ids='+encodeURIComponent(ids.join(',')); }
+  function esc2(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function show(){
+    var accts=Object.keys(buf).filter(function(a){return buf[a]&&buf[a].length;});
+    if(!accts.length) return;
+    var total=accts.reduce(function(s,a){return s+buf[a].length;},0);
+    if(!el){ el=document.createElement('div'); el.id='rbDeepBanner'; document.body.appendChild(el); }
+    var links=accts.map(function(a){ return '<a class="rb-deep-go" href="'+amUrl(a,buf[a])+'" target="_blank" rel="noopener">🔗 '+esc2(acctName(a))+' 광고관리자에서 열기 ('+buf[a].length+') ↗</a>'; }).join('');
+    el.innerHTML='<button class="rb-deep-x" aria-label="닫기">✕</button>'
+      +'<div class="rb-deep-t">✅ 방금 '+total+'개 광고 생성됨 <span>· PAUSED 상태예요 — 열어서 검토 후 활성화하세요</span></div>'+links;
+    el.querySelector('.rb-deep-x').onclick=function(){ if(el){el.remove();el=null;} buf={}; };
+  }
+  var _f=window.fetch;
+  window.fetch=function(url,opts){
+    var pr=_f.call(this,url,opts);
+    try{
+      var u=(typeof url==='string')?url:(url&&url.url)||'';
+      if(u.indexOf('/api/clonead')>=0 && opts && typeof opts.body==='string'){
+        var b=JSON.parse(opts.body);
+        if(b && b.apply===true && b.act){
+          pr.then(function(resp){ resp.clone().json().then(function(j){
+            if(j && j.ok && j.newAdId){
+              var act=String(b.act).replace(/^act_/,'');
+              (buf[act]=buf[act]||[]).push(j.newAdId);
+              if(tmr)clearTimeout(tmr); tmr=setTimeout(show,1200);   // 배치 생성이 끝나면(1.2s 유휴) 배너 표시
+            }
+          }).catch(function(){}); }).catch(function(){});
+        }
+      }
+    }catch(e){}
+    return pr;
+  };
+})();
+</script>
 </body>
 </html>
