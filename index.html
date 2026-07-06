@@ -3562,9 +3562,14 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
       var r=await fetch('/api/clonead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({searchAds:q, act:act})});
       var j=await r.json();
       if(j&&j.ok&&Array.isArray(j.searchedAds)){
-        j.searchedAds.forEach(function(a){ if(!a.cid)return; if(buf.some(function(x){return x.cid===a.cid;}))return; buf.push({cid:a.cid, name:a.name||a.cid, _searched:true, _status:a.status||''}); });
+        var firstCid=null;
+        j.searchedAds.forEach(function(a){ if(!a.cid)return; if(!firstCid)firstCid=a.cid; if(buf.some(function(x){return x.cid===a.cid;}))return; buf.push({cid:a.cid, name:a.name||a.cid, _searched:true, _status:a.status||''}); });
         try{ if(typeof msRenderSrc==='function')msRenderSrc(); }catch(e){}
-        if(typeof toast==='function')toast(j.searchedAds.length?('메타에서 '+j.searchedAds.length+'개 찾음(중지 포함) · 목록에 추가됨'):'매칭 소재 없음');
+        // 첫 결과 자동 선택 + 미리보기 갱신 — 네이티브 select가 '열린 채'면 목록이 실시간 갱신 안 되므로,
+        // 선택값을 바꿔 결과가 즉시 보이게 하고 ③ 미리보기도 갱신한다.
+        try{ var selEl=document.getElementById('ms_src'); if(selEl&&firstCid){ selEl.value=firstCid; selEl.dispatchEvent(new Event('change',{bubbles:true})); try{ selEl.focus(); }catch(e2){} } }catch(e){}
+        try{ if(typeof msRenderPreview==='function')msRenderPreview(); }catch(e){}
+        if(typeof toast==='function')toast(j.searchedAds.length?('메타에서 '+j.searchedAds.length+'개 찾음(중지 포함) · 첫 소재 자동 선택됨'):'매칭 소재 없음');
       } else { if(typeof toast==='function')toast('검색 실패: '+((j&&j.error)||'서버 확인')); }
     }catch(e){ if(typeof toast==='function')toast('검색 중 오류'); }
     if(btn){ btn.disabled=false; btn.textContent='🔎 메타에서 검색'; }
