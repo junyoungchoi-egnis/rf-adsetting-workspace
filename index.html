@@ -2038,7 +2038,7 @@ function msRenderSrc(){
   if(fp)list=list.filter(s=>prodOf(s)===fp);
   if(fm)list=list.filter(s=>mgrOf(s)===fm);
   const prev=sel.value;
-  sel.innerHTML=list.length?list.map(function(s){ return '<option value="'+s.cid+'">'+esc(s.name||s.cid)+'</option>'; }).join(''):'<option value="">(메타 라이브러리 소재 없음 — 동기화 필요)</option>';
+  sel.innerHTML=list.length?list.map(function(s){ return '<option value="'+s.cid+'">'+esc(s.name||s.cid)+((s._status&&s._status!=='ACTIVE')?' · ⏸중지':'')+'</option>'; }).join(''):'<option value="">(메타 라이브러리 소재 없음 — 동기화 필요)</option>';
   if(prev&&list.some(s=>s.cid===prev)) sel.value=prev;
   msRenderPreview();
 }
@@ -3532,6 +3532,61 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
     }catch(e){}
     return pr;
   };
+})();
+</script>
+<script>
+/* RB_CLONE_SEARCH — 복제 소스 온디맨드 검색. 동기화 스냅샷은 활성 광고만 담아
+   일시중지 소재가 복제 목록에 안 뜨는 문제 → 이름으로 메타에서 직접 찾아(활성·중지 무관) 목록에 추가.
+   msSources·ucSources가 모두 metaCloneSources()를 쓰므로 그것만 패치해 검색 버퍼를 덧붙인다. */
+(function(){
+  var buf=[];  // {cid,name,_searched,_status}
+  function patch(){
+    if(window.__rbCloneSrcPatched) return;
+    if(typeof window.metaCloneSources!=='function') return;
+    window.__rbCloneSrcPatched=1;
+    var _o=window.metaCloneSources;
+    window.metaCloneSources=function(){
+      var base; try{ base=_o.apply(this,arguments)||[]; }catch(e){ base=[]; }
+      if(!buf.length) return base;
+      var seen={}; base.forEach(function(s){ if(s&&s.cid)seen[s.cid]=1; });
+      return base.concat(buf.filter(function(s){ return !seen[s.cid]; }));
+    };
+  }
+  async function run(){
+    var s=document.getElementById('ms_srcSearch'); var q=(s&&s.value||'').trim();
+    if(q.length<2){ if(typeof toast==='function')toast('검색어를 2글자 이상 입력하세요'); return; }
+    var act=''; try{ act=(typeof mcdTargetAccount==='function')?String(mcdTargetAccount()||'').replace(/^act_/,''):''; }catch(e){}
+    if(!act){ if(typeof toast==='function')toast('계정을 먼저 선택하세요'); return; }
+    var btn=document.getElementById('rbCloneSearchBtn'); if(btn){ btn.disabled=true; btn.textContent='검색 중…'; }
+    try{
+      var r=await fetch('/api/clonead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({searchAds:q, act:act})});
+      var j=await r.json();
+      if(j&&j.ok&&Array.isArray(j.searchedAds)){
+        var firstCid=null;
+        j.searchedAds.forEach(function(a){ if(!a.cid)return; if(!firstCid)firstCid=a.cid; if(buf.some(function(x){return x.cid===a.cid;}))return; buf.push({cid:a.cid, name:a.name||a.cid, _searched:true, _status:a.status||''}); });
+        try{ if(typeof msRenderSrc==='function')msRenderSrc(); }catch(e){}
+        // 첫 결과 자동 선택 + 미리보기 갱신 — 네이티브 select가 '열린 채'면 목록이 실시간 갱신 안 되므로,
+        // 선택값을 바꿔 결과가 즉시 보이게 하고 ③ 미리보기도 갱신한다.
+        try{ var selEl=document.getElementById('ms_src'); if(selEl&&firstCid){ selEl.value=firstCid; selEl.dispatchEvent(new Event('change',{bubbles:true})); try{ selEl.focus(); }catch(e2){} } }catch(e){}
+        try{ if(typeof msRenderPreview==='function')msRenderPreview(); }catch(e){}
+        if(typeof toast==='function')toast(j.searchedAds.length?('메타에서 '+j.searchedAds.length+'개 찾음(중지 포함) · 첫 소재 자동 선택됨'):'매칭 소재 없음');
+      } else { if(typeof toast==='function')toast('검색 실패: '+((j&&j.error)||'서버 확인')); }
+    }catch(e){ if(typeof toast==='function')toast('검색 중 오류'); }
+    if(btn){ btn.disabled=false; btn.textContent='🔎 메타에서 검색'; }
+  }
+  function build(){
+    var s=document.getElementById('ms_srcSearch'); if(!s||!s.parentNode) return false;
+    patch();
+    if(document.getElementById('rbCloneSearchBtn')) return true;
+    var btn=document.createElement('button'); btn.id='rbCloneSearchBtn'; btn.type='button'; btn.textContent='🔎 메타에서 검색';
+    btn.title='활성·중지 상관없이 이름으로 메타에서 소재를 찾아 목록에 추가';
+    btn.style.cssText='margin:6px 0 2px;font-size:11.5px;padding:6px 11px;border-radius:8px;border:1px solid #3b82f6;background:#16233f;color:#5b9dff;font-weight:600;cursor:pointer';
+    s.parentNode.insertBefore(btn, s.nextSibling);
+    btn.addEventListener('click', run);
+    s.addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); run(); } });
+    return true;
+  }
+  var n=0, iv=setInterval(function(){ if(build()||++n>120)clearInterval(iv); },1000);
 })();
 </script>
 </body>
