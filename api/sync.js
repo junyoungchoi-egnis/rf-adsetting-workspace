@@ -125,8 +125,19 @@ async function fetchActiveAds(actId, token) {
   const cfields = 'id,body,title,call_to_action_type,image_hash,image_url,video_id,object_story_id,effective_object_story_id,thumbnail_url,object_type,url_tags,asset_feed_spec{bodies{text},titles{text},descriptions{text},call_to_action_types},object_story_spec{link_data{message,name,description,link,call_to_action{type}},video_data{message,title,link_description,call_to_action{type,value{link}}}}';
   const fields = 'name,effective_status,adset{name},creative{' + cfields + '}';
   const filt = '[{"field":"effective_status","operator":"IN","value":["ACTIVE"]}]';
-  const url = GRAPH + '/act_' + actId + '/ads?fields=' + enc(fields) + '&filtering=' + enc(filt) + '&limit=40&access_token=' + enc(token);
-  const raw = await fetchOne(url, actId);
+  // 활성 광고를 페이지네이션으로 수집. (이전엔 40개 단일페이지라 CLCL 등 상당수 활성 소재가
+  // 복제 소스 목록에서 잘려 안 보였음.) 타임아웃 방지를 위해 페이지 상한(12p≈600개)을 둔다.
+  let url = GRAPH + '/act_' + actId + '/ads?fields=' + enc(fields) + '&filtering=' + enc(filt) + '&limit=50&access_token=' + enc(token);
+  const raw = [];
+  let guard = 0;
+  while (url && guard < 12) {
+    guard++;
+    const r = await fetch(url);
+    const j = await r.json();
+    if (j.error) { if (guard === 1) throw new Error('[act_' + actId + '] ' + (j.error.message || 'graph error')); break; }
+    (j.data || []).forEach(x => raw.push(x));
+    url = (j.paging && j.paging.next) ? j.paging.next : null;
+  }
   return raw.map(a => {
     const c = a.creative || {};
     const oss = c.object_story_spec || {}; const ld = oss.link_data || {}; const vd = oss.video_data || {};
