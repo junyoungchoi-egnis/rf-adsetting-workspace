@@ -296,7 +296,7 @@ module.exports = async function (req, res) {
           previews[fmt] = body ? { body: body } : { error: '이 게재위치는 미리보기를 만들 수 없습니다' };
         } catch (e) { previews[fmt] = { error: String((e && e.message) || e) }; }
       }));
-      return res.status(200).json({ ok: true, previews: previews, instagramUserId: oss.instagram_user_id || null });
+      return res.status(200).json({ ok: true, previews: previews, instagramUserId: (specForPrev && specForPrev.object_story_spec && specForPrev.object_story_spec.instagram_user_id) || null });
     }
 
     if (!act || !targetAdsetId || !newName || !utmCampaign || !utmContent) {
