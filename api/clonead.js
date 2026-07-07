@@ -211,6 +211,25 @@ module.exports = async function (req, res) {
       return res.status(200).json({ ok: true, bizIg: out });
     }
 
+    // 페이지 게시권한 진단: { listPages:true } → 서버 토큰(rf API 시스템사용자)이 접근 가능한 페이지 + tasks.
+    // tasks에 CREATE_CONTENT/MANAGE 있으면 그 페이지로 광고(게시) 생성 가능. 없으면 복제 시 code 10로 실패.
+    if (b.listPages === true) {
+      const out = []; const seen = {};
+      let url = GRAPH + '/me/accounts?fields=id,name,tasks&limit=100&access_token=' + enc(token);
+      for (let p = 0; p < 12 && url; p++) {
+        const j = await fetch(url).then(function (r) { return r.json(); }).catch(function () { return null; });
+        if (!j || j.error) break;
+        (j.data || []).forEach(function (pg) {
+          if (!pg || !pg.id || seen[pg.id]) return; seen[pg.id] = 1;
+          const tasks = pg.tasks || [];
+          const canPublish = tasks.indexOf('CREATE_CONTENT') >= 0 || tasks.indexOf('MANAGE') >= 0;
+          out.push({ id: pg.id, name: pg.name || '', tasks: tasks, canPublish: canPublish });
+        });
+        url = (j.paging && j.paging.next) || null;
+      }
+      return res.status(200).json({ ok: true, pages: out });
+    }
+
     // 복제 소스 온디맨드 검색: { searchAds:"<이름 일부>", act } → 활성·중지 무관하게 이름 매칭 광고 반환.
     // (동기화 스냅샷은 활성 광고만 담아 일시중지 소재가 복제 목록에 안 뜸 → 이 검색으로 찾아 srcCreativeId로 복제)
     if (typeof b.searchAds === 'string' && b.searchAds.trim()) {
@@ -346,7 +365,7 @@ module.exports = async function (req, res) {
     }
 
     if (!apply) {
-      return res.status(200).json({ ok: true, dryRun: true, mode: srcCreativeId ? 'clone' : 'new', targetAdsetId: targetAdsetId, newName: newName, tokenSource: tokenSource, instagramUserId: clean.instagram_user_id || null });
+      return res.status(200).json({ ok: true, dryRun: true, mode: srcCreativeId ? 'clone' : 'new', targetAdsetId: targetAdsetId, newName: newName, tokenSource: tokenSource, instagramUserId: clean.instagram_user_id || null, pageId: clean.page_id || null });
     }
 
     // 새 소재 생성
@@ -362,7 +381,21 @@ module.exports = async function (req, res) {
       ? b.creativeFeatures
       : { product_extensions: { enroll_status: 'OPT_OUT' } };
     cpayload.degrees_of_freedom_spec = { creative_features_spec: _cfs };
-    const created = await gpost(GRAPH + '/act_' + act + '/adcreatives?access_token=' + enc(token), cpayload);
+    let created;
+    {
+      const _cr = await fetch(GRAPH + '/act_' + act + '/adcreatives?access_token=' + enc(token), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cpayload) });
+      const _cj = await _cr.json();
+      if (_cj.error) {
+        const _e = _cj.error;
+        // 페이지 게시 권한 없음(code 10 / subcode 1341012) → 앱에서 못 만드니, 메타 수동 복제용 정보 반환
+        if (_e.code === 10 || _e.error_subcode === 1341012) {
+          const _base = (clean.link_data && clean.link_data.link) || (clean.video_data && clean.video_data.call_to_action && clean.video_data.call_to_action.value && clean.video_data.call_to_action.value.link) || '';
+          return res.status(200).json({ ok: false, code: 'PAGE_NO_PUBLISH', error: friendlyErr(_e), pageId: clean.page_id || null, newName: newName, utmCampaign: utmCampaign, utmContent: utmContent, landing: _base });
+        }
+        throw new Error(friendlyErr(_e));
+      }
+      created = _cj;
+    }
     const newCid = created.id;
     if (!newCid) throw new Error('새 소재 생성 실패');
 
