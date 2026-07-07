@@ -142,6 +142,17 @@ module.exports = async function (req, res) {
     const isCBO = !!(campaign && String(campaign.budgetMode) === 'CBO');
     const objectiveEff = campaign ? campPayload.objective : (b.objective || 'OUTCOME_SALES');
 
+    // 전환 목표인데 픽셀 미지정 → 계정의 픽셀을 자동 사용(마케터가 고를 필요 없게)
+    let autoPixel = null;
+    const _needPixelAny = adsets.some(function (a) { return NEEDS_PIXEL[String(a.optimizationGoal || DEFAULT_OPT[objectiveEff] || 'OFFSITE_CONVERSIONS')] && !a.pixelId; });
+    if (_needPixelAny) {
+      try {
+        const pj = await fetch(GRAPH + '/act_' + act + '/adspixels?fields=id,name&access_token=' + enc(token)).then(function (r) { return r.json(); });
+        const px = (pj && pj.data && pj.data[0]) || null;
+        if (px && px.id) autoPixel = String(px.id);
+      } catch (e) {}
+    }
+
     // ── 광고세트 페이로드들 구성 + 검증 ──
     const adPayloads = []; const gaps = [];
     for (let i = 0; i < adsets.length; i++) {
@@ -160,8 +171,9 @@ module.exports = async function (req, res) {
       if (a.startTime) p.start_time = a.startTime;
       // 전환/픽셀 필요 목표
       if (NEEDS_PIXEL[optGoal]) {
-        if (!a.pixelId) { gaps.push('[' + (nm || ('세트' + (i + 1))) + '] 전환 픽셀(pixel_id)이 필요합니다'); }
-        else { p.promoted_object = { pixel_id: String(a.pixelId), custom_event_type: a.customEventType || 'PURCHASE' }; if (a.pageId) p.promoted_object.page_id = String(a.pageId); }
+        const _pix = a.pixelId || autoPixel;
+        if (!_pix) { gaps.push('[' + (nm || ('세트' + (i + 1))) + '] 이 계정에 전환 픽셀이 없습니다 — 픽셀을 먼저 설치하세요'); }
+        else { p.promoted_object = { pixel_id: String(_pix), custom_event_type: a.customEventType || 'PURCHASE' }; if (a.pageId) p.promoted_object.page_id = String(a.pageId); }
       } else if (a.pageId) {
         p.promoted_object = { page_id: String(a.pageId) };
       }
@@ -186,7 +198,7 @@ module.exports = async function (req, res) {
     if (!apply) {
       return res.status(200).json({
         ok: gaps.length === 0, dryRun: true, gaps: gaps,
-        tokenSource: tokenSource, budgetMode: isCBO ? 'CBO' : 'ABO',
+        tokenSource: tokenSource, budgetMode: isCBO ? 'CBO' : 'ABO', pixel: autoPixel,
         campaign: campPayload, campaignId: campaignId || null, adsets: adPayloads, count: adPayloads.length
       });
     }
