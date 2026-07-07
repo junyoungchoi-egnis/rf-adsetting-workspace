@@ -503,7 +503,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
           <div class="field"><label>② 광고 세트 선택 — 다중 선택 가능 · <span class="hint" id="ms_setCount">0개 선택</span> &nbsp;<label style="display:inline;font-weight:400;color:var(--text3)"><input type="checkbox" id="ms_setActive" checked onchange="msRenderSets()" style="width:auto;vertical-align:middle"> 활성만</label></label><input id="ms_setSearch" placeholder="🔎 세트명 검색" oninput="msRenderSets()" style="margin-bottom:6px"><div id="ms_setlist" style="max-height:200px;overflow:auto;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:4px"></div></div>
         </div>
         <div style="margin-top:10px"><div class="hint" style="margin-bottom:4px">③ 세팅 미리보기</div><div id="ms_preview"></div></div>
-        <div style="margin-top:8px"><button class="btn btn-primary" onclick="msCreate(this)">세트마다 생성 (PAUSED)</button></div>
+        <div id="ms_genRow" style="margin-top:8px;display:none"><button class="btn btn-primary" onclick="msCreate(this)">세트마다 생성 (PAUSED)</button></div>
       </div>
 
         <div style="display:grid;grid-template-columns:1fr 380px;gap:16px" class="mcd-grid">
@@ -2056,6 +2056,7 @@ function msRenderSets(){
     return '<div class="diverge-row" style="cursor:pointer;gap:9px;background:'+(on?'var(--accentbg)':'rgba(255,255,255,.02)')+';border-color:'+(on?'var(--accent)':'var(--border)')+'" onclick="msToggle('+i+')"><span style="font-size:15px;font-style:normal;color:'+(on?'var(--accent2)':'var(--text3)')+'">'+(on?'☑':'☐')+'</span><div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:600;color:'+(on?'var(--text)':'var(--text2)')+'">'+esc((c.brand||c.product||''))+' · '+esc(schemeKr(c.scheme))+' <span style="color:var(--accent2)">/ '+esc(tamKr(c.tam)||'')+'</span></div><div class="t-mono" style="font-size:10px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(c.name)+'</div></div><span style="font-size:10px;white-space:nowrap;color:'+(((c.landing||'').trim())?'var(--green)':'var(--yellow)')+'">'+(((c.landing||'').trim())?'랜딩 ✓':'랜딩 ⚠')+'</span></div>';
   }).join(''):'<div class="empty" style="padding:10px">조건에 맞는 세트 없음</div>';
   const cnt=document.getElementById('ms_setCount'); if(cnt)cnt.textContent=Object.keys(msTargets).length+'개 선택';
+  const _st=document.getElementById('n5cloneStat'); if(_st){ const keys=Object.keys(msTargets); const sel=keys.length; const land=keys.filter(function(k){ return ((msTargets[k].landing||'')+'').trim(); }).length; _st.innerHTML=sel?('선택 <b style="color:var(--text)">'+sel+'개</b> · 랜딩 준비 '+land+'개'+((sel>land)?(' · <span style="color:var(--yellow)">랜딩 미매핑 '+(sel-land)+'개는 생성 제외</span>'):'')):'생성할 광고 세트를 선택하세요'; }
 }
 function msToggle(i){ const c=(window.__msCands||[])[i]; if(!c)return; if(msTargets[c.adsetId])delete msTargets[c.adsetId]; else msTargets[c.adsetId]=c; msRenderSets(); msRenderPreview(); }
 function msSelectedSets(){ return Object.keys(msTargets).map(function(k){ return msTargets[k]; }); }
@@ -2487,13 +2488,15 @@ async function ucCreate(btn){
     }
     window.n5SrcApply=function(){ var src=$('mcd_src'); if(!src) return; var adv=!!window.__srcAdv; [].forEach.call(src.querySelectorAll('button[data-v]'), function(b){ b.style.display=(b.getAttribute('data-v')==='reuse'||adv)?'':'none'; }); var ab=$('mcd_srcAdvBtn'); if(ab) ab.textContent=adv?'고급 ▴':'고급 ▾'; };
     if($('mcd_src')&&!$('mcd_srcAdvBtn')){ var _sb=document.createElement('button'); _sb.id='mcd_srcAdvBtn'; _sb.type='button'; _sb.style.cssText='opacity:.65;font-size:11px'; _sb.textContent='고급 ▾'; _sb.onclick=function(){ window.__srcAdv=!window.__srcAdv; window.n5SrcApply(); }; $('mcd_src').appendChild(_sb); }
+    if(!$('n5cloneBar')){ var _msub=cf.closest?cf.closest('.mcsub'):null; if(_msub){ var _bar=document.createElement('div'); _bar.id='n5cloneBar'; _bar.style.display='none'; _bar.innerHTML='<span id="n5cloneStat" style="flex:1;font-size:12px;color:var(--text2)">생성할 광고 세트를 선택하세요</span><button class="btn btn-primary" onclick="msCreate(this)" style="padding:11px 24px;font-size:13px">세트마다 생성 (PAUSED)</button>'; _msub.appendChild(_bar); } }
     window.n5Mode(MODE);
   }
   window.n5Mode=function(m){
     MODE=m;
     [['n5_mA','new'],['n5_mB','arch'],['n5_mC','clone']].forEach(function(p){ var b=$(p[0]); if(b)b.className=(p[1]===m?'on':''); });
     var box=$('n5_newBox'), ch=$('n5_cloneHint'), cf=$('mcd_creative'); var cfield=cf&&cf.closest?cf.closest('.field'):null;
-    try{ var _mg=cf&&cf.closest?cf.closest('.mcd-grid'):null; var _lc=_mg?_mg.firstElementChild:null; if(_lc)_lc.classList.toggle('n5-solo', m==='new'); }catch(e){}
+    try{ var _mg=cf&&cf.closest?cf.closest('.mcd-grid'):null; var _lc=_mg?_mg.firstElementChild:null; if(_lc)_lc.classList.toggle('n5-solo', m==='new'||m==='clone'); }catch(e){}
+    try{ var _cb=$('n5cloneBar'); if(_cb)_cb.style.display=(m==='clone')?'':'none'; }catch(e){}
     if(box)box.style.display=(m==='new')?'':'none';
     var cg=$('mcd_camp')&&$('mcd_camp').closest?$('mcd_camp').closest('.grid'):null; if(cg)cg.style.display=(m==='new')?'':'none';
     var cp=$('mcd_cPanel'); if(cp)cp.style.display=(m==='new'||m==='clone')?'none':''; var bpan=$('mcd_page')&&$('mcd_page').closest?$('mcd_page').closest('.panel'):null; if(bpan)bpan.style.display=(m==='new')?'none':''; if(m==='arch'){ if(!window.__srcAdv&&typeof mcdSrc!=='undefined'&&mcdSrc!=='reuse'&&typeof mcdSetSrc==='function'){ mcdSetSrc('reuse',true); } if(typeof window.n5SrcApply==='function')window.n5SrcApply(); }
@@ -3216,8 +3219,10 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
 main.main:has(#page-metacreate.active){max-width:1720px}
 #page-metacreate .mcd-grid > div:first-child{columns:2;column-gap:14px}
 #page-metacreate .mcd-grid > div:first-child > .panel{break-inside:avoid;margin-bottom:14px}
-/* 소재명 추출 모드: 보이는 패널이 하나뿐이라 2단 시 우측 여백 발생 → 단일 단으로 펴서 폼을 우로 확장 */
+/* 소재명 추출·복제 모드: 보이는 패널이 적어 2단 시 우측 여백 발생 → 단일 단으로 펴서 폼을 우로 확장 */
 #page-metacreate .mcd-grid > div:first-child.n5-solo{columns:1}
+/* 복제 모드 최종 CTA — 화면 하단 고정 액션바(스크롤해도 항상 보임) */
+#n5cloneBar{position:sticky;bottom:0;z-index:60;margin:16px -30px 0;padding:13px 30px;background:var(--surface2);border-top:1px solid var(--border);display:flex;align-items:center;gap:14px;box-shadow:0 -6px 20px rgba(0,0,0,.4)}
 /* 모드바 가독성 — 우측 전환 버튼 대비/크기 강화 + 라벨 */
 #n5_modeBar .seg-toggle button{font-size:12.5px;padding:7px 16px}
 #n5_modeBar .seg-toggle button:not(.on){color:var(--text)}
