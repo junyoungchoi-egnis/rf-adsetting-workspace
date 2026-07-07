@@ -2479,16 +2479,25 @@ async function ucCreate(btn){
       var pv=$('n5b_preview'), pr=$('n5b_pre'), gn=$('n5b_gen');
       if(pv&&pr&&gn){
         var oldLbl=pv.previousElementSibling; if(oldLbl&&oldLbl.id!=='n5b_setlist'){ oldLbl.parentNode.removeChild(oldLbl); }
-        var foot=document.createElement('div'); foot.id='n5b_foot'; foot.className='panel'; foot.style.cssText='display:none;margin-top:14px';
-        var h5=document.createElement('div'); h5.className='panel-h'; h5.textContent='⑤ 세팅 미리보기'; foot.appendChild(h5); foot.appendChild(pv);
-        var h6=document.createElement('div'); h6.className='panel-h'; h6.style.marginTop='14px'; h6.textContent='⑥ 사전 점검 & 세팅'; foot.appendChild(h6); foot.appendChild(pr);
-        foot.appendChild(gn.parentNode);
+        var foot=document.createElement('div'); foot.id='n5b_foot';
+        var h5=document.createElement('div'); h5.className='panel-h n5b-collap'; h5.style.margin='0'; h5.innerHTML='⑤ 세팅 미리보기<span class="n5b-chev">▸</span>'; foot.appendChild(h5); pv.style.display='none'; foot.appendChild(pv);
+        var h6=document.createElement('div'); h6.className='panel-h n5b-collap'; h6.style.margin='4px 0 0'; h6.innerHTML='⑥ 사전 점검 & 세팅<span class="n5b-chev">▸</span>'; foot.appendChild(h6); pr.style.display='none'; foot.appendChild(pr);
+        function n5bCollap(hd,body){ hd.addEventListener('click',function(){ var open=body.style.display!=='none'; body.style.display=open?'none':''; var cv=hd.querySelector('.n5b-chev'); if(cv)cv.textContent=open?'▸':'▾'; }); }
+        n5bCollap(h5,pv); n5bCollap(h6,pr);
         var mout=$('mcd_out'); if(mout&&mout.parentNode){ mout.parentNode.insertBefore(foot, mout.nextSibling); } else { bbox.parentNode.appendChild(foot); }
       }
     }
     window.n5SrcApply=function(){ var src=$('mcd_src'); if(!src) return; var adv=!!window.__srcAdv; [].forEach.call(src.querySelectorAll('button[data-v]'), function(b){ b.style.display=(b.getAttribute('data-v')==='reuse'||adv)?'':'none'; }); var ab=$('mcd_srcAdvBtn'); if(ab) ab.textContent=adv?'고급 ▴':'고급 ▾'; };
     if($('mcd_src')&&!$('mcd_srcAdvBtn')){ var _sb=document.createElement('button'); _sb.id='mcd_srcAdvBtn'; _sb.type='button'; _sb.style.cssText='opacity:.65;font-size:11px'; _sb.textContent='고급 ▾'; _sb.onclick=function(){ window.__srcAdv=!window.__srcAdv; window.n5SrcApply(); }; $('mcd_src').appendChild(_sb); }
-    if(!$('n5cloneBar')){ var _msub=cf.closest?cf.closest('.mcsub'):null; if(_msub){ var _bar=document.createElement('div'); _bar.id='n5cloneBar'; _bar.style.display='none'; _bar.innerHTML='<span id="n5cloneStat" style="flex:1;font-size:12px;color:var(--text2)">생성할 광고 세트를 선택하세요</span><button class="btn btn-primary" onclick="msCreate(this)" style="padding:11px 24px;font-size:13px">세트마다 생성 (PAUSED)</button>'; _msub.appendChild(_bar); } }
+    if(!$('n5cloneBar')){ var _msub=cf.closest?cf.closest('.mcsub'):null; if(_msub){
+      var _bar=document.createElement('div'); _bar.id='n5cloneBar'; _bar.style.display='none';
+      var _top=document.createElement('div'); _top.id='n5barTop'; _top.style.display='none';
+      var _ft=$('n5b_foot'); if(_ft){ _ft.style.display=''; _top.appendChild(_ft); }
+      var _act=document.createElement('div'); _act.id='n5barAct';
+      _act.innerHTML='<span id="n5cloneStat" style="flex:1;font-size:12px;color:var(--text2)">생성할 광고 세트를 선택하세요</span><button id="n5cloneGenBtn" class="btn btn-primary" onclick="msCreate(this)" style="padding:11px 24px;font-size:13px">세트마다 생성 (PAUSED)</button>';
+      _bar.appendChild(_top); _bar.appendChild(_act); _msub.appendChild(_bar);
+      var _ag=$('n5b_gen'); if(_ag){ var _agp=_ag.parentNode; _act.appendChild(_ag); if(_agp&&_agp!==_act&&!_agp.children.length&&_agp.parentNode)_agp.parentNode.removeChild(_agp); }
+    } }
     window.n5Mode(MODE);
   }
   window.n5Mode=function(m){
@@ -2496,7 +2505,7 @@ async function ucCreate(btn){
     [['n5_mA','new'],['n5_mB','arch'],['n5_mC','clone']].forEach(function(p){ var b=$(p[0]); if(b)b.className=(p[1]===m?'on':''); });
     var box=$('n5_newBox'), ch=$('n5_cloneHint'), cf=$('mcd_creative'); var cfield=cf&&cf.closest?cf.closest('.field'):null;
     try{ var _mg=cf&&cf.closest?cf.closest('.mcd-grid'):null; var _lc=_mg?_mg.firstElementChild:null; if(_lc)_lc.classList.toggle('n5-solo', m==='new'||m==='clone'); }catch(e){}
-    try{ var _cb=$('n5cloneBar'); if(_cb)_cb.style.display=(m==='clone')?'':'none'; }catch(e){}
+    try{ var _cb=$('n5cloneBar'); if(_cb)_cb.style.display=(m==='clone'||m==='arch')?'':'none'; var _cg=$('n5cloneGenBtn'); if(_cg)_cg.style.display=(m==='clone')?'':'none'; var _ag=$('n5b_gen'); if(_ag)_ag.style.display=(m==='arch')?'':'none'; }catch(e){}
     if(box)box.style.display=(m==='new')?'':'none';
     var cg=$('mcd_camp')&&$('mcd_camp').closest?$('mcd_camp').closest('.grid'):null; if(cg)cg.style.display=(m==='new')?'':'none';
     var cp=$('mcd_cPanel'); if(cp)cp.style.display=(m==='new'||m==='clone')?'none':''; var bpan=$('mcd_page')&&$('mcd_page').closest?$('mcd_page').closest('.panel'):null; if(bpan)bpan.style.display=(m==='new')?'none':''; if(m==='arch'){ if(!window.__srcAdv&&typeof mcdSrc!=='undefined'&&mcdSrc!=='reuse'&&typeof mcdSetSrc==='function'){ mcdSetSrc('reuse',true); } if(typeof window.n5SrcApply==='function')window.n5SrcApply(); }
@@ -2507,7 +2516,7 @@ async function ucCreate(btn){
     if(anF)anF.style.display='none'; if(umF)umF.style.display='none';
     var lf=$('mcd_landing')&&$('mcd_landing').closest?$('mcd_landing').closest('.field'):null; if(lf)lf.style.display='none';
     var bb=$('n5b_box'); if(bb)bb.style.display=(m==='arch')?'':'none';
-    var bf=$('n5b_foot'); if(bf)bf.style.display=(m==='arch')?'':'none';
+    var bt=$('n5barTop'); if(bt)bt.style.display=(m==='arch')?'':'none';
     if(m==='new') window.n5Compose();
     else if(m==='arch'){
       if(window.__n5PickArch){ try{ var _q=$('mcd_creativeSearch'); if(_q)_q.value=''; var _fp=$('mcd_crProduct'); if(_fp)_fp.value=''; var _fm=$('mcd_crManager'); if(_fm)_fm.value=''; if(typeof mcdFillCreative==='function')mcdFillCreative(); var _cs=$('mcd_creative'); if(_cs&&[].some.call(_cs.options,function(o){return o.value===window.__n5PickArch;}))_cs.value=window.__n5PickArch; }catch(e){} window.__n5PickArch=null; }
@@ -2635,6 +2644,7 @@ async function ucCreate(btn){
     box.innerHTML='<div style="background:rgba(40,90,107,.18);border:1px solid #2f5a6b;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.7">'
       +'<div style="font-size:11px;color:#7fb3c8;margin-bottom:6px">③ 사전 점검</div>'+rows.join('')+'</div>';
     var btn=$('n5b_gen'); if(btn){ btn.disabled=blocked; btn.style.opacity=blocked?'.5':'1'; btn.textContent=blocked?'⚡ 신규 세팅 생성 (PAUSED)':('⚡ 신규 세팅 생성 (PAUSED) · '+valid+'건'); }
+    var st=document.getElementById('n5cloneStat'); if(st){ var miss=r.gaps.length; st.innerHTML=miss?('<span style="color:var(--yellow)">사전 점검 '+miss+'건 미완</span> — ⑥ 펼쳐 확인'):('생성 예정 <b style="color:var(--text)">'+valid+'건</b>'+(r.noLand.length?(' · <span style="color:var(--yellow)">랜딩 미매핑 '+r.noLand.length+'건 제외</span>'):'')); }
   };
   window.n5bCreate=async function(btn){
     var r=n5bGaps();
@@ -3228,8 +3238,13 @@ main.main:has(#page-metacreate.active){max-width:1720px}
 #page-metacreate .mcd-grid > div:first-child > .panel{break-inside:avoid;margin-bottom:14px}
 /* 소재명 추출·복제 모드: 보이는 패널이 적어 2단 시 우측 여백 발생 → 단일 단으로 펴서 폼을 우로 확장 */
 #page-metacreate .mcd-grid > div:first-child.n5-solo{columns:1}
-/* 복제 모드 최종 CTA — 화면 하단 고정 액션바(스크롤해도 항상 보임) */
-#n5cloneBar{position:sticky;bottom:0;z-index:60;margin:16px -30px 0;padding:13px 30px;background:var(--surface2);border-top:1px solid var(--border);display:flex;align-items:center;gap:14px;box-shadow:0 -6px 20px rgba(0,0,0,.4)}
+/* 복제·신규 세팅 최종 CTA — 화면 하단 고정 컴포넌트(⑤⑥ 섹션 + 액션행이 한 덩어리) */
+#n5cloneBar{position:sticky;bottom:0;z-index:60;margin:16px -30px 0;background:var(--surface2);border-top:1px solid var(--border);box-shadow:0 -6px 20px rgba(0,0,0,.4)}
+#n5barTop{padding:12px 30px;border-bottom:1px solid var(--border);max-height:46vh;overflow:auto}
+#n5barAct{padding:12px 30px;display:flex;align-items:center;gap:14px}
+/* ⑤·⑥ 접이식 헤더 */
+.n5b-collap{cursor:pointer;display:flex;align-items:center;gap:9px}
+.n5b-collap .n5b-chev{margin-left:auto;color:var(--text3);font-size:12px}
 /* 모드바 가독성 — 우측 전환 버튼 대비/크기 강화 + 라벨 */
 #n5_modeBar .seg-toggle button{font-size:12.5px;padding:7px 16px}
 #n5_modeBar .seg-toggle button:not(.on){color:var(--text)}
