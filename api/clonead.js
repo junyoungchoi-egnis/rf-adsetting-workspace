@@ -211,6 +211,25 @@ module.exports = async function (req, res) {
       return res.status(200).json({ ok: true, bizIg: out });
     }
 
+    // 페이지 게시권한 진단: { listPages:true } → 서버 토큰(rf API 시스템사용자)이 접근 가능한 페이지 + tasks.
+    // tasks에 CREATE_CONTENT/MANAGE 있으면 그 페이지로 광고(게시) 생성 가능. 없으면 복제 시 code 10로 실패.
+    if (b.listPages === true) {
+      const out = []; const seen = {};
+      let url = GRAPH + '/me/accounts?fields=id,name,tasks&limit=100&access_token=' + enc(token);
+      for (let p = 0; p < 12 && url; p++) {
+        const j = await fetch(url).then(function (r) { return r.json(); }).catch(function () { return null; });
+        if (!j || j.error) break;
+        (j.data || []).forEach(function (pg) {
+          if (!pg || !pg.id || seen[pg.id]) return; seen[pg.id] = 1;
+          const tasks = pg.tasks || [];
+          const canPublish = tasks.indexOf('CREATE_CONTENT') >= 0 || tasks.indexOf('MANAGE') >= 0;
+          out.push({ id: pg.id, name: pg.name || '', tasks: tasks, canPublish: canPublish });
+        });
+        url = (j.paging && j.paging.next) || null;
+      }
+      return res.status(200).json({ ok: true, pages: out });
+    }
+
     // 복제 소스 온디맨드 검색: { searchAds:"<이름 일부>", act } → 활성·중지 무관하게 이름 매칭 광고 반환.
     // (동기화 스냅샷은 활성 광고만 담아 일시중지 소재가 복제 목록에 안 뜸 → 이 검색으로 찾아 srcCreativeId로 복제)
     if (typeof b.searchAds === 'string' && b.searchAds.trim()) {
