@@ -3498,19 +3498,30 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
    계정별로 광고관리자 딥링크를 만든다. (생성 코드 자체는 건드리지 않음) */
 (function(){
   if(window.__rbDeepHooked) return; window.__rbDeepHooked=1;
-  var buf={}, tmr=null, el=null;
+  var buf={}, fails=[], tmr=null, el=null;
   function acctName(act){ try{ var m=(typeof META_ACCOUNTS!=='undefined')?META_ACCOUNTS.filter(function(x){return String(x.id).replace(/^act_/,'')===String(act).replace(/^act_/,'');})[0]:null; return m?m.name:('계정 '+act); }catch(e){ return '광고관리자'; } }
   function amUrl(act, ids){ return 'https://adsmanager.facebook.com/adsmanager/manage/ads?act='+encodeURIComponent(act)+'&selected_ad_ids='+encodeURIComponent(ids.join(',')); }
   function esc2(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function show(){
     var accts=Object.keys(buf).filter(function(a){return buf[a]&&buf[a].length;});
-    if(!accts.length) return;
-    var total=accts.reduce(function(s,a){return s+buf[a].length;},0);
+    var uniqFails=fails.filter(function(f,i){ return fails.indexOf(f)===i; });
+    if(!accts.length && !uniqFails.length) return;
     if(!el){ el=document.createElement('div'); el.id='rbDeepBanner'; document.body.appendChild(el); }
-    var links=accts.map(function(a){ return '<a class="rb-deep-go" href="'+amUrl(a,buf[a])+'" target="_blank" rel="noopener">🔗 '+esc2(acctName(a))+' 광고관리자에서 열기 ('+buf[a].length+') ↗</a>'; }).join('');
-    el.innerHTML='<button class="rb-deep-x" aria-label="닫기">✕</button>'
-      +'<div class="rb-deep-t">✅ 방금 '+total+'개 광고 생성됨 <span>· PAUSED 상태예요 — 열어서 검토 후 활성화하세요</span></div>'+links;
-    el.querySelector('.rb-deep-x').onclick=function(){ if(el){el.remove();el=null;} buf={}; };
+    var html='<button class="rb-deep-x" aria-label="닫기">✕</button>';
+    if(uniqFails.length){
+      html+='<div class="rb-deep-t" style="color:#ff9b9b">⚠️ 생성 실패 '+fails.length+'건 <span style="color:#d98a8a">· 사유:</span></div>'
+        + uniqFails.slice(0,4).map(function(f){ return '<div style="font-size:11.5px;color:#e7b3b3;line-height:1.5">· '+esc2(f)+'</div>'; }).join('');
+    }
+    if(accts.length){
+      var total=accts.reduce(function(s,a){return s+buf[a].length;},0);
+      html+='<div class="rb-deep-t"'+(uniqFails.length?' style="margin-top:8px"':'')+'>✅ 방금 '+total+'개 광고 생성됨 <span>· PAUSED 상태예요 — 열어서 검토 후 활성화하세요</span></div>'
+        + accts.map(function(a){ return '<a class="rb-deep-go" href="'+amUrl(a,buf[a])+'" target="_blank" rel="noopener">🔗 '+esc2(acctName(a))+' 광고관리자에서 열기 ('+buf[a].length+') ↗</a>'; }).join('');
+    }
+    el.innerHTML=html;
+    // 실패가 있으면 붉은 톤, 성공만이면 초록 톤
+    el.style.background = uniqFails.length ? '#2a1618' : '#12331f';
+    el.style.borderColor = uniqFails.length ? '#7a3535' : '#2f7a4a';
+    el.querySelector('.rb-deep-x').onclick=function(){ if(el){el.remove();el=null;} buf={}; fails=[]; };
   }
   var _f=window.fetch;
   window.fetch=function(url,opts){
@@ -3525,6 +3536,9 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
               var act=String(b.act).replace(/^act_/,'');
               (buf[act]=buf[act]||[]).push(j.newAdId);
               if(tmr)clearTimeout(tmr); tmr=setTimeout(show,1200);   // 배치 생성이 끝나면(1.2s 유휴) 배너 표시
+            } else if(j && j.ok===false && j.needConnect!==true){
+              fails.push(String(j.error||'알 수 없는 오류'));           // 생성 실패 사유 수집 → 배너로 표시
+              if(tmr)clearTimeout(tmr); tmr=setTimeout(show,1200);
             }
           }).catch(function(){}); }).catch(function(){});
         }
