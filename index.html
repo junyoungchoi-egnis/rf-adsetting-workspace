@@ -506,7 +506,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
         <div style="margin-top:8px"><button class="btn btn-primary" onclick="msCreate(this)">세트마다 생성 (PAUSED)</button></div>
       </div>
 
-        <div style="display:grid;grid-template-columns:1fr 320px;gap:16px" class="mcd-grid">
+        <div style="display:grid;grid-template-columns:1fr 380px;gap:16px;align-items:start" class="mcd-grid">
           <div>
             <!-- A. 소재명·UTM -->
             <div class="panel">
@@ -3193,12 +3193,12 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
 <script id="RB_LAYOUT_TWEAKS">
 (function(){
   // 사이드바 하단을 통합 리스트로 재구성: 제미나이 · 미디어 라이브러리 · 계정선택 · 활동 · 동기화상태 · 개인정보.
-  // + 상단 중복 계정 바(areaNav) 숨김, '세트·소재·제품' 카운트 제거, 미리보기 sticky 해제.
+  // + 상단 중복 계정 바(areaNav) 숨김, '세트·소재·제품' 카운트 제거, 미리보기 sticky 고정(우측 고정·내부 스크롤).
   function build(){
     var side=document.querySelector('aside.side');
     var foot=side&&side.querySelector('.side-foot');
     if(!side||!foot) return false;
-    try{ var pv=document.getElementById('mcd_prev'); if(pv){ var pp=pv.closest('.panel'); if(pp) pp.style.position='static'; } }catch(e){}
+    try{ var pv=document.getElementById('mcd_prev'); if(pv){ var pp=pv.closest('.panel'); if(pp){ pp.style.position='sticky'; pp.style.top='14px'; pp.style.maxHeight='calc(100vh - 28px)'; pp.style.overflow='auto'; } } }catch(e){}
     var sel=document.getElementById('rbAcctSel');
     if(!sel) return false;
     if(document.getElementById('rbFootAcct')) return true;
