@@ -381,7 +381,21 @@ module.exports = async function (req, res) {
       ? b.creativeFeatures
       : { product_extensions: { enroll_status: 'OPT_OUT' } };
     cpayload.degrees_of_freedom_spec = { creative_features_spec: _cfs };
-    const created = await gpost(GRAPH + '/act_' + act + '/adcreatives?access_token=' + enc(token), cpayload);
+    let created;
+    {
+      const _cr = await fetch(GRAPH + '/act_' + act + '/adcreatives?access_token=' + enc(token), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cpayload) });
+      const _cj = await _cr.json();
+      if (_cj.error) {
+        const _e = _cj.error;
+        // 페이지 게시 권한 없음(code 10 / subcode 1341012) → 앱에서 못 만드니, 메타 수동 복제용 정보 반환
+        if (_e.code === 10 || _e.error_subcode === 1341012) {
+          const _base = (clean.link_data && clean.link_data.link) || (clean.video_data && clean.video_data.call_to_action && clean.video_data.call_to_action.value && clean.video_data.call_to_action.value.link) || '';
+          return res.status(200).json({ ok: false, code: 'PAGE_NO_PUBLISH', error: friendlyErr(_e), pageId: clean.page_id || null, newName: newName, utmCampaign: utmCampaign, utmContent: utmContent, landing: _base });
+        }
+        throw new Error(friendlyErr(_e));
+      }
+      created = _cj;
+    }
     const newCid = created.id;
     if (!newCid) throw new Error('새 소재 생성 실패');
 
