@@ -506,7 +506,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
         <div style="margin-top:8px"><button class="btn btn-primary" onclick="msCreate(this)">세트마다 생성 (PAUSED)</button></div>
       </div>
 
-        <div style="display:grid;grid-template-columns:1fr 320px;gap:16px" class="mcd-grid">
+        <div style="display:grid;grid-template-columns:1fr 380px;gap:16px" class="mcd-grid">
           <div>
             <!-- A. 소재명·UTM -->
             <div class="panel">
@@ -3180,8 +3180,8 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
 })();
 </script>
 <style id="RB_LAYOUT_TWEAKS_STYLE">
-/* 미리보기 패널 sticky 해제 — 뷰포트보다 커서 상단 고정 바와 겹쳐 보이던 문제 방지(정상 스크롤) */
-#page-metacreate .mcd-grid > div:last-child > .panel{position:static !important}
+/* 미리보기 패널 우측 고정(sticky) — 스크롤해도 미리보기 유지, 화면보다 크면 내부 스크롤. 고정 상단바 없어 겹침 없음 */
+#page-metacreate .mcd-grid > div:last-child > .panel{position:sticky!important;top:14px;max-height:calc(100vh - 28px);overflow:auto}
 /* 사이드바 하단 통합 리스트 */
 .side-foot .rb-foot-link{display:flex;align-items:center;gap:7px;font-size:11px;color:#8fb6ff;text-decoration:none;padding:6px 0;cursor:pointer;background:none;border:none;width:100%;text-align:left;line-height:1.4}
 .side-foot .rb-foot-link:hover{color:#b9d3ff}
@@ -3193,12 +3193,12 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
 <script id="RB_LAYOUT_TWEAKS">
 (function(){
   // 사이드바 하단을 통합 리스트로 재구성: 제미나이 · 미디어 라이브러리 · 계정선택 · 활동 · 동기화상태 · 개인정보.
-  // + 상단 중복 계정 바(areaNav) 숨김, '세트·소재·제품' 카운트 제거, 미리보기 sticky 해제.
+  // + 상단 중복 계정 바(areaNav) 숨김, '세트·소재·제품' 카운트 제거, 미리보기 sticky 고정(우측 고정·내부 스크롤).
   function build(){
     var side=document.querySelector('aside.side');
     var foot=side&&side.querySelector('.side-foot');
     if(!side||!foot) return false;
-    try{ var pv=document.getElementById('mcd_prev'); if(pv){ var pp=pv.closest('.panel'); if(pp) pp.style.position='static'; } }catch(e){}
+    try{ var pv=document.getElementById('mcd_prev'); if(pv){ var pp=pv.closest('.panel'); if(pp){ pp.style.position='sticky'; pp.style.top='14px'; pp.style.maxHeight='calc(100vh - 28px)'; pp.style.overflow='auto'; } } }catch(e){}
     var sel=document.getElementById('rbAcctSel');
     if(!sel) return false;
     if(document.getElementById('rbFootAcct')) return true;
