@@ -161,6 +161,15 @@ module.exports = async function (req, res) {
       const optGoal = String(a.optimizationGoal || DEFAULT_OPT[objectiveEff] || 'OFFSITE_CONVERSIONS');
       const targeting = (a.targeting && typeof a.targeting === 'object') ? a.targeting : { geo_locations: { countries: ['KR'] } };
       if (!targeting.geo_locations || !((targeting.geo_locations.countries || []).length)) targeting.geo_locations = { countries: ['KR'] };
+      // 어드밴티지+ 오디언스: 기본 OFF(0) — 정의한 연령/타게팅을 그대로 적용(제안 아님). true면 Meta 자동 확장 ON(1).
+      targeting.targeting_automation = { advantage_audience: (a.advantageAudience === true ? 1 : 0) };
+      // 노출위치: 기본 자동(어드밴티지+). 수동이면 플랫폼/포지션 지정(미지정 시 해당 플랫폼 전체 포지션).
+      if (a.placements && a.placements.mode === 'manual') {
+        var _pl = a.placements;
+        if (Array.isArray(_pl.publisher_platforms) && _pl.publisher_platforms.length) targeting.publisher_platforms = _pl.publisher_platforms;
+        if (Array.isArray(_pl.facebook_positions) && _pl.facebook_positions.length) targeting.facebook_positions = _pl.facebook_positions;
+        if (Array.isArray(_pl.instagram_positions) && _pl.instagram_positions.length) targeting.instagram_positions = _pl.instagram_positions;
+      }
       const p = {
         name: nm,
         optimization_goal: optGoal,
