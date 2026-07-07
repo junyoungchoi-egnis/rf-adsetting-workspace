@@ -3377,11 +3377,13 @@ main.main:has(#page-metacreate.active){max-width:1720px}
     {k:'MOBILE_FEED_STANDARD', t:'FB 피드'}
   ];
   var cur='INSTAGRAM_STANDARD';
-  var cache={}, lastSig=null, curSpec=null, curAct='', renderedKey=null, tmr=null;
+  var cache={}, lastSig=null, curSpec=null, curCid=null, curAct='', renderedKey=null, tmr=null;
   function sigOf(spec,act){ try{ return act+'|'+JSON.stringify(spec); }catch(e){ return act+'|?'; } }
   function hasPh(v){ return v==null || (''+v).indexOf('<')>=0; }
   // 현재 세팅으로부터 미리보기용 스펙 구성 + 유효성 검사
   function gather(){
+    // 복제 모드: ms_src에 선택된 기존 소재가 있으면 그 소재 자체로 미리보기(previewCreativeId)
+    try{ var msSel=document.getElementById('ms_src'); if(msSel && msSel.offsetParent!==null && msSel.value){ return {cid:msSel.value}; } }catch(e){}
     if(typeof mcdCreativeSpec!=='function') return {err:'준비 중'};
     var cs; try{ cs=mcdCreativeSpec(); }catch(e){ return {err:'소재 정보를 읽지 못했어요'}; }
     if(cs && cs.object_story_id) return {spec:{object_story_id:cs.object_story_id}};
@@ -3428,7 +3430,7 @@ main.main:has(#page-metacreate.active){max-width:1720px}
     if(cache[key]){ if(active && cur===fmt && lastSig===sig) showKey(key); return; }
     if(active && cur===fmt) msg('실제 렌더링 불러오는 중… <span style="opacity:.6">메타에서 그려오는 중이에요</span>');
     fetch('/api/clonead',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({preview:true, act:curAct, previewSpec:curSpec, previewFormats:[fmt]})})
+      body:JSON.stringify(curCid ? {preview:true, act:curAct, previewCreativeId:curCid, previewFormats:[fmt]} : {preview:true, act:curAct, previewSpec:curSpec, previewFormats:[fmt]})})
       .then(function(r){return r.json();})
       .then(function(j){ cache[key]=(j&&j.ok&&j.previews&&j.previews[fmt])?j.previews[fmt]:{error:(j&&j.error)||'이 게재위치는 미리보기를 만들 수 없어요'}; if(cur===fmt&&lastSig===sig) showKey(key); })
       .catch(function(){ cache[key]={error:'네트워크 오류로 불러오지 못했어요'}; if(cur===fmt&&lastSig===sig) showKey(key); });
@@ -3440,9 +3442,9 @@ main.main:has(#page-metacreate.active){max-width:1720px}
     if(g.err){ lastSig=null; msg('🔎 '+g.err); return; }
     var act=''; try{ act=(typeof mcdTargetAccount==='function')?String(mcdTargetAccount()||'').replace(/^act_/,''):''; }catch(e){}
     if(!act){ lastSig=null; msg('계정을 먼저 선택하세요.'); return; }
-    var sig=sigOf(g.spec, act);
+    var sig=g.cid ? (act+'|cid:'+g.cid) : sigOf(g.spec, act);
     if(sig===lastSig){ showKey(lastSig+'|'+cur); return; }   // 변경 없음 → 재요청/깜빡임 없음
-    lastSig=sig; curSpec=g.spec; curAct=act;
+    lastSig=sig; curSpec=g.cid?null:g.spec; curCid=g.cid||null; curAct=act;
     fetchFmt(cur, sig, true);
     FMTS.forEach(function(x){ if(x.k!==cur) fetchFmt(x.k, sig, false); });
   }
@@ -3482,6 +3484,11 @@ main.main:has(#page-metacreate.active){max-width:1720px}
   if(typeof window.mcdPreview==='function' && !window.__rbRpHooked){
     window.__rbRpHooked=1; var _mp=window.mcdPreview;
     window.mcdPreview=function(){ var r; try{ r=_mp.apply(this,arguments); }catch(e){} try{ if(build())schedule(); }catch(e){} return r; };
+  }
+  // 복제 흐름: 소스/세트 미리보기 갱신(msRenderPreview) 시에도 실제 렌더링 자동 로드 예약
+  if(typeof window.msRenderPreview==='function' && !window.__rbRpMsHooked){
+    window.__rbRpMsHooked=1; var _mrp=window.msRenderPreview;
+    window.msRenderPreview=function(){ var r; try{ r=_mrp.apply(this,arguments); }catch(e){} try{ if(build())schedule(); }catch(e){} return r; };
   }
   var n=0, iv=setInterval(function(){ if(build()){ clearInterval(iv); schedule(); } else if(++n>120) clearInterval(iv); },1000);
 })();
