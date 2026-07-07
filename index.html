@@ -2434,16 +2434,16 @@ async function ucCreate(btn){
     var creativeField=cf.closest('.field'); if(!creativeField||$('n5_modeBar')) return;
     var fmts=(typeof ucMapList==='function')?ucMapList('formats'):[];
     var msgs=(typeof ucMapList==='function')?ucMapList('msgpool'):[];
-    var bar=document.createElement('div'); bar.id='n5_modeBar'; bar.className='seg-toggle'; bar.style.cssText='margin:6px 0 10px';
-    bar.innerHTML='<button class="on" id="n5_mA" onclick="n5Mode(\'new\')">\u24d0 \uc18c\uc7ac \uc815\uc758</button><button id="n5_mB" onclick="n5Mode(\'arch\')">\u24d1 \uc2e0\uaddc \uc138\ud305</button><button id="n5_mC" onclick="n5Mode(\'clone\')">\u24d2 \ubcf5\uc81c</button>';
+    var bar=document.createElement('div'); bar.id='n5_modeBar'; bar.style.cssText='margin:6px 0 10px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap';
+    bar.innerHTML='<div class="seg-toggle"><button class="on" id="n5_mA" onclick="n5Mode(\'new\')">\u24d0 \uc18c\uc7ac\uba85 \ucd94\ucd9c</button></div><div class="seg-toggle"><button id="n5_mB" onclick="n5Mode(\'arch\')">\u24d1 \uc2e0\uaddc \uc138\ud305</button><button id="n5_mC" onclick="n5Mode(\'clone\')">\u24d2 \ubcf5\uc81c</button></div>';
     var box=document.createElement('div'); box.id='n5_newBox';
     box.innerHTML=''
       +'<div id="n5_chip" class="hint" style="margin:2px 0 8px;font-size:11px">\uce90\ud398\uc778\u00b7\uc138\ud2b8\ub97c \uba3c\uc800 \uc120\ud0dd\ud558\uc138\uc694</div>'
       +'<div class="grid" style="grid-template-columns:repeat(4,1fr);gap:8px">'
         +'<div class="field" style="margin:0"><label>\ub0a0\uc9dc</label><input type="date" id="n5_date" oninput="n5Compose()" style="color-scheme:dark"></div>'
-        +'<div class="field" style="margin:0"><label>\uba54\uc2dc\uc9c01</label><select id="n5_msg1" onchange="n5Compose()">'+opts(msgs,'(\uc5c6\uc74c)')+'</select></div>'
-        +'<div class="field" style="margin:0"><label>\uba54\uc2dc\uc9c02</label><select id="n5_msg2" onchange="n5Compose()">'+opts(msgs,'(\uc5c6\uc74c)')+'</select></div>'
-        +'<div class="field" style="margin:0"><label>\uba54\uc2dc\uc9c03</label><select id="n5_msg3" onchange="n5Compose()">'+opts(msgs,'(\uc5c6\uc74c)')+'</select></div>'
+        +'<div class="field" style="margin:0"><label>\uba54\uc2dc\uc9c01</label><input class="n5-msgq" placeholder="\ud83d\udd0e \uac80\uc0c9" oninput="n5MsgFilter(this,\'n5_msg1\')" style="margin-bottom:4px"><select id="n5_msg1" onchange="n5Compose()">'+opts(msgs,'(\uc5c6\uc74c)')+'</select></div>'
+        +'<div class="field" style="margin:0"><label>\uba54\uc2dc\uc9c02</label><input class="n5-msgq" placeholder="\ud83d\udd0e \uac80\uc0c9" oninput="n5MsgFilter(this,\'n5_msg2\')" style="margin-bottom:4px"><select id="n5_msg2" onchange="n5Compose()">'+opts(msgs,'(\uc5c6\uc74c)')+'</select></div>'
+        +'<div class="field" style="margin:0"><label>\uba54\uc2dc\uc9c03</label><input class="n5-msgq" placeholder="\ud83d\udd0e \uac80\uc0c9" oninput="n5MsgFilter(this,\'n5_msg3\')" style="margin-bottom:4px"><select id="n5_msg3" onchange="n5Compose()">'+opts(msgs,'(\uc5c6\uc74c)')+'</select></div>'
       +'</div>'
       +'<div class="grid" style="grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">'
         +'<div class="field" style="margin:0"><label>\ud615\uc2dd</label><select id="n5_fmt" onchange="n5Compose()">'+opts(fmts,'')+'</select></div>'
@@ -2486,6 +2486,7 @@ async function ucCreate(btn){
     MODE=m;
     [['n5_mA','new'],['n5_mB','arch'],['n5_mC','clone']].forEach(function(p){ var b=$(p[0]); if(b)b.className=(p[1]===m?'on':''); });
     var box=$('n5_newBox'), ch=$('n5_cloneHint'), cf=$('mcd_creative'); var cfield=cf&&cf.closest?cf.closest('.field'):null;
+    try{ var _mg=cf&&cf.closest?cf.closest('.mcd-grid'):null; var _lc=_mg?_mg.firstElementChild:null; if(_lc)_lc.classList.toggle('n5-solo', m==='new'); }catch(e){}
     if(box)box.style.display=(m==='new')?'':'none';
     var cg=$('mcd_camp')&&$('mcd_camp').closest?$('mcd_camp').closest('.grid'):null; if(cg)cg.style.display=(m==='new')?'':'none';
     var cp=$('mcd_cPanel'); if(cp)cp.style.display=(m==='new'||m==='clone')?'none':''; var bpan=$('mcd_page')&&$('mcd_page').closest?$('mcd_page').closest('.panel'):null; if(bpan)bpan.style.display=(m==='new')?'none':''; if(m==='arch'){ if(!window.__srcAdv&&typeof mcdSrc!=='undefined'&&mcdSrc!=='reuse'&&typeof mcdSetSrc==='function'){ mcdSetSrc('reuse',true); } if(typeof window.n5SrcApply==='function')window.n5SrcApply(); }
@@ -2498,7 +2499,14 @@ async function ucCreate(btn){
     var bb=$('n5b_box'); if(bb)bb.style.display=(m==='arch')?'':'none';
     var bf=$('n5b_foot'); if(bf)bf.style.display=(m==='arch')?'':'none';
     if(m==='new') window.n5Compose();
-    else if(m==='arch'){ if(typeof mcdSync==='function'){ try{ mcdSync(); }catch(e){} } try{ window.n5bRender(); window.n5bPreview(); window.n5bPre(); }catch(e){} }
+    else if(m==='arch'){
+      if(window.__n5PickArch){ try{ var _q=$('mcd_creativeSearch'); if(_q)_q.value=''; var _fp=$('mcd_crProduct'); if(_fp)_fp.value=''; var _fm=$('mcd_crManager'); if(_fm)_fm.value=''; if(typeof mcdFillCreative==='function')mcdFillCreative(); var _cs=$('mcd_creative'); if(_cs&&[].some.call(_cs.options,function(o){return o.value===window.__n5PickArch;}))_cs.value=window.__n5PickArch; }catch(e){} window.__n5PickArch=null; }
+      if(typeof mcdSync==='function'){ try{ mcdSync(); }catch(e){} } try{ window.n5bRender(); window.n5bPreview(); window.n5bPre(); }catch(e){}
+    }
+  };
+  window.n5MsgFilter=function(inp,selId){
+    var q=((inp&&inp.value)||'').trim().toLowerCase(); var s=$(selId); if(!s) return;
+    [].forEach.call(s.options,function(o){ if(o.value===''||o.value==='__manual__'){ o.hidden=false; return; } var t=(o.textContent||'').toLowerCase(); o.hidden=!!q&&t.indexOf(q)<0; });
   };
   window.n5Compose=function(){
     if(MODE!=='new') return;
@@ -2520,15 +2528,16 @@ async function ucCreate(btn){
     if(MODE!=='new') return;
     var set=curSet(); var an=$('mcd_autoname'); var name=an?an.textContent:'';
     if(!set){ if(typeof toast==='function')toast('\uc138\ud2b8\ub97c \uba3c\uc800 \uc120\ud0dd\ud558\uc138\uc694'); return; }
-    if(!name){ if(typeof toast==='function')toast('\uc18c\uc7ac \uc815\uc758 \uc694\uc18c\ub97c \uc785\ub825\ud558\uc138\uc694'); return; }
+    if(!name){ if(typeof toast==='function')toast('\uc18c\uc7ac\uba85 \ucd94\ucd9c \uc694\uc18c\ub97c \uc785\ub825\ud558\uc138\uc694'); return; }
     var dv=(($('n5_date')||{}).value)||'';
     var p={fmt:(($('n5_fmt')||{}).value)||'', msg:[(($('n5_msg1')||{}).value),(($('n5_msg2')||{}).value),(($('n5_msg3')||{}).value)].filter(Boolean).join('-'), soje:(($('n5_soje')||{}).value)||'', manager:(($('n5_mgr')||{}).value)||'', date:(typeof yymmdd==='function')?yymmdd(dv):dv};
     var utm=(($('mcd_utm')||{}).textContent)||'';
     if(!confirm('\uc774 \uc18c\uc7ac\uba85\uc744 \uc0dd\uc131 \uc544\uce74\uc774\ube0c(\u2462)\uc5d0 \uc800\uc7a5\ud560\uae4c\uc694?\n'+name)) return;
     try{ ucArchPush(set,name,utm,p,false); }catch(e){ if(typeof toast==='function')toast('\uc800\uc7a5 \uc624\ub958'); return; }
+    try{ var _arr=DB.archive||[]; var _last=_arr[_arr.length-1]; if(_last&&_last.name===name) window.__n5PickArch=_last.id; }catch(e){}
     try{ if(typeof save==='function')save(); }catch(e){}
     try{ if(typeof mcdFillCreative==='function')mcdFillCreative(); }catch(e){}
-    if(typeof toast==='function')toast('\uc0dd\uc131 \uc544\uce74\uc774\ube0c(\u2462)\uc5d0 \uc800\uc7a5\ub428');
+    if(typeof toast==='function')toast('\uc800\uc7a5\ub428 \u00b7 [\u24d1 \uc2e0\uaddc \uc138\ud305]\uc5d0\uc11c \uc774 \uc18c\uc7ac\uba85\uc774 \ubc14\ub85c \uc120\ud0dd\ub429\ub2c8\ub2e4');
   };
   var n5bTargets={};
   function n5bArchItem(){ try{ return DB.archive.find(function(x){return x.id===(($('mcd_creative')||{}).value);}); }catch(e){ return null; } }
@@ -3186,6 +3195,8 @@ if(document.readyState!=="loading")build();else document.addEventListener("DOMCo
 main.main:has(#page-metacreate.active){max-width:1720px}
 #page-metacreate .mcd-grid > div:first-child{columns:2;column-gap:14px}
 #page-metacreate .mcd-grid > div:first-child > .panel{break-inside:avoid;margin-bottom:14px}
+/* 소재명 추출 모드: 보이는 패널이 하나뿐이라 2단 시 우측 여백 발생 → 단일 단으로 펴서 폼을 우로 확장 */
+#page-metacreate .mcd-grid > div:first-child.n5-solo{columns:1}
 @media(max-width:1240px){main.main:has(#page-metacreate.active){max-width:1280px}#page-metacreate .mcd-grid > div:first-child{columns:1}}
 /* 사이드바 하단 통합 리스트 */
 .side-foot .rb-foot-link{display:flex;align-items:center;gap:7px;font-size:11px;color:#8fb6ff;text-decoration:none;padding:6px 0;cursor:pointer;background:none;border:none;width:100%;text-align:left;line-height:1.4}
