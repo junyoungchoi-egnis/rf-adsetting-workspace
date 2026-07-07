@@ -293,6 +293,12 @@ module.exports = async function (req, res) {
       if (!clean.link_data && !clean.video_data) return res.status(422).json({ ok: false, error: 'newSpec 에 에셋(image_hash/video_id) 또는 링크 필요' });
       var _hasAsset = (clean.link_data && (clean.link_data.image_hash || clean.link_data.link)) || (clean.video_data && clean.video_data.video_id);
       if (!_hasAsset) return res.status(422).json({ ok: false, error: '에셋(이미지 해시·영상) 또는 랜딩 링크가 필요합니다' });
+      // 플레이스홀더(<...>)가 그대로 넘어오면 = 클라이언트에서 에셋/랜딩이 실제로 선택·입력 안 됨.
+      // (예: 영상 소재인데 video_id가 안 잡혀 image_hash에 '<애셋 미선택>'이 새어 들어감) → 메타에 잘못된 값 보내지 말고 명확히 차단.
+      var _isPh = function (v) { return typeof v === 'string' && v.indexOf('<') >= 0; };
+      if (clean.link_data && _isPh(clean.link_data.image_hash)) return res.status(422).json({ ok: false, code: 'ASSET_NOT_SELECTED', error: '소재(이미지)가 선택되지 않았습니다 — 이미지를 다시 고르거나, 영상 소재는 "복제(기존 소재)" 방식으로 만들어 주세요.' });
+      if (clean.video_data && _isPh(clean.video_data.video_id)) return res.status(422).json({ ok: false, code: 'ASSET_NOT_SELECTED', error: '소재(영상)가 선택되지 않았습니다 — 영상을 다시 선택해 주세요.' });
+      if (clean.link_data && _isPh(clean.link_data.link)) return res.status(422).json({ ok: false, code: 'LANDING_MISSING', error: '랜딩 URL이 입력되지 않았습니다.' });
       newTags = 'utm_campaign=' + enc(utmCampaign) + '&utm_content=' + enc(utmContent);
     }
 
