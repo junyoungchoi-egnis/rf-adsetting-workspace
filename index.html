@@ -3678,6 +3678,15 @@ main.main:has(#page-metacreate.active){max-width:1720px}
     padding:7px 12px;border-radius:8px;text-decoration:none}
   #rbDeepBanner .rb-deep-go:hover{background:#7ee0a0}
   #rbDeepBanner .rb-deep-x{position:absolute;top:8px;right:10px;background:transparent;border:0;color:#9aa3b2;font-size:13px;cursor:pointer}
+  #rbDeepBanner .rb-deep-t b{color:#fff}
+  #rbDeepBanner .rb-err-sec{font-size:11px;color:#7fb3c8;font-weight:600;margin-top:2px}
+  #rbDeepBanner .rb-err-reason{font-size:12px;color:#f0c4c4;line-height:1.6;background:rgba(255,255,255,.03);border:1px solid #4a2020;border-radius:9px;padding:9px 11px}
+  #rbDeepBanner .rb-err-report{display:flex;align-items:center;gap:10px;margin-top:2px}
+  #rbDeepBanner .rb-err-report span{flex:1;font-size:11.5px;color:#9aa3b2;line-height:1.45}
+  #rbDeepBanner .rb-err-report b{color:#e6e9ef}
+  #rbDeepBanner .rb-err-cp{flex:none;font-size:11.5px;font-weight:600;color:#fff;background:#1f6feb;border:none;border-radius:8px;padding:8px 13px;cursor:pointer}
+  #rbDeepBanner .rb-err-cp:hover{background:#2f7bf6}
+  #rbDeepBanner .rb-err-cp.done{background:#1f7a52}
 </style>
 <script>
 /* RB_DEEPLINK — 소재 생성 직후 "메타 광고관리자에서 열기/활성화" 바로가기 배너.
@@ -3685,7 +3694,28 @@ main.main:has(#page-metacreate.active){max-width:1720px}
    계정별로 광고관리자 딥링크를 만든다. (생성 코드 자체는 건드리지 않음) */
 (function(){
   if(window.__rbDeepHooked) return; window.__rbDeepHooked=1;
-  var buf={}, fails=[], manual=[], tmr=null, el=null;
+  var buf={}, fails=[], tmr=null, el=null;
+  function isDev(){ try{ return /-git-dev-/.test(location.host); }catch(e){ return false; } }
+  function screenLabel(){ try{ if(document.querySelector('#n5_mC.on'))return '소재 세팅 · 복제'; if(document.querySelector('#n5_mB.on'))return '소재 세팅 · 신규 세팅'; var u=document.getElementById('page-unified'); if(u&&u.classList.contains('active'))return '통합 세팅'; return '소재 세팅'; }catch(e){ return '소재 세팅'; } }
+  var REASONS={
+    PAGE_NO_PUBLISH:'이 소재의 페이지에 게시 권한이 없어요. 권한 있는 자사 페이지(예: CLOOP) 소재로 복제하거나, 개발자에게 페이지 권한을 요청하세요.',
+    ASSET_NOT_SELECTED:'소재(이미지·영상)가 선택되지 않았어요. 소재를 다시 고르거나, 영상은 “복제(기존 소재)” 방식으로 만들어 주세요.',
+    LANDING_MISSING:'랜딩 URL이 없어요. 설정/매핑에서 이 세트의 스킴–랜딩 연결을 확인해 주세요.',
+    IMAGE_ACCOUNT_MISMATCH:'선택한 소재의 이미지가 이 광고 계정에 없어요(다른 계정 이미지). 같은 계정 소재를 고르거나, 대상 세트를 그 소재의 계정으로 맞춰 주세요.'
+  };
+  function reasonOf(f){ if(f.code&&REASONS[f.code])return REASONS[f.code]; if(/limit/i.test(f.error||''))return '메타 생성 한도에 도달했어요. 잠시 후 다시 시도해 주세요.'; return '예상치 못한 오류입니다. 아래 진단 정보를 개발자님께 전달해 주세요. ('+(f.error||'')+')'; }
+  function diagText(){
+    var succ=Object.keys(buf).reduce(function(s,a){return s+buf[a].length;},0);
+    var accts=Object.keys(buf).concat(fails.map(function(f){return f.act;})).filter(function(a,i,arr){return a&&arr.indexOf(a)===i;});
+    var L=['[rf-adsetting 오류 제보]'];
+    try{ L.push('시각: '+new Date().toLocaleString('ko-KR')); }catch(e){}
+    L.push('화면: '+screenLabel());
+    L.push('계정: '+accts.map(function(a){return acctName(a)+' (act_'+String(a).replace(/^act_/,'')+')';}).join(', '));
+    L.push('결과: 성공 '+succ+' / 실패 '+fails.length, '', '실패 '+fails.length+'건:');
+    fails.forEach(function(f){ L.push('· 소재: '+(f.name||'(이름 없음)')); if(f.set)L.push('  세트: '+f.set); L.push('  사유: '+(f.code?f.code+' — ':'')+(f.error||'')); if(f.landing)L.push('  랜딩/UTM: '+utmUrl(f.landing,f.camp,f.cont)); });
+    L.push('앱: '+(isDev()?'dev':'prod')+' · '+location.host);
+    return L.join('\n');
+  }
   function acctName(act){ try{ var m=(typeof META_ACCOUNTS!=='undefined')?META_ACCOUNTS.filter(function(x){return String(x.id).replace(/^act_/,'')===String(act).replace(/^act_/,'');})[0]:null; return m?m.name:('계정 '+act); }catch(e){ return '광고관리자'; } }
   function amUrl(act, ids){ return 'https://adsmanager.facebook.com/adsmanager/manage/ads?act='+encodeURIComponent(act)+'&selected_ad_ids='+encodeURIComponent(ids.join(',')); }
   function esc2(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
@@ -3700,44 +3730,31 @@ main.main:has(#page-metacreate.active){max-width:1720px}
   }
   function show(){
     var accts=Object.keys(buf).filter(function(a){return buf[a]&&buf[a].length;});
-    var uniqFails=fails.filter(function(f,i){ return fails.indexOf(f)===i; });
-    if(!accts.length && !uniqFails.length && !manual.length) return;
-    if(!el){
-      el=document.createElement('div'); el.id='rbDeepBanner'; document.body.appendChild(el);
-      el.addEventListener('click', function(e){
-        var cb=e.target.closest && e.target.closest('[data-copy-idx]'); if(!cb) return;
-        var i=+cb.getAttribute('data-copy-idx'), f=cb.getAttribute('data-copy-field'); var m=manual[i]; if(!m) return;
-        var val=(f==='name')?m.name:utmUrl(m.landing,m.camp,m.cont);
-        try{ navigator.clipboard.writeText(val); var o=cb.textContent; cb.textContent='복사됨'; setTimeout(function(){cb.textContent=o;},1200); }catch(x){}
-      });
-    }
+    if(!accts.length && !fails.length) return;
+    if(!el){ el=document.createElement('div'); el.id='rbDeepBanner'; document.body.appendChild(el); }
+    var succ=accts.reduce(function(s,a){return s+buf[a].length;},0);
     var html='<button class="rb-deep-x" aria-label="닫기">✕</button>';
-    if(manual.length){
-      html+='<div class="rb-deep-t" style="color:#ffd28a">📋 앱에서 게시 불가 페이지 '+manual.length+'건 — 메타에서 수동 복제용</div>'
-        +'<div style="font-size:10.5px;color:#c9b98f;margin:2px 0 6px">이 페이지는 rf API에 게시 권한이 없어요. 메타에서 원본 광고를 복제한 뒤, 아래 값으로 이름·UTM만 바꿔주세요.</div>'
-        +'<div style="max-height:200px;overflow:auto">'
-        + manual.map(function(m,i){ return '<div style="border:1px solid #5a4a25;border-radius:8px;padding:7px 9px;margin-bottom:6px;background:rgba(0,0,0,.18)">'
-            +'<div style="font-size:11px;color:#cbb28a;margin-bottom:2px">소재명 <button data-copy-idx="'+i+'" data-copy-field="name" style="float:right;font-size:10px;padding:1px 8px;border-radius:5px;border:1px solid #6b5a33;background:transparent;color:#ffd28a;cursor:pointer">복사</button></div>'
-            +'<div style="font-size:11px;color:#e6e9ef;word-break:break-all;margin-bottom:5px">'+esc2(m.name||'(이름 없음)')+'</div>'
-            +'<div style="font-size:11px;color:#cbb28a;margin-bottom:2px">UTM URL <button data-copy-idx="'+i+'" data-copy-field="url" style="float:right;font-size:10px;padding:1px 8px;border-radius:5px;border:1px solid #6b5a33;background:transparent;color:#ffd28a;cursor:pointer">복사</button></div>'
-            +'<div style="font-size:10.5px;color:#9aa3b2;word-break:break-all">'+esc2(utmUrl(m.landing,m.camp,m.cont)||'(랜딩 URL 없음 — 원본 유지)')+'</div>'
-          +'</div>'; }).join('')
-        +'</div>';
-    }
-    if(uniqFails.length){
-      html+='<div class="rb-deep-t"'+(manual.length?' style="margin-top:8px;color:#ff9b9b"':' style="color:#ff9b9b"')+'>⚠️ 생성 실패 '+fails.length+'건 <span style="color:#d98a8a">· 사유:</span></div>'
-        + uniqFails.slice(0,4).map(function(f){ return '<div style="font-size:11.5px;color:#e7b3b3;line-height:1.5">· '+esc2(f)+'</div>'; }).join('');
+    if(fails.length){
+      html+='<div class="rb-deep-t" style="color:#ff9b9b">⚠️ 생성 일부 실패 — <b>성공 '+succ+' / 실패 '+fails.length+'</b></div>';
+      var seen={}, reasons=[]; fails.forEach(function(f){ var r=reasonOf(f); if(!seen[r]){ seen[r]=1; reasons.push(r); } });
+      html+='<div class="rb-err-sec">① 왜 실패했나요</div>'
+        + '<div class="rb-err-reason">'+reasons.map(function(r){ return '· '+esc2(r); }).join('<br>')+'</div>'
+        + '<div class="rb-err-report"><span>② 반복되면 <b>개발자님께 제보</b>해 주세요 — 진단 정보가 버튼에 담깁니다</span>'
+        + '<button class="rb-err-cp" id="rbErrCp">📋 진단 정보 복사</button></div>';
     }
     if(accts.length){
-      var total=accts.reduce(function(s,a){return s+buf[a].length;},0);
-      html+='<div class="rb-deep-t"'+((uniqFails.length||manual.length)?' style="margin-top:8px"':'')+'>✅ 방금 '+total+'개 광고 생성됨 <span>· PAUSED 상태예요 — 열어서 검토 후 활성화하세요</span></div>'
+      html+='<div class="rb-deep-t"'+(fails.length?' style="margin-top:10px"':'')+'>✅ 방금 '+succ+'개 광고 생성됨 <span>· PAUSED 상태예요 — 열어서 검토 후 활성화하세요</span></div>'
         + accts.map(function(a){ return '<a class="rb-deep-go" href="'+amUrl(a,buf[a])+'" target="_blank" rel="noopener">🔗 '+esc2(acctName(a))+' 광고관리자에서 열기 ('+buf[a].length+') ↗</a>'; }).join('');
     }
     el.innerHTML=html;
-    // 톤: 수동복제(노랑) > 실패(빨강) > 성공(초록)
-    el.style.background = manual.length ? '#2a2416' : (uniqFails.length ? '#2a1618' : '#12331f');
-    el.style.borderColor = manual.length ? '#6b5a33' : (uniqFails.length ? '#7a3535' : '#2f7a4a');
-    el.querySelector('.rb-deep-x').onclick=function(){ if(el){el.remove();el=null;} buf={}; fails=[]; manual=[]; };
+    el.style.background = fails.length ? '#2a1618' : '#12331f';
+    el.style.borderColor = fails.length ? '#7a3535' : '#2f7a4a';
+    var xb=el.querySelector('.rb-deep-x'); if(xb) xb.onclick=function(){ if(el){el.remove();el=null;} buf={}; fails=[]; };
+    var cp=el.querySelector('#rbErrCp'); if(cp) cp.onclick=function(){ var t=diagText();
+      function done(){ cp.textContent='✓ 복사됨 — 개발자님께 붙여넣기'; cp.classList.add('done'); setTimeout(function(){ cp.textContent='📋 진단 정보 복사'; cp.classList.remove('done'); },1800); }
+      function fb(){ try{ var ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done(); }catch(x){ cp.textContent='복사 실패'; } }
+      try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(done,fb); } else fb(); }catch(e){ fb(); }
+    };
   }
   var _f=window.fetch;
   window.fetch=function(url,opts){
@@ -3748,25 +3765,24 @@ main.main:has(#page-metacreate.active){max-width:1720px}
         var b=JSON.parse(opts.body);
         if(b && b.apply===true && b.act){
           pr.then(function(resp){ resp.clone().json().then(function(j){
+            var act=String(b.act).replace(/^act_/,'');
             if(j && j.ok && j.newAdId){
-              var act=String(b.act).replace(/^act_/,'');
               (buf[act]=buf[act]||[]).push(j.newAdId);
-              if(tmr)clearTimeout(tmr); tmr=setTimeout(show,1200);   // 배치 생성이 끝나면(1.2s 유휴) 배너 표시
             } else if(j && j.code==='PAGE_NO_PUBLISH'){
-              // 페이지 게시 권한 없음 → 메타 수동 복제용 정보(소재명·랜딩·UTM)를 복사 팝업으로
-              var _nm=(j.newName||b.newName||'');
-              if(!manual.some(function(x){return x.name===_nm;})) manual.push({name:_nm, landing:(j.landing||''), camp:(j.utmCampaign||b.utmCampaign||''), cont:(j.utmContent||b.utmContent||'')});
-              if(tmr)clearTimeout(tmr); tmr=setTimeout(show,1200);
+              // 페이지 게시 권한 없음 → 실패로 수집(사유·소재명·랜딩·UTM은 진단 정보 복사에 담김)
+              fails.push({act:act, code:'PAGE_NO_PUBLISH', name:(j.newName||b.newName||''), set:(b.utmCampaign||''), error:(j.error||'이 소재의 페이지 게시 권한 없음'), landing:(j.landing||''), camp:(j.utmCampaign||b.utmCampaign||''), cont:(j.utmContent||b.utmContent||'')});
             } else if(j && j.ok===false && j.needConnect!==true){
-              fails.push(String(j.error||'알 수 없는 오류'));           // 생성 실패 사유 수집 → 배너로 표시
-              if(tmr)clearTimeout(tmr); tmr=setTimeout(show,1200);
-            }
+              fails.push({act:act, code:(j.code||''), name:(b.newName||''), set:(b.utmCampaign||''), error:String(j.error||'알 수 없는 오류')});
+            } else { return; }
+            if(tmr)clearTimeout(tmr); tmr=setTimeout(show,1200);   // 배치 생성이 끝나면(1.2s 유휴) 알럿 표시
           }).catch(function(){}); }).catch(function(){});
         }
       }
     }catch(e){}
     return pr;
   };
+  // dev 전용 미리보기: 개발 서버 콘솔에서 rbErrDemo() 실행 시 샘플 오류 알럿 표시
+  try{ if(/-git-dev-/.test(location.host)){ window.rbErrDemo=function(){ buf={}; fails=[]; var a='3342733785912061'; buf[a]=['1','2','3','4','5','6','7','8','9','10','11','12']; fails.push({act:a,code:'PAGE_NO_PUBLISH',name:'260703_FB_SPED_I_PR-ED-ppp_free.90-BENEFIT_PRC_ALL_REG_2607BF_jhg',set:'FB_SPED_PUR_CMX_ALL_2607BF_BENEFIT_260703',error:'이 소재의 페이지에 게시 권한이 없습니다',landing:'https://sprintenergy.kr/article/event/8/62040/',camp:'FB_SPED_PUR_CMX_ALL_2607BF_BENEFIT_260703',cont:'260703_FB_SPED_I_PR-ED-ppp_free.90-BENEFIT_PRC_ALL_REG_2607BF_jhg'}); show(); }; } }catch(e){}
 })();
 </script>
 <script>
