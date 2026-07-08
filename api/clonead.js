@@ -309,13 +309,22 @@ module.exports = async function (req, res) {
     let clean, newTags;
     if (srcCreativeId) {
       // (A) 기존 복제
-      const cr = await gget(GRAPH + '/' + srcCreativeId + '?fields=name,object_type,url_tags,object_story_spec&access_token=' + enc(token));
+      const cr = await gget(GRAPH + '/' + srcCreativeId + '?fields=name,object_type,url_tags,object_story_spec,effective_object_story_id,object_story_id&access_token=' + enc(token));
       const spec = cr.object_story_spec;
-      if (!spec || (!spec.link_data && !spec.video_data)) {
-        return res.status(422).json({ ok: false, error: '인라인 소재 아님 (object_type=' + (cr.object_type || '?') + ')' });
+      if (spec && (spec.link_data || spec.video_data)) {
+        // 인라인 소재 → object_story_spec 재구성 + 링크 UTM 교정
+        clean = cleanFromSource(spec, utmCampaign, utmContent);
+        newTags = fixUtm(cr.url_tags || '', utmCampaign, utmContent);
+      } else {
+        // 인라인 소재 아님(object_type=SHARE 등, 예: 기존 게시물을 그대로 홍보한 광고) →
+        // 기존 게시물(object_story_id)을 그대로 참조해 복제(같은 게시물, 새 광고). UTM은 url_tags로 주입.
+        const osid = cr.effective_object_story_id || cr.object_story_id || (spec && spec.object_story_id) || '';
+        if (!osid) {
+          return res.status(422).json({ ok: false, error: '복제 불가 — 인라인 소재도 아니고 참조할 게시물 ID도 없습니다 (object_type=' + (cr.object_type || '?') + ')' });
+        }
+        clean = { object_story_id: String(osid) };
+        newTags = fixUtm(cr.url_tags || '', utmCampaign, utmContent) || ('utm_campaign=' + enc(utmCampaign) + '&utm_content=' + enc(utmContent));
       }
-      clean = cleanFromSource(spec, utmCampaign, utmContent);
-      newTags = fixUtm(cr.url_tags || '', utmCampaign, utmContent);
     } else {
       // (B) 신규 생성
       clean = cleanFromNew(newSpec, utmCampaign, utmContent);
@@ -380,7 +389,11 @@ module.exports = async function (req, res) {
     }
 
     // 새 소재 생성
-    const cpayload = { name: newName + (srcCreativeId ? ' [clone]' : ' [new]'), object_story_spec: clean };
+    // object_story_id(기존 게시물 참조형, SHARE 복제)는 최상위 필드로 보냄(object_story_spec로 래핑 X).
+    var _useStoryId = !!(clean && clean.object_story_id && !clean.link_data && !clean.video_data);
+    const cpayload = _useStoryId
+      ? { name: newName + ' [clone]', object_story_id: clean.object_story_id }
+      : { name: newName + (srcCreativeId ? ' [clone]' : ' [new]'), object_story_spec: clean };
     if (newTags) cpayload.url_tags = newTags;
     // 어드밴티지+ 크리에이티브(자동 향상)·상품연동(제품태그/카탈로그/Shop) 제어.
     // Meta v22(2025-01)부터 standard_enhancements 번들 키는 지원 중단 → 전송 시 에러.
@@ -388,10 +401,13 @@ module.exports = async function (req, res) {
     // 따라서 기본값은 "상품연동(product_extensions)만 명시적 OPT_OUT" 로 두어 제품태그/카탈로그/Shop
     // 자동 첨부를 끈다. 개별 항목 세부 제어는 클라이언트가 creativeFeatures(=creative_features_spec)
     // 를 넘겨 덮어쓸 수 있음(향후 소재 세팅 UI의 개별 토글용).
-    var _cfs = (b.creativeFeatures && typeof b.creativeFeatures === 'object')
-      ? b.creativeFeatures
-      : { product_extensions: { enroll_status: 'OPT_OUT' } };
-    cpayload.degrees_of_freedom_spec = { creative_features_spec: _cfs };
+    // (기존 게시물 참조형은 게시물 자체 설정을 따르므로 dof_spec 미적용)
+    if (!_useStoryId) {
+      var _cfs = (b.creativeFeatures && typeof b.creativeFeatures === 'object')
+        ? b.creativeFeatures
+        : { product_extensions: { enroll_status: 'OPT_OUT' } };
+      cpayload.degrees_of_freedom_spec = { creative_features_spec: _cfs };
+    }
     let created;
     {
       const _cr = await fetch(GRAPH + '/act_' + act + '/adcreatives?access_token=' + enc(token), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cpayload) });
