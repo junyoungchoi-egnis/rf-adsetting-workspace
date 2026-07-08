@@ -1431,7 +1431,7 @@ function parseLiveSet(a){
 /* 메타 라이브 광고세트 ∪ 빌더 세트 → 통합 후보 목록 (현재 영역 기준) */
 /* 소재 탭 후보 = 메타 라이브 광고세트만. 기준: 캠페인 활성(activeOnlyCamp).
    소재 0건 신규 광고세트도 포함(adsets 엔드포인트로 수집되므로). 빌더 세트는 라이브 매칭 시 속성(랜딩·1차)만 보강. */
-function creativeCandidates(){
+function creativeCandidates(ignoreScope){
   const adsets = metaSnap&&metaSnap.adsets?(Array.isArray(metaSnap.adsets)?metaSnap.adsets:Object.values(metaSnap.adsets)):[];
   const builderByAdset={}; DB.sets.forEach(s=>{ if(s.adsetId)builderByAdset[s.adsetId]=s; });
   const out=[];
@@ -1439,8 +1439,8 @@ function creativeCandidates(){
     if(!a||!a.adsetId) return;
     if(activeOnlyCamp && a.campaignStatus!=='ACTIVE') return;        // 캠페인 활성 기준 (토글 해제 시 전체)
     const c=parseLiveSet(a); if(!c) return;
-    if(!M().products.find(p=>p.code===c.product)) return;            // 등록 제품코드만 → 영역 정확
-    if(areaOf(c.product)!==areaScope) return;
+    if(!M().products.find(p=>p.code===c.product)) return;            // 등록 제품코드만 → 이름 파싱·랜딩 정확
+    if(!ignoreScope && areaOf(c.product)!==areaScope) return;         // 스코프 필터(소재세팅은 계정 기준이라 msCandidates에서 ignoreScope=true)
     c.campName=a.campaignName||''; c.campStatus=a.campaignStatus||'';
     c.live={total:a.total,active:a.active,status:a.adsetStatus};
     const b=builderByAdset[a.adsetId];                              // 빌더 매칭 시 랜딩·1차 보강 (라이브 파싱 보완)
@@ -2092,7 +2092,7 @@ function msCandidates(){
   if(typeof creativeCandidates!=='function') return [];
   const rows=(metaSnap&&metaSnap.adsets)?(Array.isArray(metaSnap.adsets)?metaSnap.adsets:Object.values(metaSnap.adsets)):[];
   const acctOf={}; rows.forEach(function(a){ if(a.adsetId)acctOf[a.adsetId]=a.account; });
-  var out=creativeCandidates().filter(function(c){ return c.adsetId; }).map(function(c){ c._acct=acctOf[c.adsetId]||''; return c; });
+  var out=creativeCandidates(true).filter(function(c){ return c.adsetId; }).map(function(c){ c._acct=acctOf[c.adsetId]||''; return c; });
   // 대상 광고세트를 "선택 계정"(계정 드롭다운 = RB_SELACCT / mcdTargetAccount)으로 좁힌다.
   // 한 브랜드(예: 클룹)에 계정이 둘(메인·서브)이라 area 필터만으로는 두 계정 세트가 섞이는데,
   // 소재 그리드는 선택 계정의 에셋만 보여주므로 → 다른 계정 세트를 고르면 image_hash 불일치로
@@ -2106,7 +2106,7 @@ function msCandidates(){
       if(_scoped.length || (metaSnap && metaSnap.adsets)) return _scoped;
     }
   }catch(e){}
-  return out;
+  return out.filter(function(c){ return areaOf(c.product)===areaScope; });  // 계정 미선택 시엔 제품 브랜드 스코프로 폴백
 }
 function msRenderSrc(){
   const wrap=document.getElementById('ms_srclist'); const hidden=document.getElementById('ms_src'); if(!wrap) return;
