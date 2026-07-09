@@ -311,21 +311,6 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-h">광고세트 라이브러리 <span class="hint" id="setLibCount"></span></div>
-        <div class="row-flex" style="margin-bottom:12px">
-          <input id="setSearch" placeholder="🔍 세트명 검색" style="max-width:260px" oninput="renderSetLib()">
-          <div class="seg-toggle"><button id="lsAll" class="on" onclick="setLibFilter('all')">전체</button><button id="lsActive" onclick="setLibFilter('active')">활성</button><button id="lsInactive" onclick="setLibFilter('inactive')">비활성</button></div>
-          <div class="spacer"></div>
-          <button class="btn btn-ghost btn-sm" onclick="exportSets()">📥 세트 CSV</button>
-        </div>
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr><th>제품</th><th>광고세트명 (utm_campaign)</th><th>합성</th><th>타게팅</th><th>1차</th><th>랜딩</th><th>생성일</th><th></th></tr></thead>
-            <tbody id="setLibBody"></tbody>
-          </table>
-        </div>
-      </div>
 
       <!-- 생성 단계 (캠페인 + 광고세트) — 생성 클릭 시 표시 -->
       <div class="panel" id="b_createWrap" style="display:none;margin-top:16px;border-color:#2a4a7a">
@@ -1431,6 +1416,7 @@ function bxRenderResult(j,act){
 let libFilter='all';
 function setLibFilter(v){ libFilter=v; ['all','active','inactive'].forEach(x=>$('ls'+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle('on',x===v)); renderSetLib(); }
 function renderSetLib(){
+  if(!$('setLibBody')||!$('setSearch')) return;   // 광고세트 라이브러리 표 제거됨 — 요소 없으면 스킵
   const q=($('setSearch').value||'').toLowerCase();
   const scoped=DB.sets.filter(s=>areaOf(s.product)===areaScope);
   let list=scoped.filter(s=>!q||s.name.toLowerCase().includes(q));
