@@ -306,14 +306,14 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
               <div>생성 예정 <b id="b_genCount" style="color:var(--accent2)">0</b>개</div>
             </div>
             <div class="warnbox" id="b_warn"></div>
-            <button class="btn btn-primary" style="width:100%;margin-top:12px;padding:12px" onclick="generateSets()">+ 캠페인·광고세트 생성</button>
+            <div class="hint" style="margin-top:12px;text-align:center">↓ 아래 <b>META에 실제 생성</b>에서 모드(캠페인/세트/한번에)를 고르고 생성하세요</div>
           </div>
         </div>
       </div>
 
 
       <!-- 생성 단계 (캠페인 + 광고세트) — 생성 클릭 시 표시 -->
-      <div class="panel" id="b_createWrap" style="display:none;margin-top:16px;border-color:#2a4a7a">
+      <div class="panel" id="b_createWrap" style="margin-top:16px;border-color:#2a4a7a">
         <div class="panel-h">Meta에 실제 생성 — 캠페인 · 광고세트 <span class="hint">생성 시 PAUSED(꺼짐) · 광고(소재)는 소재 세팅 탭에서</span></div>
         <div class="seg-toggle" id="bx_modebar" style="margin-bottom:10px"><button id="bx_mA" onclick="bxSetMode('camp')">ⓐ 캠페인 생성</button><button id="bx_mB" onclick="bxSetMode('set')">ⓑ 세트 생성</button><button id="bx_mC" class="on" onclick="bxSetMode('both')">ⓒ 한번에</button></div>
         <div id="bx_camprow" style="font-size:12px;color:var(--text2);margin-bottom:6px"></div>
@@ -1250,6 +1250,18 @@ function buildPreview(){
   if(effectiveTargets().length===0)w.push('타게팅 토큰을 1개 이상 선택하세요.');
   if(bTams.size===0)w.push('타겟 컨셉을 1개 이상 선택하세요.');
   const wb=$('b_warn');wb.innerHTML=w.join('<br>');wb.classList.toggle('show',w.length>0);
+  try{ bxSyncFromBuilder(b, valid); }catch(e){}   // 빌더 → 실제 생성(META) 섹션 실시간 동기화
+}
+function bxSyncFromBuilder(b, valid){
+  if(!$('b_createWrap')) return;
+  var kr=buildKrName({...b,tams:[...bTams]});
+  var sets=[];
+  if(valid && effectiveTargets().length && bTams.size){
+    effectiveTargets().forEach(function(tg){ [...bTams].forEach(function(tm){ var o={...b,targeting:tg,tam:tm};
+      sets.push({name:buildSetName(o),product:b.product,brand:brandOf(b.product),media:b.media,goal:b.goal,bid:b.bid,targeting:tg,scheme:b.scheme,tam:tm,firstcat:b.firstcat,date:b.date,landing:landingFor(b.product,b.scheme)}); }); });
+  }
+  lastGen=(b.product&&b.goal&&b.bid)?{product:b.product,scheme:b.scheme,goal:b.goal,media:b.media,bid:b.bid,cnum:b.cnum,campaignName:kr,sets:sets}:null;
+  if(!window.__bxInited){ window.__bxInited=1; bxInit(); } else { bxRefreshLive(); }
 }
 function generateSets(){
   const b=currentBuilder();
@@ -1306,7 +1318,7 @@ function bxSetMode(m){
 }
 function bxRenderCamprow(){
   var cr=$('bx_camprow'); if(!cr)return;
-  var n=(lastGen&&lastGen.setIds)?lastGen.setIds.length:0;
+  var n=(lastGen&&lastGen.sets)?lastGen.sets.length:0;
   cr.innerHTML = bxMode==='camp' ? '<b style="color:var(--accent2)">캠페인 1개</b>만 생성합니다 (세트는 ⓑ에서 붙이기)'
     : bxMode==='set' ? '기존 캠페인에 <b style="color:var(--accent2)">광고세트 '+n+'개</b> 생성'
     : '<b style="color:var(--accent2)">캠페인 1 + 광고세트 '+n+'개</b>를 한번에 생성';
@@ -1314,16 +1326,17 @@ function bxRenderCamprow(){
 function bxInit(){
   var sel=$('bx_acct');
   if(sel){ var cur=sel.value; sel.innerHTML=Object.keys(UC_ACCT).map(function(id){ return '<option value="'+id+'">'+esc(UC_ACCT[id]||id)+(id===BX_TEST_ACCT?' · 테스트':'')+'</option>'; }).join(''); sel.value=(cur&&UC_ACCT[cur])?cur:BX_TEST_ACCT; }
-  var ci=$('bx_campnameInput'); if(ci)ci.value=(lastGen&&lastGen.campaignName)||'';
-  bxRenderSets();
-  var as=$('bx_autoset');
-  if(as&&lastGen){
-    var _obj=META_OBJECTIVE[lastGen.goal]||'OUTCOME_SALES';
-    var _s0=(lastGen.setIds||[]).map(function(id){return DB.sets.find(function(x){return x.id===id;});}).filter(Boolean)[0];
-    var _bidm=(_s0&&META_BID[_s0.bid])||META_BID.CMX;
-    as.innerHTML='이름 기반 자동 세팅 — 목표 <b style="color:var(--text2)">'+esc(goalKr(lastGen.goal))+' ('+_obj+')</b> · 최적화 <b style="color:var(--text2)">'+esc(bxOptLabel(_bidm.optimization_goal))+'</b> · 입찰 <b style="color:var(--text2)">최저비용(자동)</b> · 일정 세트 날짜(00:00 KST)';
-  }
-  bxToggle(); bxSetMode(bxMode||'both');
+  bxToggle(); bxSetMode(bxMode||'both'); bxRefreshLive();
+}
+function bxRefreshLive(){   // 빌더 변경 시마다 캠페인명·세트목록·자동세팅 갱신
+  var ci=$('bx_campnameInput'); if(ci){ var auto=(lastGen&&lastGen.campaignName)||''; if(!ci.value||ci.value===ci.getAttribute('data-auto'))ci.value=auto; ci.setAttribute('data-auto',auto); }
+  bxRenderSets(); bxRenderCamprow(); bxRenderAutoset();
+}
+function bxRenderAutoset(){
+  var as=$('bx_autoset'); if(!as)return;
+  if(!lastGen||!lastGen.goal){ as.innerHTML='제품·목표·입찰 등 기본 정보를 채우면 자동 세팅이 표시됩니다'; return; }
+  var _obj=META_OBJECTIVE[lastGen.goal]||'OUTCOME_SALES'; var _bidm=META_BID[lastGen.bid]||META_BID.CMX;
+  as.innerHTML='이름 기반 자동 세팅 — 목표 <b style="color:var(--text2)">'+esc(goalKr(lastGen.goal))+' ('+_obj+')</b> · 최적화 <b style="color:var(--text2)">'+esc(bxOptLabel(_bidm.optimization_goal))+'</b> · 입찰 <b style="color:var(--text2)">최저비용(자동)</b> · 일정 세트 날짜(00:00 KST)';
 }
 async function bxFillPixels(force){
   var sel=$('bx_pixel'); if(!sel)return;
@@ -1344,14 +1357,16 @@ async function bxFillPixels(force){
 function bxOptLabel(g){ return ({OFFSITE_CONVERSIONS:'전환',VALUE:'가치(ROAS)',LINK_CLICKS:'링크 클릭',LANDING_PAGE_VIEWS:'랜딩뷰',REACH:'도달',POST_ENGAGEMENT:'참여'})[g]||g; }
 function bxToggle(){ var cbo=(($('bx_budgetmode')||{}).value)==='CBO'; var l=$('bx_budgetlbl'); if(l)l.textContent=cbo?'캠페인 일 예산 (원)':'세트 일 예산 (원)'; }
 function bxCheckClear(){ var c=$('bx_check'); if(c)c.innerHTML=''; var o=$('bx_out'); if(o)o.innerHTML=''; }
+var bxNameOverride={};   // 자동 세트명 → 사용자 수정명 (라이브 재생성돼도 유지)
 function bxRenderSets(){
   var wrap=$('bx_setlist'); if(!wrap)return;
-  var sets=(lastGen&&lastGen.setIds)?lastGen.setIds.map(function(id){return DB.sets.find(function(s){return s.id===id;});}).filter(Boolean):[];
-  wrap.innerHTML=sets.length?sets.map(function(s){ var land=((s.landing||'')+'').trim();
-    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px"><input class="bx-setname t-mono" data-sid="'+esc(s.id)+'" value="'+esc(s.name)+'" oninput="bxCheckClear()" style="flex:1;font-size:11.5px"><span style="font-size:10px;white-space:nowrap;color:'+(land?'var(--green)':'var(--yellow)')+'">'+(land?'랜딩 ✓':'랜딩 ⚠')+'</span></div>';
-  }).join(''):'<div class="hint" style="padding:6px 0">생성할 세트가 없습니다</div>';
+  var sets=(lastGen&&lastGen.sets)?lastGen.sets:[];
+  wrap.innerHTML=sets.length?sets.map(function(s){ var land=((s.landing||'')+'').trim(); var val=bxNameOverride[s.name]||s.name;
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px"><input class="bx-setname t-mono" data-name="'+esc(s.name)+'" value="'+esc(val)+'" oninput="bxNameEdit(this)" style="flex:1;font-size:11.5px"><span style="font-size:10px;white-space:nowrap;color:'+(land?'var(--green)':'var(--yellow)')+'">'+(land?'랜딩 ✓':'랜딩 ⚠')+'</span></div>';
+  }).join(''):'<div class="hint" style="padding:6px 0">타게팅·타겟 컨셉을 선택하면 세트가 표시됩니다</div>';
 }
-function bxSetNames(){ var m={}; [].forEach.call(document.querySelectorAll('#bx_setlist .bx-setname'),function(inp){ m[inp.getAttribute('data-sid')]=(inp.value||'').trim(); }); return m; }
+function bxNameEdit(inp){ var k=inp.getAttribute('data-name'); var v=(inp.value||'').trim(); if(v&&v!==k)bxNameOverride[k]=v; else delete bxNameOverride[k]; bxCheckClear(); }
+function bxSetName(autoName){ return bxNameOverride[autoName]||autoName; }
 function bxFillCampaigns(){
   var sel=$('bx_pickCamp'); if(!sel)return; var cur=sel.value;
   var live=[]; try{ live=(typeof mcLiveCampaigns==='function')?mcLiveCampaigns():[]; }catch(e){}
@@ -1371,24 +1386,25 @@ function bxPayload(apply){
   var objective=(lastGen&&META_OBJECTIVE[lastGen.goal])||'OUTCOME_SALES';
   function campObj(){ var nm=((($('bx_campnameInput')||{}).value)||'').trim()||((lastGen&&lastGen.campaignName)||('FB_'+objective)); var c={name:nm,objective:objective,budgetMode:mode}; if(mode==='CBO')c.dailyBudget=budget; return c; }
   function adsetArr(){
-    if(!lastGen||!lastGen.setIds) return [];
+    var sets=(lastGen&&lastGen.sets)?lastGen.sets:[];
     var amin=Math.max(13,Math.min(65,Number((($('bx_agemin')||{}).value))||18));
     var amax=Math.max(amin,Math.min(65,Number((($('bx_agemax')||{}).value))||65));
     var targeting={geo_locations:{countries:['KR']},age_min:amin,age_max:amax};
     var adv=!!(($('bx_advaud')||{}).checked);
     var autopl=(($('bx_autopl')||{}).checked)!==false;
     var placements=autopl?{mode:'auto'}:{mode:'manual',publisher_platforms:['facebook','instagram']};
-    var names=bxSetNames();
-    return lastGen.setIds.map(function(id){return DB.sets.find(function(s){return s.id===id;});}).filter(Boolean).map(function(s){
+    var pxSel=(($('bx_pixel')||{}).value)||''; var px=pxSel||((BX_PIXEL[act]||{}).id||'');
+    return sets.map(function(s){
       var bidm=META_BID[s.bid]||META_BID.CMX;
-      var o={name:(names[s.id]||s.name),targeting:targeting,budgetMode:mode,optimizationGoal:bidm.optimization_goal,bidStrategy:bidm.bid_strategy,advantageAudience:adv,placements:placements};
-      var pxSel=(($('bx_pixel')||{}).value)||''; var px=pxSel||((BX_PIXEL[act]||{}).id||''); if(px)o.pixelId=px;   // 선택 픽셀(기본=계정 매핑, 변경 가능)
+      var o={name:bxSetName(s.name),targeting:targeting,budgetMode:mode,optimizationGoal:bidm.optimization_goal,bidStrategy:bidm.bid_strategy,advantageAudience:adv,placements:placements};
+      if(px)o.pixelId=px;   // 선택 픽셀(기본=계정 매핑, 변경 가능)
       if(mode==='ABO')o.dailyBudget=budget; return o;
     });
   }
+  var hasSets=!!(lastGen&&lastGen.sets&&lastGen.sets.length);
   if(bxMode==='camp') return {act:act,apply:apply===true,campaign:campObj(),adsets:[],campaignOnly:true};
-  if(bxMode==='set'){ var cid=String((($('bx_pickCamp')||{}).value)||''); if(!cid) return null; if(!lastGen||!lastGen.setIds||!lastGen.setIds.length) return null; return {act:act,apply:apply===true,campaignId:cid,objective:objective,adsets:adsetArr()}; }
-  if(!lastGen||!lastGen.setIds||!lastGen.setIds.length) return null;
+  if(bxMode==='set'){ var cid=String((($('bx_pickCamp')||{}).value)||''); if(!cid||!hasSets) return null; return {act:act,apply:apply===true,campaignId:cid,objective:objective,adsets:adsetArr()}; }
+  if(!hasSets) return null;
   return {act:act,apply:apply===true,campaign:campObj(),adsets:adsetArr()};
 }
 function bxRenderCheck(j){
