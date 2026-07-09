@@ -112,6 +112,17 @@ module.exports = async function (req, res) {
     const b = await readJson(req);
     const act = String(b.act || '').replace(/^act_/, '').trim();
     const apply = b.apply === true;
+
+    // 픽셀 목록 조회: { listPixels:true, act } → 이 계정에서 쓸 수 있는 픽셀 [{id,name}] (드롭다운용)
+    if (b.listPixels === true) {
+      if (!act) return res.status(400).json({ ok: false, error: '광고 계정(act)이 필요합니다' });
+      try {
+        const pj = await fetch(GRAPH + '/act_' + act + '/adspixels?fields=id,name&limit=100&access_token=' + enc(token)).then(function (r) { return r.json(); });
+        const seen = {}, out = [];
+        ((pj && pj.data) || []).forEach(function (p) { if (p && p.id && !seen[p.id]) { seen[p.id] = 1; out.push({ id: String(p.id), name: p.name || '' }); } });
+        return res.status(200).json({ ok: true, pixels: out });
+      } catch (e) { return res.status(200).json({ ok: false, error: String((e && e.message) || e) }); }
+    }
     const campaignId = String(b.campaignId || '').trim();
     const campaign = b.campaign || null;
     const adsets = Array.isArray(b.adsets) ? b.adsets : [];

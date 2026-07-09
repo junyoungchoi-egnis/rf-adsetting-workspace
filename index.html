@@ -319,14 +319,14 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
         <div id="bx_camprow" style="font-size:12px;color:var(--text2);margin-bottom:6px"></div>
         <div id="bx_autoset" style="font-size:11px;color:var(--text3);margin-bottom:10px;padding:7px 9px;border:1px dashed rgba(255,255,255,.14);border-radius:8px">이름 기반 자동 세팅 — 채우면 표시됩니다</div>
         <div class="grid g3">
-          <div class="field"><label>생성할 계정 <span class="req">*</span></label><select id="bx_acct" onchange="bxPixelInfo();bxCheckClear()"></select></div>
+          <div class="field"><label>생성할 계정 <span class="req">*</span></label><select id="bx_acct" onchange="bxFillPixels(true);bxCheckClear()"></select></div>
           <div class="field"><label>예산 방식</label><select id="bx_budgetmode" onchange="bxToggle();bxCheckClear()"><option value="ABO">ABO · 세트별 예산</option><option value="CBO">CBO · 캠페인 예산</option></select></div>
           <div class="field"><label id="bx_budgetlbl">세트 일 예산 (원)</label><input id="bx_budget" type="number" placeholder="예: 30000" oninput="bxCheckClear()"></div>
         </div>
-        <div id="bx_pixelInfo" class="hint" style="margin:-2px 0 8px"></div>
         <div class="field" id="bx_campnameWrap"><label>✏️ 캠페인명 <span class="opt">규칙 자동 · 직접 수정 가능</span></label><input id="bx_campnameInput" class="t-mono" oninput="bxCheckClear()" placeholder="FB_..."></div>
         <div class="field" id="bx_pickCampWrap" style="display:none"><label>대상 캠페인 <span class="opt">방금 만든 것 + 메타 라이브</span></label><select id="bx_pickCamp" onchange="bxCheckClear()"></select></div>
         <div id="bx_audienceWrap">
+          <div class="field"><label>전환 픽셀 <span class="opt">계정 기본 자동 선택 · 변경 가능</span></label><select id="bx_pixel" onchange="bxCheckClear()"></select></div>
           <div class="grid g3">
             <div class="field"><label>연령 최소</label><input id="bx_agemin" type="number" value="18" min="13" max="65" oninput="bxCheckClear()"></div>
             <div class="field"><label>연령 최대</label><input id="bx_agemax" type="number" value="65" min="13" max="65" oninput="bxCheckClear()"></div>
@@ -1302,7 +1302,7 @@ function bxSetMode(m){
   if((e=$('bx_audienceWrap')))e.style.display=(m==='set'||m==='both')?'':'none';
   if((e=$('bx_gen')))e.textContent=bxGenLabel();
   if(m==='set') bxFillCampaigns();
-  bxRenderCamprow(); bxPixelInfo(); bxCheckClear();
+  bxRenderCamprow(); if(m!=='camp')bxFillPixels(); bxCheckClear();
 }
 function bxRenderCamprow(){
   var cr=$('bx_camprow'); if(!cr)return;
@@ -1323,15 +1323,23 @@ function bxInit(){
     var _bidm=(_s0&&META_BID[_s0.bid])||META_BID.CMX;
     as.innerHTML='이름 기반 자동 세팅 — 목표 <b style="color:var(--text2)">'+esc(goalKr(lastGen.goal))+' ('+_obj+')</b> · 최적화 <b style="color:var(--text2)">'+esc(bxOptLabel(_bidm.optimization_goal))+'</b> · 입찰 <b style="color:var(--text2)">최저비용(자동)</b> · 일정 세트 날짜(00:00 KST)';
   }
-  bxToggle(); bxSetMode(bxMode||'both'); bxPixelInfo();
+  bxToggle(); bxSetMode(bxMode||'both');
 }
-function bxPixelInfo(){
-  var el=$('bx_pixelInfo'); if(!el)return;
-  if(bxMode==='camp'){ el.innerHTML=''; return; }   // 캠페인만 생성은 픽셀 무관
+async function bxFillPixels(force){
+  var sel=$('bx_pixel'); if(!sel)return;
+  if(bxMode==='camp')return;   // 캠페인만 생성은 픽셀 무관
   var act=String((($('bx_acct')||{}).value)||'').replace(/^act_/,'');
-  var p=BX_PIXEL[act];
-  el.innerHTML=p?('전환 픽셀: <b style="color:var(--text2)">'+esc(p.name)+'</b> <span style="color:var(--text3)">('+p.id+')</span>')
-    :'<span style="color:var(--yellow)">⚠ 이 계정은 픽셀 매핑이 없어 계정 첫 픽셀이 자동 사용됩니다 — 확인 필요</span>';
+  if(!force && sel.getAttribute('data-act')===act && sel.options.length) return;
+  var def=(BX_PIXEL[act]||{}).id||'';
+  sel.setAttribute('data-act',act);
+  sel.innerHTML='<option>불러오는 중…</option>';
+  try{
+    var r=await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({listPixels:true,act:act})});
+    var j=await r.json(); var list=(j&&j.pixels)||[];
+    if(!list.length){ sel.innerHTML=def?('<option value="'+esc(def)+'">기본 픽셀 ('+esc(def)+')</option>'):'<option value="">픽셀 없음</option>'; return; }
+    sel.innerHTML=list.map(function(p){ var d=(p.id===def); return '<option value="'+esc(p.id)+'">'+esc(p.name||p.id)+' ('+esc(p.id)+')'+(d?' · 기본':'')+'</option>'; }).join('');
+    if(def && list.some(function(p){return p.id===def;})) sel.value=def;
+  }catch(e){ sel.innerHTML=def?('<option value="'+esc(def)+'">기본 픽셀 ('+esc(def)+')</option>'):'<option value="">불러오기 실패</option>'; }
 }
 function bxOptLabel(g){ return ({OFFSITE_CONVERSIONS:'전환',VALUE:'가치(ROAS)',LINK_CLICKS:'링크 클릭',LANDING_PAGE_VIEWS:'랜딩뷰',REACH:'도달',POST_ENGAGEMENT:'참여'})[g]||g; }
 function bxToggle(){ var cbo=(($('bx_budgetmode')||{}).value)==='CBO'; var l=$('bx_budgetlbl'); if(l)l.textContent=cbo?'캠페인 일 예산 (원)':'세트 일 예산 (원)'; }
@@ -1374,7 +1382,7 @@ function bxPayload(apply){
     return lastGen.setIds.map(function(id){return DB.sets.find(function(s){return s.id===id;});}).filter(Boolean).map(function(s){
       var bidm=META_BID[s.bid]||META_BID.CMX;
       var o={name:(names[s.id]||s.name),targeting:targeting,budgetMode:mode,optimizationGoal:bidm.optimization_goal,bidStrategy:bidm.bid_strategy,advantageAudience:adv,placements:placements};
-      var px=BX_PIXEL[act]; if(px&&px.id)o.pixelId=px.id;   // 계정별 고정 픽셀(자동-첫픽셀 위험 방지)
+      var pxSel=(($('bx_pixel')||{}).value)||''; var px=pxSel||((BX_PIXEL[act]||{}).id||''); if(px)o.pixelId=px;   // 선택 픽셀(기본=계정 매핑, 변경 가능)
       if(mode==='ABO')o.dailyBudget=budget; return o;
     });
   }
