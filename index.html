@@ -330,23 +330,29 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
       <!-- 생성 단계 (캠페인 + 광고세트) — 생성 클릭 시 표시 -->
       <div class="panel" id="b_createWrap" style="display:none;margin-top:16px;border-color:#2a4a7a">
         <div class="panel-h">Meta에 실제 생성 — 캠페인 · 광고세트 <span class="hint">생성 시 PAUSED(꺼짐) · 광고(소재)는 소재 세팅 탭에서</span></div>
-        <div id="bx_camprow" style="font-size:12px;color:var(--text2);margin-bottom:6px">캠페인 <b id="bx_campname" class="t-mono" style="color:var(--accent2)">—</b> · 광고세트 <b id="bx_setn" style="color:var(--accent2)">0</b>개 생성 예정</div>
+        <div class="seg-toggle" id="bx_modebar" style="margin-bottom:10px"><button id="bx_mA" onclick="bxSetMode('camp')">ⓐ 캠페인 생성</button><button id="bx_mB" onclick="bxSetMode('set')">ⓑ 세트 생성</button><button id="bx_mC" class="on" onclick="bxSetMode('both')">ⓒ 한번에</button></div>
+        <div id="bx_camprow" style="font-size:12px;color:var(--text2);margin-bottom:6px"></div>
         <div id="bx_autoset" style="font-size:11px;color:var(--text3);margin-bottom:10px;padding:7px 9px;border:1px dashed rgba(255,255,255,.14);border-radius:8px">이름 기반 자동 세팅 — 채우면 표시됩니다</div>
         <div class="grid g3">
           <div class="field"><label>생성할 계정 <span class="req">*</span></label><select id="bx_acct" onchange="bxCheckClear()"></select></div>
           <div class="field"><label>예산 방식</label><select id="bx_budgetmode" onchange="bxToggle();bxCheckClear()"><option value="ABO">ABO · 세트별 예산</option><option value="CBO">CBO · 캠페인 예산</option></select></div>
           <div class="field"><label id="bx_budgetlbl">세트 일 예산 (원)</label><input id="bx_budget" type="number" placeholder="예: 30000" oninput="bxCheckClear()"></div>
         </div>
-        <div class="grid g3">
-          <div class="field"><label>연령 최소</label><input id="bx_agemin" type="number" value="18" min="13" max="65" oninput="bxCheckClear()"></div>
-          <div class="field"><label>연령 최대</label><input id="bx_agemax" type="number" value="65" min="13" max="65" oninput="bxCheckClear()"></div>
-          <div class="field"><label>국가</label><input value="대한민국 (KR)" disabled style="opacity:.65"></div>
+        <div class="field" id="bx_campnameWrap"><label>✏️ 캠페인명 <span class="opt">규칙 자동 · 직접 수정 가능</span></label><input id="bx_campnameInput" class="t-mono" oninput="bxCheckClear()" placeholder="FB_..."></div>
+        <div class="field" id="bx_pickCampWrap" style="display:none"><label>대상 캠페인 <span class="opt">방금 만든 것 + 메타 라이브</span></label><select id="bx_pickCamp" onchange="bxCheckClear()"></select></div>
+        <div id="bx_audienceWrap">
+          <div class="grid g3">
+            <div class="field"><label>연령 최소</label><input id="bx_agemin" type="number" value="18" min="13" max="65" oninput="bxCheckClear()"></div>
+            <div class="field"><label>연령 최대</label><input id="bx_agemax" type="number" value="65" min="13" max="65" oninput="bxCheckClear()"></div>
+            <div class="field"><label>국가</label><input value="대한민국 (KR)" disabled style="opacity:.65"></div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:2px;padding:9px 11px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.02)">
+            <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="bx_advaud" style="width:auto"> 어드밴티지+ 오디언스 <span class="hint">기본 끔 · 정의한 연령/타게팅 그대로</span></label>
+            <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="bx_autopl" checked style="width:auto"> 자동 노출위치(어드밴티지+) <span class="hint">끄면 FB·IG만(오디언스 네트워크 제외)</span></label>
+          </div>
+          <div class="field" id="bx_setsWrap" style="margin-top:10px"><label>✏️ 광고세트 — 세트명 직접 수정 가능</label><div id="bx_setlist" style="max-height:200px;overflow:auto"></div></div>
         </div>
-        <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:10px;padding:9px 11px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.02)">
-          <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="bx_advaud" style="width:auto"> 어드밴티지+ 오디언스 <span class="hint">기본 끔 · 정의한 연령/타게팅 그대로</span></label>
-          <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="bx_autopl" checked style="width:auto"> 자동 노출위치(어드밴티지+) <span class="hint">끄면 FB·IG만(오디언스 네트워크 제외)</span></label>
-        </div>
-        <div class="hint" style="margin-top:6px">전환 픽셀은 <b>계정 픽셀 자동</b> 사용 · 목표·최적화·입찰은 <b>세트명(이름 규칙)에서 자동</b> · 광고(소재)는 <b>소재 세팅</b> 탭에서 붙입니다.</div>
+        <div class="hint" style="margin-top:6px">전환 픽셀은 <b>계정 픽셀 자동</b> 사용 · 목표·최적화·입찰은 <b>이름 규칙에서 자동</b> · 광고(소재)는 <b>소재 세팅</b> 탭에서 붙입니다.</div>
         <div id="bx_check" style="margin-top:12px"></div>
         <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
           <button class="btn btn-ghost btn-sm" onclick="bxDryRun()">🔎 사전 점검</button>
@@ -1287,13 +1293,35 @@ function generateSets(){
   const w=$('b_createWrap'); if(w){ w.style.display=''; bxInit(); w.scrollIntoView({behavior:'smooth',block:'start'}); }
   toast(`광고세트 ${added}개 준비 · 아래에서 실제 생성(PAUSED)으로 진행하세요`);
 }
-/* ── 캠페인·세트 실제 생성 (/api/buildset) ── */
+/* ── 캠페인·세트 실제 생성 (/api/buildset) — 모드: camp(캠페인만)/set(기존 캠페인+세트)/both(한번에) ── */
 var BX_TEST_ACCT='539103343188615';
+var bxMode='both';
+var bxMadeCampaigns=[]; // 이 세션에서 ⓐ로 생성한 캠페인 {id,name}
+var bxPendingPick=null;  // ⓐ 직후 ⓑ 진입 시 자동 선택할 캠페인 id(1회성 핸드오프)
+function bxGenLabel(){ return bxMode==='camp'?'⚡ 캠페인 생성 (PAUSED)':(bxMode==='set'?'⚡ 세트 생성 (PAUSED)':'⚡ 캠페인·세트 생성 (PAUSED)'); }
+function bxSetMode(m){
+  bxMode=m;
+  [['bx_mA','camp'],['bx_mB','set'],['bx_mC','both']].forEach(function(p){ var b=$(p[0]); if(b)b.className=(p[1]===m?'on':''); });
+  var e;
+  if((e=$('bx_campnameWrap')))e.style.display=(m==='camp'||m==='both')?'':'none';
+  if((e=$('bx_pickCampWrap')))e.style.display=(m==='set')?'':'none';
+  if((e=$('bx_audienceWrap')))e.style.display=(m==='set'||m==='both')?'':'none';
+  if((e=$('bx_gen')))e.textContent=bxGenLabel();
+  if(m==='set') bxFillCampaigns();
+  bxRenderCamprow(); bxCheckClear();
+}
+function bxRenderCamprow(){
+  var cr=$('bx_camprow'); if(!cr)return;
+  var n=(lastGen&&lastGen.setIds)?lastGen.setIds.length:0;
+  cr.innerHTML = bxMode==='camp' ? '<b style="color:var(--accent2)">캠페인 1개</b>만 생성합니다 (세트는 ⓑ에서 붙이기)'
+    : bxMode==='set' ? '기존 캠페인에 <b style="color:var(--accent2)">광고세트 '+n+'개</b> 생성'
+    : '<b style="color:var(--accent2)">캠페인 1 + 광고세트 '+n+'개</b>를 한번에 생성';
+}
 function bxInit(){
   var sel=$('bx_acct');
   if(sel){ var cur=sel.value; sel.innerHTML=Object.keys(UC_ACCT).map(function(id){ return '<option value="'+id+'">'+esc(UC_ACCT[id]||id)+(id===BX_TEST_ACCT?' · 테스트':'')+'</option>'; }).join(''); sel.value=(cur&&UC_ACCT[cur])?cur:BX_TEST_ACCT; }
-  if($('bx_campname'))$('bx_campname').textContent=(lastGen&&lastGen.campaignName)||'—';
-  if($('bx_setn'))$('bx_setn').textContent=(lastGen&&lastGen.setIds)?lastGen.setIds.length:0;
+  var ci=$('bx_campnameInput'); if(ci)ci.value=(lastGen&&lastGen.campaignName)||'';
+  bxRenderSets();
   var as=$('bx_autoset');
   if(as&&lastGen){
     var _obj=META_OBJECTIVE[lastGen.goal]||'OUTCOME_SALES';
@@ -1301,67 +1329,103 @@ function bxInit(){
     var _bidm=(_s0&&META_BID[_s0.bid])||META_BID.CMX;
     as.innerHTML='이름 기반 자동 세팅 — 목표 <b style="color:var(--text2)">'+esc(goalKr(lastGen.goal))+' ('+_obj+')</b> · 최적화 <b style="color:var(--text2)">'+esc(bxOptLabel(_bidm.optimization_goal))+'</b> · 입찰 <b style="color:var(--text2)">최저비용(자동)</b> · 일정 세트 날짜(00:00 KST)';
   }
-  bxToggle(); bxCheckClear();
+  bxToggle(); bxSetMode(bxMode||'both');
 }
 function bxOptLabel(g){ return ({OFFSITE_CONVERSIONS:'전환',VALUE:'가치(ROAS)',LINK_CLICKS:'링크 클릭',LANDING_PAGE_VIEWS:'랜딩뷰',REACH:'도달',POST_ENGAGEMENT:'참여'})[g]||g; }
 function bxToggle(){ var cbo=(($('bx_budgetmode')||{}).value)==='CBO'; var l=$('bx_budgetlbl'); if(l)l.textContent=cbo?'캠페인 일 예산 (원)':'세트 일 예산 (원)'; }
 function bxCheckClear(){ var c=$('bx_check'); if(c)c.innerHTML=''; var o=$('bx_out'); if(o)o.innerHTML=''; }
+function bxRenderSets(){
+  var wrap=$('bx_setlist'); if(!wrap)return;
+  var sets=(lastGen&&lastGen.setIds)?lastGen.setIds.map(function(id){return DB.sets.find(function(s){return s.id===id;});}).filter(Boolean):[];
+  wrap.innerHTML=sets.length?sets.map(function(s){ var land=((s.landing||'')+'').trim();
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px"><input class="bx-setname t-mono" data-sid="'+esc(s.id)+'" value="'+esc(s.name)+'" oninput="bxCheckClear()" style="flex:1;font-size:11.5px"><span style="font-size:10px;white-space:nowrap;color:'+(land?'var(--green)':'var(--yellow)')+'">'+(land?'랜딩 ✓':'랜딩 ⚠')+'</span></div>';
+  }).join(''):'<div class="hint" style="padding:6px 0">생성할 세트가 없습니다</div>';
+}
+function bxSetNames(){ var m={}; [].forEach.call(document.querySelectorAll('#bx_setlist .bx-setname'),function(inp){ m[inp.getAttribute('data-sid')]=(inp.value||'').trim(); }); return m; }
+function bxFillCampaigns(){
+  var sel=$('bx_pickCamp'); if(!sel)return; var cur=sel.value;
+  var live=[]; try{ live=(typeof mcLiveCampaigns==='function')?mcLiveCampaigns():[]; }catch(e){}
+  var groups=[];
+  if(bxMadeCampaigns.length) groups.push('<optgroup label="방금 만든 캠페인">'+bxMadeCampaigns.map(function(c){return '<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>';}).join('')+'</optgroup>');
+  if(live.length) groups.push('<optgroup label="메타 라이브 캠페인">'+live.map(function(c){return '<option value="'+esc(c.id)+'">'+esc(c.name)+(c.active?'':' · 비활성')+'</option>';}).join('')+'</optgroup>');
+  sel.innerHTML=groups.join('')||'<option value="">대상 캠페인 없음 — ⓐ로 먼저 만들거나 🔄 동기화</option>';
+  var all=bxMadeCampaigns.concat(live);
+  if(bxPendingPick && all.some(function(c){return String(c.id)===String(bxPendingPick);})){ sel.value=bxPendingPick; bxPendingPick=null; }   // ⓐ 직후 핸드오프(1회성)
+  else if(cur && all.some(function(c){return String(c.id)===String(cur);})){ sel.value=cur; }
+  else if(bxMadeCampaigns.length){ sel.value=bxMadeCampaigns[bxMadeCampaigns.length-1].id; }
+}
 function bxPayload(apply){
-  if(!lastGen||!lastGen.setIds||!lastGen.setIds.length) return null;
   var act=String((($('bx_acct')||{}).value)||'').replace(/^act_/,'');
   var mode=(($('bx_budgetmode')||{}).value)||'ABO';
   var budget=Math.round(Number((($('bx_budget')||{}).value)||0))||0;
-  var amin=Math.max(13,Math.min(65,Number((($('bx_agemin')||{}).value))||18));
-  var amax=Math.max(amin,Math.min(65,Number((($('bx_agemax')||{}).value))||65));
-  var targeting={geo_locations:{countries:['KR']},age_min:amin,age_max:amax};
-  var objective=META_OBJECTIVE[lastGen.goal]||'OUTCOME_SALES';
-  var sets=lastGen.setIds.map(function(id){return DB.sets.find(function(s){return s.id===id;});}).filter(Boolean);
-  var adv=!!(($('bx_advaud')||{}).checked);
-  var autopl=(($('bx_autopl')||{}).checked)!==false;
-  var placements=autopl?{mode:'auto'}:{mode:'manual',publisher_platforms:['facebook','instagram']};
-  var adsets=sets.map(function(s){
-    var bidm=META_BID[s.bid]||META_BID.CMX;
-    var o={name:s.name,targeting:targeting,budgetMode:mode,optimizationGoal:bidm.optimization_goal,bidStrategy:bidm.bid_strategy,advantageAudience:adv,placements:placements};
-    if(mode==='ABO')o.dailyBudget=budget; return o;
-  });
-  var campaign={name:(lastGen.campaignName||('FB_'+objective)),objective:objective,budgetMode:mode}; if(mode==='CBO')campaign.dailyBudget=budget;
-  return {act:act,apply:apply===true,campaign:campaign,adsets:adsets};
+  var objective=(lastGen&&META_OBJECTIVE[lastGen.goal])||'OUTCOME_SALES';
+  function campObj(){ var nm=((($('bx_campnameInput')||{}).value)||'').trim()||((lastGen&&lastGen.campaignName)||('FB_'+objective)); var c={name:nm,objective:objective,budgetMode:mode}; if(mode==='CBO')c.dailyBudget=budget; return c; }
+  function adsetArr(){
+    if(!lastGen||!lastGen.setIds) return [];
+    var amin=Math.max(13,Math.min(65,Number((($('bx_agemin')||{}).value))||18));
+    var amax=Math.max(amin,Math.min(65,Number((($('bx_agemax')||{}).value))||65));
+    var targeting={geo_locations:{countries:['KR']},age_min:amin,age_max:amax};
+    var adv=!!(($('bx_advaud')||{}).checked);
+    var autopl=(($('bx_autopl')||{}).checked)!==false;
+    var placements=autopl?{mode:'auto'}:{mode:'manual',publisher_platforms:['facebook','instagram']};
+    var names=bxSetNames();
+    return lastGen.setIds.map(function(id){return DB.sets.find(function(s){return s.id===id;});}).filter(Boolean).map(function(s){
+      var bidm=META_BID[s.bid]||META_BID.CMX;
+      var o={name:(names[s.id]||s.name),targeting:targeting,budgetMode:mode,optimizationGoal:bidm.optimization_goal,bidStrategy:bidm.bid_strategy,advantageAudience:adv,placements:placements};
+      if(mode==='ABO')o.dailyBudget=budget; return o;
+    });
+  }
+  if(bxMode==='camp') return {act:act,apply:apply===true,campaign:campObj(),adsets:[],campaignOnly:true};
+  if(bxMode==='set'){ var cid=String((($('bx_pickCamp')||{}).value)||''); if(!cid) return null; if(!lastGen||!lastGen.setIds||!lastGen.setIds.length) return null; return {act:act,apply:apply===true,campaignId:cid,objective:objective,adsets:adsetArr()}; }
+  if(!lastGen||!lastGen.setIds||!lastGen.setIds.length) return null;
+  return {act:act,apply:apply===true,campaign:campObj(),adsets:adsetArr()};
 }
 function bxRenderCheck(j){
   var c=$('bx_check'); if(!c)return;
   var ok=function(t){return '<div style="color:#5fd08a">✅ '+t+'</div>';};
   var bad=function(t){return '<div style="color:#fbbf24">⚠️ '+esc(t)+'</div>';};
   var rows=[];
-  if(j&&j.ok){ rows.push(ok('캠페인 1개 · 광고세트 '+(j.count||0)+'개 생성 준비 완료')); rows.push(ok('예산 방식 '+(j.budgetMode||''))); rows.push(j.pixel?ok('전환 픽셀 자동: '+esc(j.pixel)):'<div class="hint">픽셀 없음 — 전환 목표면 설치 필요</div>'); }
+  if(j&&j.ok){ rows.push(ok(bxMode==='camp'?'캠페인 1개 생성 준비 완료':(bxMode==='set'?'선택 캠페인에 광고세트 '+(j.count||0)+'개 준비':'캠페인 1개 · 광고세트 '+(j.count||0)+'개 준비 완료'))); rows.push(ok('예산 방식 '+(j.budgetMode||''))); if(bxMode!=='camp')rows.push(j.pixel?ok('전환 픽셀 자동: '+esc(j.pixel)):'<div class="hint">픽셀 없음 — 전환 목표면 설치 필요</div>'); }
   else { ((j&&j.gaps)||[]).forEach(function(g){rows.push(bad(g));}); if(!(j&&j.gaps&&j.gaps.length))rows.push(bad((j&&j.error)||'점검 실패')); }
   c.innerHTML='<div style="background:rgba(40,90,107,.18);border:1px solid #2f5a6b;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.7"><div style="font-size:11px;color:#7fb3c8;margin-bottom:6px">사전 점검</div>'+rows.join('')+'</div>';
 }
 async function bxDryRun(){
-  var body=bxPayload(false); if(!body){toast('먼저 위에서 [캠페인·광고세트 생성]을 눌러 준비하세요');return;}
+  var body=bxPayload(false); if(!body){toast(bxMode==='set'?'대상 캠페인을 선택하세요':'먼저 위에서 준비하세요');return;}
   var c=$('bx_check'); if(c)c.innerHTML='<div class="hint">점검 중…</div>';
   try{ var r=await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); var j=await r.json(); bxRenderCheck(j); }
   catch(e){ if(c)c.innerHTML='<div class="warnbox show">점검 실패: '+esc(String(e&&e.message||e))+'</div>'; }
 }
 async function bxCreate(btn){
-  var pre=bxPayload(false); if(!pre){toast('먼저 위에서 준비하세요');return;}
+  var pre=bxPayload(false); if(!pre){toast(bxMode==='set'?'대상 캠페인을 선택하세요 (없으면 ⓐ로 먼저 생성)':'먼저 위에서 준비하세요');return;}
   var c=$('bx_check'); if(c)c.innerHTML='<div class="hint">점검 중…</div>';
   try{ var dr=await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pre)}); var dj=await dr.json(); bxRenderCheck(dj); if(!dj.ok){toast('보완 후 다시 시도하세요');return;} }
   catch(e){ if(c)c.innerHTML='<div class="warnbox show">점검 실패: '+esc(String(e&&e.message||e))+'</div>'; return; }
   var acctName=((($('bx_acct')||{}).selectedOptions||[])[0]||{}).textContent||'';
-  if(!confirm('['+acctName+']에 캠페인 1개 + 광고세트 '+((pre.adsets||[]).length)+'개를 PAUSED(꺼짐)로 생성합니다.\n진행할까요?')) return;
+  var nAd=(pre.adsets||[]).length;
+  var msg=bxMode==='camp'?('['+acctName+']에 캠페인 1개를 PAUSED(꺼짐)로 생성합니다.\n진행할까요?')
+    :bxMode==='set'?('선택한 캠페인에 광고세트 '+nAd+'개를 PAUSED(꺼짐)로 생성합니다.\n진행할까요?')
+    :('['+acctName+']에 캠페인 1개 + 광고세트 '+nAd+'개를 PAUSED(꺼짐)로 생성합니다.\n진행할까요?');
+  if(!confirm(msg)) return;
   var body=bxPayload(true);
   if(btn){btn.disabled=true;btn.textContent='생성 중…';}
-  try{ var r=await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); var j=await r.json(); bxRenderResult(j,body.act); if(j.ok)toast('생성 완료 · 세트 '+(j.createdCount||0)+'개'); else toast('생성 실패 — 결과 확인'); }
+  try{ var r=await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); var j=await r.json();
+    bxRenderResult(j,body.act);
+    if(j&&j.ok){ if(j.campaign&&j.campaign.id){ if(!bxMadeCampaigns.some(function(x){return String(x.id)===String(j.campaign.id);})) bxMadeCampaigns.push({id:j.campaign.id,name:(j.campaign.name||'캠페인')}); if(bxMode==='camp')bxPendingPick=j.campaign.id; }
+      toast(bxMode==='camp'?'캠페인 생성됨 · ⓑ 세트 생성에서 자동 선택됩니다':'생성 완료 · 세트 '+(j.createdCount||0)+'개'); }
+    else toast('생성 실패 — 결과 확인');
+  }
   catch(e){ bxRenderResult({ok:false,error:String(e&&e.message||e)},body.act); }
-  if(btn){btn.disabled=false;btn.textContent='⚡ 캠페인·세트 생성 (PAUSED)';}
+  if(btn){btn.disabled=false;btn.textContent=bxGenLabel();}
 }
 function bxRenderResult(j,act){
   var o=$('bx_out'); if(!o)return;
   if(j&&j.ok){
     var cid=(j.campaign&&j.campaign.id)||j.campaignId||'';
     var dl=cid?('https://adsmanager.facebook.com/adsmanager/manage/adsets?act='+encodeURIComponent(act)+'&selected_campaign_ids='+encodeURIComponent(cid)):'';
+    var parts=[]; if(j.campaign&&j.campaign.id)parts.push('캠페인 «'+esc(j.campaign.name||'')+'» 생성'); if((j.createdCount||0)>0)parts.push('광고세트 '+j.createdCount+'개 생성');
     var fails=(j.failed&&j.failed.length)?('<div style="color:#fbbf24;margin-top:5px">실패 '+j.failedCount+'개: '+j.failed.map(function(f){return esc(f.name)+' ('+esc(f.error)+')';}).join(', ')+'</div>'):'';
-    o.innerHTML='<div style="background:#0f2417;border:1px solid #1f7a52;border-radius:8px;padding:11px 13px;font-size:12.5px">✅ 생성 완료 — 캠페인 1개 · 광고세트 <b>'+(j.createdCount||0)+'개</b> (PAUSED)'+fails+(dl?('<div style="margin-top:8px"><a href="'+dl+'" target="_blank" rel="noopener" class="btn btn-primary btn-sm" style="text-decoration:none">메타 광고관리자에서 열기 ↗</a></div>'):'')+'</div>';
+    var extra=(bxMode==='camp'&&cid)?'<div class="hint" style="margin-top:6px">→ ⓑ 세트 생성에서 이 캠페인을 골라 세트를 붙이세요.</div>':'';
+    o.innerHTML='<div style="background:#0f2417;border:1px solid #1f7a52;border-radius:8px;padding:11px 13px;font-size:12.5px">✅ '+(parts.join(' · ')||'생성 완료')+' (PAUSED)'+fails+(dl?('<div style="margin-top:8px"><a href="'+dl+'" target="_blank" rel="noopener" class="btn btn-primary btn-sm" style="text-decoration:none">메타 광고관리자에서 열기 ↗</a></div>'):'')+extra+'</div>';
   } else { o.innerHTML='<div class="warnbox show">생성 실패: '+esc(String((j&&j.error)||'알 수 없는 오류'))+'</div>'; }
 }
 let libFilter='all';

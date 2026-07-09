@@ -116,9 +116,12 @@ module.exports = async function (req, res) {
     const campaign = b.campaign || null;
     const adsets = Array.isArray(b.adsets) ? b.adsets : [];
 
+    // 캠페인만 생성 모드: 신규 campaign 만 넘기고 adsets 는 비움
+    const campaignOnly = (b.campaignOnly === true) || (!!campaign && !campaignId && !adsets.length);
     if (!act) return res.status(400).json({ ok: false, error: '광고 계정(act)이 필요합니다' });
     if (!campaign && !campaignId) return res.status(400).json({ ok: false, error: 'campaign(신규) 또는 campaignId(기존) 중 하나는 필수' });
-    if (!adsets.length) return res.status(400).json({ ok: false, error: '광고세트가 최소 1개 필요합니다' });
+    if (!campaignOnly && !adsets.length) return res.status(400).json({ ok: false, error: '광고세트가 최소 1개 필요합니다' });
+    if (campaignOnly && !campaign) return res.status(400).json({ ok: false, error: '캠페인만 생성하려면 신규 campaign 정보가 필요합니다' });
 
     // ── 캠페인 페이로드 구성 ──
     let campPayload = null;
