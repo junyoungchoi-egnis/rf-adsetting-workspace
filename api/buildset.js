@@ -210,7 +210,7 @@ module.exports = async function (req, res) {
     if (!apply) {
       return res.status(200).json({
         ok: gaps.length === 0, dryRun: true, gaps: gaps,
-        tokenSource: tokenSource, budgetMode: isCBO ? 'CBO' : 'ABO', pixel: autoPixel,
+        tokenSource: tokenSource, budgetMode: isCBO ? 'CBO' : 'ABO', pixel: ((adPayloads[0] && adPayloads[0].promoted_object && adPayloads[0].promoted_object.pixel_id) || autoPixel || null),
         campaign: campPayload, campaignId: campaignId || null, adsets: adPayloads, count: adPayloads.length
       });
     }

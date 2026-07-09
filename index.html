@@ -319,10 +319,11 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
         <div id="bx_camprow" style="font-size:12px;color:var(--text2);margin-bottom:6px"></div>
         <div id="bx_autoset" style="font-size:11px;color:var(--text3);margin-bottom:10px;padding:7px 9px;border:1px dashed rgba(255,255,255,.14);border-radius:8px">이름 기반 자동 세팅 — 채우면 표시됩니다</div>
         <div class="grid g3">
-          <div class="field"><label>생성할 계정 <span class="req">*</span></label><select id="bx_acct" onchange="bxCheckClear()"></select></div>
+          <div class="field"><label>생성할 계정 <span class="req">*</span></label><select id="bx_acct" onchange="bxPixelInfo();bxCheckClear()"></select></div>
           <div class="field"><label>예산 방식</label><select id="bx_budgetmode" onchange="bxToggle();bxCheckClear()"><option value="ABO">ABO · 세트별 예산</option><option value="CBO">CBO · 캠페인 예산</option></select></div>
           <div class="field"><label id="bx_budgetlbl">세트 일 예산 (원)</label><input id="bx_budget" type="number" placeholder="예: 30000" oninput="bxCheckClear()"></div>
         </div>
+        <div id="bx_pixelInfo" class="hint" style="margin:-2px 0 8px"></div>
         <div class="field" id="bx_campnameWrap"><label>✏️ 캠페인명 <span class="opt">규칙 자동 · 직접 수정 가능</span></label><input id="bx_campnameInput" class="t-mono" oninput="bxCheckClear()" placeholder="FB_..."></div>
         <div class="field" id="bx_pickCampWrap" style="display:none"><label>대상 캠페인 <span class="opt">방금 만든 것 + 메타 라이브</span></label><select id="bx_pickCamp" onchange="bxCheckClear()"></select></div>
         <div id="bx_audienceWrap">
@@ -337,7 +338,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
           </div>
           <div class="field" id="bx_setsWrap" style="margin-top:10px"><label>✏️ 광고세트 — 세트명 직접 수정 가능</label><div id="bx_setlist" style="max-height:200px;overflow:auto"></div></div>
         </div>
-        <div class="hint" style="margin-top:6px">전환 픽셀은 <b>계정 픽셀 자동</b> 사용 · 목표·최적화·입찰은 <b>이름 규칙에서 자동</b> · 광고(소재)는 <b>소재 세팅</b> 탭에서 붙입니다.</div>
+        <div class="hint" style="margin-top:6px">전환 픽셀은 <b>계정별 고정 매핑</b> · 목표·최적화·입찰은 <b>이름 규칙에서 자동</b> · 광고(소재)는 <b>소재 세팅</b> 탭에서 붙입니다.</div>
         <div id="bx_check" style="margin-top:12px"></div>
         <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
           <button class="btn btn-ghost btn-sm" onclick="bxDryRun()">🔎 사전 점검</button>
@@ -1280,6 +1281,14 @@ function generateSets(){
 }
 /* ── 캠페인·세트 실제 생성 (/api/buildset) — 모드: camp(캠페인만)/set(기존 캠페인+세트)/both(한번에) ── */
 var BX_TEST_ACCT='539103343188615';
+/* 계정 → 전환 픽셀 고정 매핑. "계정 첫 픽셀 자동"이 TEST 로켓 픽셀을 잡는 문제 방지.
+   클룹 계정=cloop.1(562093002202082), 스프린트=스프린트 픽셀(689084934129344). */
+var BX_PIXEL={
+  '1462607070849777':{id:'562093002202082',name:'cloop.1 - Meta 픽셀'},   // 클룹 메인
+  '793134085895227':{id:'562093002202082',name:'cloop.1 - Meta 픽셀'},    // 클룹 서브
+  '3342733785912061':{id:'689084934129344',name:'스프린트 픽셀'},          // 스프린트
+  '539103343188615':{id:'562093002202082',name:'cloop.1 - Meta 픽셀'}      // 테스트(클룹 프로모션)
+};
 var bxMode='both';
 var bxMadeCampaigns=[]; // 이 세션에서 ⓐ로 생성한 캠페인 {id,name}
 var bxPendingPick=null;  // ⓐ 직후 ⓑ 진입 시 자동 선택할 캠페인 id(1회성 핸드오프)
@@ -1293,7 +1302,7 @@ function bxSetMode(m){
   if((e=$('bx_audienceWrap')))e.style.display=(m==='set'||m==='both')?'':'none';
   if((e=$('bx_gen')))e.textContent=bxGenLabel();
   if(m==='set') bxFillCampaigns();
-  bxRenderCamprow(); bxCheckClear();
+  bxRenderCamprow(); bxPixelInfo(); bxCheckClear();
 }
 function bxRenderCamprow(){
   var cr=$('bx_camprow'); if(!cr)return;
@@ -1314,7 +1323,15 @@ function bxInit(){
     var _bidm=(_s0&&META_BID[_s0.bid])||META_BID.CMX;
     as.innerHTML='이름 기반 자동 세팅 — 목표 <b style="color:var(--text2)">'+esc(goalKr(lastGen.goal))+' ('+_obj+')</b> · 최적화 <b style="color:var(--text2)">'+esc(bxOptLabel(_bidm.optimization_goal))+'</b> · 입찰 <b style="color:var(--text2)">최저비용(자동)</b> · 일정 세트 날짜(00:00 KST)';
   }
-  bxToggle(); bxSetMode(bxMode||'both');
+  bxToggle(); bxSetMode(bxMode||'both'); bxPixelInfo();
+}
+function bxPixelInfo(){
+  var el=$('bx_pixelInfo'); if(!el)return;
+  if(bxMode==='camp'){ el.innerHTML=''; return; }   // 캠페인만 생성은 픽셀 무관
+  var act=String((($('bx_acct')||{}).value)||'').replace(/^act_/,'');
+  var p=BX_PIXEL[act];
+  el.innerHTML=p?('전환 픽셀: <b style="color:var(--text2)">'+esc(p.name)+'</b> <span style="color:var(--text3)">('+p.id+')</span>')
+    :'<span style="color:var(--yellow)">⚠ 이 계정은 픽셀 매핑이 없어 계정 첫 픽셀이 자동 사용됩니다 — 확인 필요</span>';
 }
 function bxOptLabel(g){ return ({OFFSITE_CONVERSIONS:'전환',VALUE:'가치(ROAS)',LINK_CLICKS:'링크 클릭',LANDING_PAGE_VIEWS:'랜딩뷰',REACH:'도달',POST_ENGAGEMENT:'참여'})[g]||g; }
 function bxToggle(){ var cbo=(($('bx_budgetmode')||{}).value)==='CBO'; var l=$('bx_budgetlbl'); if(l)l.textContent=cbo?'캠페인 일 예산 (원)':'세트 일 예산 (원)'; }
@@ -1357,6 +1374,7 @@ function bxPayload(apply){
     return lastGen.setIds.map(function(id){return DB.sets.find(function(s){return s.id===id;});}).filter(Boolean).map(function(s){
       var bidm=META_BID[s.bid]||META_BID.CMX;
       var o={name:(names[s.id]||s.name),targeting:targeting,budgetMode:mode,optimizationGoal:bidm.optimization_goal,bidStrategy:bidm.bid_strategy,advantageAudience:adv,placements:placements};
+      var px=BX_PIXEL[act]; if(px&&px.id)o.pixelId=px.id;   // 계정별 고정 픽셀(자동-첫픽셀 위험 방지)
       if(mode==='ABO')o.dailyBudget=budget; return o;
     });
   }
