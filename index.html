@@ -1389,8 +1389,23 @@ function bxInit(){
   if(sel){ var cur=sel.value; sel.innerHTML=Object.keys(UC_ACCT).map(function(id){ return '<option value="'+id+'">'+esc(UC_ACCT[id]||id)+(id===BX_TEST_ACCT?' · 테스트':'')+'</option>'; }).join(''); sel.value=(cur&&UC_ACCT[cur])?cur:BX_TEST_ACCT; }
   bxToggle(); bxSetMode(bxMode||'camp'); bxRefreshLive();
 }
+// ⓑ 대상 캠페인명 + 선택 타겟컨셉 병합(추가 개념) — 미리보기·rename 프롬프트 공용
+function bxMergedCampaignName(){
+  var sel=$('bx_pickCamp'); if(!sel||!sel.value)return null;
+  var curName=(((sel.selectedOptions&&sel.selectedOptions[0])||{}).textContent||'').replace(/\s*·\s*비활성\s*$/,'').trim();
+  if(!curName)return null;
+  var m=curName.match(/^(.*?)\s*\(([^)]*)\)\s*$/);
+  var base=m?m[1].trim():curName;
+  var existing=m?m[2].split('/').map(function(s){return s.trim();}).filter(Boolean):[];
+  var newTams=[]; try{ newTams=Array.from(bTams).map(function(c){return tamKr(c)||c;}).filter(Boolean); }catch(e){}
+  var merged=existing.slice(); newTams.forEach(function(t){ if(merged.indexOf(t)<0)merged.push(t); });
+  var newName=base+(merged.length?(' ('+merged.join('/')+')'):'');
+  return {curName:curName, newName:newName, changed:(newName!==curName)};
+}
 function bxRefreshLive(){   // 빌더 변경 시마다 캠페인명·세트목록·자동세팅 갱신
   var ci=$('bx_campnameInput'); if(ci){ var auto=(lastGen&&lastGen.campaignName)||''; if(!ci.value||ci.value===ci.getAttribute('data-auto'))ci.value=auto; ci.setAttribute('data-auto',auto); }
+  // ⓑ: 미리보기 캠페인명은 '대상 캠페인 + 선택 타겟컨셉 병합'(덮어쓰기 아님)으로 표시
+  if(bxMode==='set'){ try{ var mc=bxMergedCampaignName(); var pk=$('b_previewKr'); if(pk&&mc)pk.textContent=mc.newName; }catch(e){} }
   bxRenderSets(); bxRenderCamprow(); bxRenderAutoset();
 }
 function bxRenderAutoset(){
@@ -1532,16 +1547,8 @@ async function bxCreate(btn){
 // ⓑ 세트 생성 후: 추가한 타겟 컨셉을 대상 캠페인명 (…) 부분에 병합할지 물어보고, 승인 시 캠페인명 변경.
 async function bxMaybeRenameCampaign(act){
   var sel=$('bx_pickCamp'); if(!sel||!sel.value)return; var cid=sel.value;
-  var curName=(((sel.selectedOptions&&sel.selectedOptions[0])||{}).textContent||'').replace(/\s*·\s*비활성\s*$/,'').trim();
-  if(!curName)return;
-  var newTams=[]; try{ newTams=Array.from(bTams).map(function(c){return tamKr(c)||c;}).filter(Boolean); }catch(e){}
-  if(!newTams.length)return;
-  var m=curName.match(/^(.*?)\s*\(([^)]*)\)\s*$/);
-  var base=m?m[1].trim():curName;
-  var existing=m?m[2].split('/').map(function(s){return s.trim();}).filter(Boolean):[];
-  var merged=existing.slice(); newTams.forEach(function(t){ if(merged.indexOf(t)<0)merged.push(t); });
-  var newName=base+(merged.length?(' ('+merged.join('/')+')'):'');
-  if(newName===curName)return;   // 이미 반영돼 있음
+  var mc=bxMergedCampaignName(); if(!mc||!mc.changed)return;   // 병합 결과가 기존과 같으면(이미 반영) 안 물음
+  var curName=mc.curName, newName=mc.newName;
   if(!confirm('캠페인명 수정이 필요해요 — 추가한 타겟 컨셉을 반영할까요?\n\n'+curName+'\n→ '+newName+'\n\n변경하시겠어요? (세트는 이미 생성됐고, 안 바꿔도 됩니다)')) return;
   try{
     var r=await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({updateCampaignName:true, act:act, campaignId:cid, name:newName})});
