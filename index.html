@@ -307,7 +307,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
             <div id="bx_autoset" style="font-size:11px;color:var(--text3);margin:12px 0;padding:7px 9px;border:1px dashed rgba(255,255,255,.14);border-radius:8px">이름 기반 자동 세팅 — 채우면 표시됩니다</div>
             <div class="grid g3" id="bx_budgetBlock">
               <div class="field"><label>예산 방식</label><select id="bx_budgetmode" onchange="bxToggle();bxCheckClear()"><option value="ABO">ABO · 세트별 예산</option><option value="CBO">CBO · 캠페인 예산</option></select></div>
-              <div class="field"><label id="bx_budgetlbl">세트 일 예산 (원)</label><input id="bx_budget" type="number" placeholder="예: 30000" oninput="bxCheckClear()"></div>
+              <div class="field" id="bx_budgetField"><label id="bx_budgetlbl">세트 일 예산 (원)</label><input id="bx_budget" type="number" placeholder="예: 30000" oninput="bxCheckClear()"></div>
             </div>
             <div class="field" id="bx_campnameWrap"><label>✏️ 캠페인명 <span class="opt">규칙 자동 · 직접 수정 가능</span></label><input id="bx_campnameInput" class="t-mono" oninput="bxCheckClear()" placeholder="FB_..."></div>
             <div id="bx_audCore">
@@ -1333,7 +1333,7 @@ function bxSetMode(m){
   // ⓐ에선 세트명 미리보기 칸 숨기고 캠페인명만
   if((e=$('b_setPrevWrap')))e.style.display=(m==='camp')?'none':'';
   if((e=$('bx_gen')))e.textContent=bxGenLabel();
-  bxLayout(m);
+  bxLayout(m); bxToggle();   // 예산 입력 노출 모드에 맞게 재평가(ⓐ ABO=숨김 등)
   if(m==='set'){ bxFillCampaigns(); bxFillPixels(); }
   bxRenderCamprow(); bxCheckClear();
 }
@@ -1417,7 +1417,13 @@ async function bxFillPixels(force){
   }catch(e){ sel.innerHTML=def?('<option value="'+esc(def)+'">기본 픽셀 ('+esc(def)+')</option>'):'<option value="">불러오기 실패</option>'; }
 }
 function bxOptLabel(g){ return ({OFFSITE_CONVERSIONS:'전환',VALUE:'가치(ROAS)',LINK_CLICKS:'링크 클릭',LANDING_PAGE_VIEWS:'랜딩뷰',REACH:'도달',POST_ENGAGEMENT:'참여'})[g]||g; }
-function bxToggle(){ var cbo=(($('bx_budgetmode')||{}).value)==='CBO'; var l=$('bx_budgetlbl'); if(l)l.textContent=cbo?'캠페인 일 예산 (원)':'세트 일 예산 (원)'; }
+function bxToggle(){
+  var cbo=(($('bx_budgetmode')||{}).value)==='CBO';
+  // 예산 입력 노출: ⓐ 캠페인=CBO일 때만(캠페인 예산) · ⓑ 세트=ABO일 때만(세트별 예산). 그 외엔 입력 불필요 → 숨김.
+  var showBudget=(bxMode==='camp')?cbo:(!cbo);
+  var f=$('bx_budgetField'); if(f)f.style.display=showBudget?'':'none';
+  var l=$('bx_budgetlbl'); if(l)l.textContent=(bxMode==='camp')?'캠페인 일 예산 (원)':'세트 일 예산 (원)';
+}
 function bxCheckClear(){ var c=$('bx_check'); if(c)c.innerHTML=''; var o=$('bx_out'); if(o)o.innerHTML=''; }
 var bxNameOverride={};   // 자동 세트명 → 사용자 수정명 (라이브 재생성돼도 유지)
 function bxRenderSets(){
@@ -1516,11 +1522,33 @@ async function bxCreate(btn){
   try{ var r=await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); var j=await r.json();
     bxRenderResult(j,body.act);
     if(j&&j.ok){ if(j.campaign&&j.campaign.id){ if(!bxMadeCampaigns.some(function(x){return String(x.id)===String(j.campaign.id);})) bxMadeCampaigns.push({id:j.campaign.id,name:(j.campaign.name||'캠페인'),ctx:bxSnapshotA()}); if(bxMode==='camp')bxPendingPick=j.campaign.id; }
-      toast(bxMode==='camp'?'캠페인 생성됨 · ⓑ 세트 생성에서 자동 선택됩니다':'생성 완료 · 세트 '+(j.createdCount||0)+'개'); }
+      toast(bxMode==='camp'?'캠페인 생성됨 · ⓑ 세트 생성에서 자동 선택됩니다':'생성 완료 · 세트 '+(j.createdCount||0)+'개');
+      if(bxMode==='set' && (j.createdCount||0)>0){ try{ await bxMaybeRenameCampaign(body.act); }catch(e){} } }
     else toast('생성 실패 — 결과 확인');
   }
   catch(e){ bxRenderResult({ok:false,error:String(e&&e.message||e)},body.act); }
   if(btn){btn.disabled=false;btn.textContent=bxGenLabel();}
+}
+// ⓑ 세트 생성 후: 추가한 타겟 컨셉을 대상 캠페인명 (…) 부분에 병합할지 물어보고, 승인 시 캠페인명 변경.
+async function bxMaybeRenameCampaign(act){
+  var sel=$('bx_pickCamp'); if(!sel||!sel.value)return; var cid=sel.value;
+  var curName=(((sel.selectedOptions&&sel.selectedOptions[0])||{}).textContent||'').replace(/\s*·\s*비활성\s*$/,'').trim();
+  if(!curName)return;
+  var newTams=[]; try{ newTams=Array.from(bTams).map(function(c){return tamKr(c)||c;}).filter(Boolean); }catch(e){}
+  if(!newTams.length)return;
+  var m=curName.match(/^(.*?)\s*\(([^)]*)\)\s*$/);
+  var base=m?m[1].trim():curName;
+  var existing=m?m[2].split('/').map(function(s){return s.trim();}).filter(Boolean):[];
+  var merged=existing.slice(); newTams.forEach(function(t){ if(merged.indexOf(t)<0)merged.push(t); });
+  var newName=base+(merged.length?(' ('+merged.join('/')+')'):'');
+  if(newName===curName)return;   // 이미 반영돼 있음
+  if(!confirm('캠페인명 수정이 필요해요 — 추가한 타겟 컨셉을 반영할까요?\n\n'+curName+'\n→ '+newName+'\n\n변경하시겠어요? (세트는 이미 생성됐고, 안 바꿔도 됩니다)')) return;
+  try{
+    var r=await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({updateCampaignName:true, act:act, campaignId:cid, name:newName})});
+    var j=await r.json();
+    if(j&&j.ok){ toast('캠페인명 변경됨'); try{ var opt=sel.selectedOptions[0]; if(opt)opt.textContent=newName; var lc=bxCampLive.filter(function(c){return String(c.id)===String(cid);})[0]; if(lc)lc.name=newName; }catch(e){} }
+    else toast('캠페인명 변경 실패: '+esc(String((j&&j.error)||'')));
+  }catch(e){ toast('캠페인명 변경 오류'); }
 }
 function bxRenderResult(j,act){
   var o=$('bx_out'); if(!o)return;
