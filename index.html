@@ -2361,6 +2361,17 @@ function msRenderPreview(){
   }
   wrap.innerHTML=rows.join('');
 }
+function msProgress(done,total){
+  var row=$('ms_genRow'); if(!row)return; var el=document.getElementById('ms_prog');
+  if(!el){ el=document.createElement('div'); el.id='ms_prog'; el.style.cssText='margin-top:8px'; row.appendChild(el); }
+  var pct=total?Math.round(done/total*100):0;
+  el.innerHTML='<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2)"><span class="ms-spin"></span><span>생성 중… <b style="color:var(--accent2)">'+done+'/'+total+'</b></span></div><div style="height:6px;background:rgba(255,255,255,.08);border-radius:4px;margin-top:5px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:var(--accent);transition:width .25s"></div></div>';
+}
+function msProgressDone(done,total,fail){
+  var el=document.getElementById('ms_prog'); if(!el)return;
+  el.innerHTML='<div style="font-size:12px;color:'+(fail?'var(--yellow)':'var(--green)')+'">✅ 생성 완료 <b>'+done+'/'+total+'</b>'+(fail?(' · 실패 '+fail):'')+' (PAUSED)</div>';
+  setTimeout(function(){ try{ if(el&&el.parentNode)el.parentNode.removeChild(el); }catch(e){} }, 5000);
+}
 async function msCreate(btn){
   const srcs=msSelectedSrcs();
   const sets=msSelectedSets();
@@ -2370,15 +2381,18 @@ async function msCreate(btn){
   srcs.forEach(function(src){ const p=cloneCreativeParts(src); sets.forEach(function(set){ const name=buildCreativeName(set,p.date,{fmt:p.fmt,msg:p.msg,soje:p.soje},p.manager||''); if(set._acct&&set.adsetId) plan.push({act:set._acct, srcCreativeId:src.cid, targetAdsetId:set.adsetId, newName:name, utmCampaign:set.name, utmContent:name}); }); });
   if(!plan.length){ toast('생성 가능한 라이브 세트가 없습니다'); return; }
   if(!confirm('소재 '+srcs.length+' × 세트 '+sets.length+' = '+plan.length+'건을 각각 PAUSED(꺼짐)로 생성합니다. 진행할까요?')){ toast('취소됨'); return; }
-  if(btn){ btn.disabled=true; btn.textContent='생성 중…'; }
+  if(btn){ btn.disabled=true; }
   let done=0,fail=0,stop=false;
+  msProgress(0,plan.length); if(btn)btn.textContent='생성 중… 0/'+plan.length;
   for(let i=0;i<plan.length;i++){
     try{ const r=await fetch('/api/clonead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({apply:true},plan[i]))}); const j=await r.json(); if(j.ok)done++; else { fail++; if(((j.error||'')+'').indexOf('limit')>=0){stop=true;} } }
     catch(e){ fail++; }
+    var _n=done+fail; msProgress(_n,plan.length); if(btn)btn.textContent='생성 중… '+_n+'/'+plan.length;   // n/N 진행 표시
     if(stop) break;
-    await new Promise(function(res){ setTimeout(res,1500); });
+    if(i<plan.length-1) await new Promise(function(res){ setTimeout(res,1500); });
   }
   if(btn){ btn.disabled=false; btn.textContent='세트마다 생성 (PAUSED)'; }
+  msProgressDone(done,plan.length,fail);
   if(typeof mcLogActivity==='function'){ try{ mcLogActivity('소재 다중복제 생성 완료 '+done+'/'+plan.length); }catch(e){} }
   toast('생성 — 완료 '+done+' · 실패 '+fail+(stop?' · 한도 도달, 잠시후 재시도':''));
 }
@@ -3564,6 +3578,9 @@ main.main:has(#page-build.active) .two-col > div:last-child > .panel{position:st
 /* 모드 슬롯 안의 A~C는 카드가 아니라 '섹션'으로 평탄화(창 안에 창 느낌 제거) */
 #bx_campSlot .panel,#bx_setSlot .panel{border:none!important;background:none!important;padding:0!important;margin:0 0 6px!important;box-shadow:none!important}
 #bx_campSlot .panel .panel-h,#bx_setSlot .panel .panel-h{padding-left:0;padding-right:0}
+/* 복제 진행 스피너 */
+@keyframes msspin{to{transform:rotate(360deg)}}
+.ms-spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.22);border-top-color:var(--accent2);border-radius:50%;animation:msspin .8s linear infinite;vertical-align:middle}
 </style>
 <script id="RB_LAYOUT_TWEAKS">
 (function(){
