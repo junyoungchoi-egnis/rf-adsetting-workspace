@@ -302,7 +302,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
             <div id="bx_setSlot"></div>
             <div id="bx_autoset" style="font-size:11px;color:var(--text3);margin:12px 0;padding:7px 9px;border:1px dashed rgba(255,255,255,.14);border-radius:8px">이름 기반 자동 세팅 — 채우면 표시됩니다</div>
             <div class="grid g3">
-              <div class="field"><label>생성할 계정 <span class="req">*</span></label><select id="bx_acct" onchange="bxFillPixels(true);bxCheckClear()"></select></div>
+              <div class="field"><label>생성할 계정 <span class="req">*</span></label><select id="bx_acct" onchange="bxFillPixels(true);bxFillCampaigns();bxCheckClear()"></select></div>
               <div class="field"><label>예산 방식</label><select id="bx_budgetmode" onchange="bxToggle();bxCheckClear()"><option value="ABO">ABO · 세트별 예산</option><option value="CBO">CBO · 캠페인 예산</option></select></div>
               <div class="field"><label id="bx_budgetlbl">세트 일 예산 (원)</label><input id="bx_budget" type="number" placeholder="예: 30000" oninput="bxCheckClear()"></div>
             </div>
@@ -1395,18 +1395,30 @@ function bxRenderSets(){
 }
 function bxNameEdit(inp){ var k=inp.getAttribute('data-name'); var v=(inp.value||'').trim(); if(v&&v!==k)bxNameOverride[k]=v; else delete bxNameOverride[k]; bxCheckClear(); }
 function bxSetName(autoName){ return bxNameOverride[autoName]||autoName; }
-function bxFillCampaigns(){
+async function bxFillCampaigns(){
+  if(bxMode!=='set')return;   // camp 모드에선 A필드 덮어쓰기 방지
   var sel=$('bx_pickCamp'); if(!sel)return; var cur=sel.value;
-  var live=[]; try{ live=(typeof mcLiveCampaigns==='function')?mcLiveCampaigns():[]; }catch(e){}
-  var groups=[];
-  if(bxMadeCampaigns.length) groups.push('<optgroup label="방금 만든 캠페인">'+bxMadeCampaigns.map(function(c){return '<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>';}).join('')+'</optgroup>');
-  if(live.length) groups.push('<optgroup label="메타 라이브 캠페인">'+live.map(function(c){return '<option value="'+esc(c.id)+'">'+esc(c.name)+(c.active?'':' · 비활성')+'</option>';}).join('')+'</optgroup>');
-  sel.innerHTML=groups.join('')||'<option value="">대상 캠페인 없음 — ⓐ로 먼저 만들거나 🔄 동기화</option>';
-  var all=bxMadeCampaigns.concat(live);
-  if(bxPendingPick && all.some(function(c){return String(c.id)===String(bxPendingPick);})){ sel.value=bxPendingPick; bxPendingPick=null; }   // ⓐ 직후 핸드오프(1회성)
-  else if(cur && all.some(function(c){return String(c.id)===String(cur);})){ sel.value=cur; }
-  else if(bxMadeCampaigns.length){ sel.value=bxMadeCampaigns[bxMadeCampaigns.length-1].id; }
-  if(sel.value)bxOnPickCamp();   // 선택된 캠페인의 기본정보 상속
+  var act=String((($('bx_acct')||{}).value)||'').replace(/^act_/,'');
+  var render=function(live,note){
+    var groups=[];
+    if(bxMadeCampaigns.length) groups.push('<optgroup label="방금 만든 캠페인">'+bxMadeCampaigns.map(function(c){return '<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>';}).join('')+'</optgroup>');
+    if(live.length) groups.push('<optgroup label="계정 캠페인 ('+live.length+')">'+live.map(function(c){return '<option value="'+esc(c.id)+'">'+esc(c.name)+(c.active===false?' · 비활성':'')+'</option>';}).join('')+'</optgroup>');
+    sel.innerHTML=groups.join('')||('<option value="">'+(note||'대상 캠페인 없음 — ⓐ로 먼저 만들거나 Meta 연동/동기화')+'</option>');
+    var all=bxMadeCampaigns.concat(live);
+    if(bxPendingPick && all.some(function(c){return String(c.id)===String(bxPendingPick);})){ sel.value=bxPendingPick; bxPendingPick=null; }   // ⓐ 직후 핸드오프(1회성)
+    else if(cur && all.some(function(c){return String(c.id)===String(cur);})){ sel.value=cur; }
+    else if(bxMadeCampaigns.length){ sel.value=bxMadeCampaigns[bxMadeCampaigns.length-1].id; }
+    if(sel.value)bxOnPickCamp();   // 선택된 캠페인의 기본정보 상속
+  };
+  // 스냅샷 기준 즉시 표시 → 계정에서 실제 전체 캠페인 fetch로 교체
+  var snap=[]; try{ snap=(typeof mcLiveCampaigns==='function')?mcLiveCampaigns():[]; }catch(e){}
+  render(snap,'계정 캠페인 불러오는 중…');
+  if(!act)return;
+  try{
+    var r=await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({listCampaigns:true,act:act})});
+    var j=await r.json();
+    if(j&&j.ok&&Array.isArray(j.campaigns)) render(j.campaigns);
+  }catch(e){}
 }
 function bxPayload(apply){
   var act=String((($('bx_acct')||{}).value)||'').replace(/^act_/,'');
