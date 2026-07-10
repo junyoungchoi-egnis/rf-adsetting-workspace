@@ -1354,7 +1354,26 @@ function bxAbsorbBuilder(){   // A~C 패널을 하단 바의 모드별 슬롯으
 }
 function bxSnapshotA(){ var g=function(id){var el=$(id);return el?el.value:'';}; return {product:g('b_product'),media:g('b_media'),date:g('b_date'),goal:g('b_goal'),bid:g('b_bid'),scheme:g('b_scheme'),firstcat:g('b_firstcat'),bidopt:g('b_bidopt'),cnum:g('b_cnum')}; }
 function bxApplyA(s){ if(!s)return; var st=function(id,v){var el=$(id); if(el&&v!=null&&v!=='')el.value=v;}; st('b_product',s.product);st('b_media',s.media);st('b_date',s.date);st('b_goal',s.goal);st('b_bid',s.bid);st('b_scheme',s.scheme);st('b_firstcat',s.firstcat);st('b_bidopt',s.bidopt);st('b_cnum',s.cnum); try{buildPreview();}catch(e){} }
-function bxTryParseCtx(name){ try{ var t=String(name||'').split('_'); var m=$('b_media'),p=$('b_product'),g=$('b_goal'),bd=$('b_bid'); var has=function(sel,v){return sel&&[].some.call(sel.options,function(o){return o.value===v;});}; if(has(m,t[0]))m.value=t[0]; if(has(p,t[1]))p.value=t[1]; if(has(g,t[2]))g.value=t[2]; if(has(bd,t[3]))bd.value=t[3]; buildPreview(); }catch(e){} }
+function bxTryParseCtx(name){
+  // 라이브 캠페인명(코드형 or 한글형 FB_화이바_100원딜_구매_conv_01 등)에서 제품·목표·입찰·스킴·매체를
+  // 토큰 전수 스캔으로 역매핑(코드 또는 한글 라벨 매칭). 위치 의존 X → 형식이 달라도 최대한 인식.
+  try{
+    var M_=M();
+    var toks=String(name||'').replace(/\([^)]*\)/g,' ').split(/[_\s]+/).filter(Boolean);
+    var setIf=function(id,code){ if(!code)return; var el=$(id); if(el&&[].some.call(el.options,function(o){return o.value===code;}))el.value=code; };
+    var gotProd=false;
+    toks.forEach(function(tk){
+      var pr=M_.products.find(function(p){return p.code===tk;})||M_.products.find(function(p){return p.brand===tk;});
+      if(pr){ setIf('b_product',pr.code); gotProd=true; return; }
+      var g=M_.goals.find(function(x){return x.code===tk;})||M_.goals.find(function(x){return x.kr===tk;}); if(g){ setIf('b_goal',g.code); return; }
+      var bd=M_.bids.find(function(x){return x.code===tk;})||M_.bids.find(function(x){return x.kr===tk;}); if(bd){ setIf('b_bid',bd.code); return; }
+      var sc=M_.schemes.find(function(x){return x.code===tk;})||M_.schemes.find(function(x){return x.kr===tk;}); if(sc){ setIf('b_scheme',sc.code); return; }
+      var md=M_.media.find(function(x){return x.code===tk;}); if(md){ setIf('b_media',md.code); return; }
+    });
+    try{ var cr=$('bx_camprow'); if(cr&&!gotProd&&bxMode==='set') cr.innerHTML+=' <span style="color:var(--yellow)">· ⚠ 캠페인명에서 제품을 자동 인식 못함 — 세트명 제품코드 확인하세요</span>'; }catch(e){}
+    buildPreview();
+  }catch(e){}
+}
 function bxOnPickCamp(){
   var sel=$('bx_pickCamp'); if(!sel){bxCheckClear();return;} var cid=sel.value;
   var made=null; for(var i=0;i<bxMadeCampaigns.length;i++){ if(String(bxMadeCampaigns[i].id)===String(cid)){made=bxMadeCampaigns[i];break;} }
