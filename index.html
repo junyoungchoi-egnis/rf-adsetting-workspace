@@ -307,7 +307,9 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
               <div class="field"><label id="bx_budgetlbl">세트 일 예산 (원)</label><input id="bx_budget" type="number" placeholder="예: 30000" oninput="bxCheckClear()"></div>
             </div>
             <div class="field" id="bx_campnameWrap"><label>✏️ 캠페인명 <span class="opt">규칙 자동 · 직접 수정 가능</span></label><input id="bx_campnameInput" class="t-mono" oninput="bxCheckClear()" placeholder="FB_..."></div>
-            <div class="field" id="bx_pickCampWrap" style="display:none"><label>① 대상 캠페인 <span class="opt">방금 만든 것 + 메타 라이브 · 기본정보를 상속</span></label><select id="bx_pickCamp" onchange="bxOnPickCamp()"></select></div>
+            <div class="field" id="bx_pickCampWrap"><label>① 대상 캠페인 <span class="opt">이 캠페인 하위에 세트 생성 · 기본정보 상속</span> <span id="bx_campLoad" style="color:var(--text3);font-size:10px"></span></label>
+              <input id="bx_campSearch" placeholder="🔍 캠페인 검색 (이름·ID)" oninput="bxRenderCampOptions()" style="margin-bottom:6px">
+              <select id="bx_pickCamp" size="1" onchange="bxOnPickCamp()"></select></div>
             <div id="bx_audienceWrap">
               <div class="field"><label>전환 픽셀 <span class="opt">계정 기본 자동 선택 · 변경 가능</span></label><select id="bx_pixel" onchange="bxCheckClear()"></select></div>
               <div class="grid g3">
@@ -1306,6 +1308,7 @@ var BX_PIXEL={
 };
 var bxMode='camp';
 var bxMadeCampaigns=[]; // 이 세션에서 ⓐ로 생성한 캠페인 {id,name,ctx}
+var bxCampLive=[];      // 계정에서 불러온 실제 캠페인 캐시 [{id,name,active}]
 var bxPendingPick=null;  // ⓐ 직후 ⓑ 진입 시 자동 선택할 캠페인 id(1회성 핸드오프)
 function bxGenLabel(){ return bxMode==='camp'?'⚡ 캠페인 생성 (PAUSED)':(bxMode==='set'?'⚡ 세트 생성 (PAUSED)':'⚡ 캠페인·세트 생성 (PAUSED)'); }
 function bxSetMode(m){
@@ -1395,30 +1398,32 @@ function bxRenderSets(){
 }
 function bxNameEdit(inp){ var k=inp.getAttribute('data-name'); var v=(inp.value||'').trim(); if(v&&v!==k)bxNameOverride[k]=v; else delete bxNameOverride[k]; bxCheckClear(); }
 function bxSetName(autoName){ return bxNameOverride[autoName]||autoName; }
+function bxRenderCampOptions(){   // 검색어로 필터 후 옵션 재구성(옵션 hide 아님 — 안정적)
+  var sel=$('bx_pickCamp'); if(!sel)return; var cur=sel.value;
+  var q=((($('bx_campSearch')||{}).value)||'').trim().toLowerCase();
+  var f=function(list){ return q?list.filter(function(c){return ((c.name||'').toLowerCase().indexOf(q)>=0)||(String(c.id).toLowerCase().indexOf(q)>=0);}):list; };
+  var made=f(bxMadeCampaigns), live=f(bxCampLive);
+  var groups=[];
+  if(made.length) groups.push('<optgroup label="방금 만든 캠페인">'+made.map(function(c){return '<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>';}).join('')+'</optgroup>');
+  if(live.length) groups.push('<optgroup label="계정 캠페인 ('+live.length+(q?' · 검색':'')+')">'+live.map(function(c){return '<option value="'+esc(c.id)+'">'+esc(c.name)+(c.active===false?' · 비활성':'')+'</option>';}).join('')+'</optgroup>');
+  sel.innerHTML=groups.join('')||('<option value="">'+(q?'검색 결과 없음':'대상 캠페인 없음 — ⓐ로 먼저 만들거나 Meta 연동/동기화')+'</option>');
+  if(bxPendingPick && [].some.call(sel.options,function(o){return o.value===String(bxPendingPick);})){ sel.value=String(bxPendingPick); bxPendingPick=null; bxOnPickCamp(); }
+  else if(cur && [].some.call(sel.options,function(o){return o.value===cur;})){ sel.value=cur; }
+  else if(!q && bxMadeCampaigns.length){ sel.value=bxMadeCampaigns[bxMadeCampaigns.length-1].id; bxOnPickCamp(); }
+}
 async function bxFillCampaigns(){
   if(bxMode!=='set')return;   // camp 모드에선 A필드 덮어쓰기 방지
-  var sel=$('bx_pickCamp'); if(!sel)return; var cur=sel.value;
   var act=String((($('bx_acct')||{}).value)||'').replace(/^act_/,'');
-  var render=function(live,note){
-    var groups=[];
-    if(bxMadeCampaigns.length) groups.push('<optgroup label="방금 만든 캠페인">'+bxMadeCampaigns.map(function(c){return '<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>';}).join('')+'</optgroup>');
-    if(live.length) groups.push('<optgroup label="계정 캠페인 ('+live.length+')">'+live.map(function(c){return '<option value="'+esc(c.id)+'">'+esc(c.name)+(c.active===false?' · 비활성':'')+'</option>';}).join('')+'</optgroup>');
-    sel.innerHTML=groups.join('')||('<option value="">'+(note||'대상 캠페인 없음 — ⓐ로 먼저 만들거나 Meta 연동/동기화')+'</option>');
-    var all=bxMadeCampaigns.concat(live);
-    if(bxPendingPick && all.some(function(c){return String(c.id)===String(bxPendingPick);})){ sel.value=bxPendingPick; bxPendingPick=null; }   // ⓐ 직후 핸드오프(1회성)
-    else if(cur && all.some(function(c){return String(c.id)===String(cur);})){ sel.value=cur; }
-    else if(bxMadeCampaigns.length){ sel.value=bxMadeCampaigns[bxMadeCampaigns.length-1].id; }
-    if(sel.value)bxOnPickCamp();   // 선택된 캠페인의 기본정보 상속
-  };
-  // 스냅샷 기준 즉시 표시 → 계정에서 실제 전체 캠페인 fetch로 교체
-  var snap=[]; try{ snap=(typeof mcLiveCampaigns==='function')?mcLiveCampaigns():[]; }catch(e){}
-  render(snap,'계정 캠페인 불러오는 중…');
+  try{ bxCampLive=(typeof mcLiveCampaigns==='function')?(mcLiveCampaigns()||[]):[]; }catch(e){ bxCampLive=[]; }  // 스냅샷 즉시
+  bxRenderCampOptions();
   if(!act)return;
+  var lbl=$('bx_campLoad'); if(lbl)lbl.textContent='· 불러오는 중…';
   try{
     var r=await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({listCampaigns:true,act:act})});
     var j=await r.json();
-    if(j&&j.ok&&Array.isArray(j.campaigns)) render(j.campaigns);
-  }catch(e){}
+    if(j&&j.ok&&Array.isArray(j.campaigns)){ bxCampLive=j.campaigns; bxRenderCampOptions(); if(lbl)lbl.textContent='· 계정 캠페인 '+j.campaigns.length+'개'; }
+    else if(lbl)lbl.textContent='';
+  }catch(e){ if(lbl)lbl.textContent=''; }
 }
 function bxPayload(apply){
   var act=String((($('bx_acct')||{}).value)||'').replace(/^act_/,'');
