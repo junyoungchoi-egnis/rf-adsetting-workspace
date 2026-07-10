@@ -242,8 +242,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
         <p>제품·목표·입찰·스킴·타게팅·타겟 컨셉(구 TAM)을 조합하면 <b>광고세트명(=utm_campaign)</b>·합성코드·한글 캠페인명이 시트 규칙대로 자동 생성됩니다. 타겟 컨셉은 1개 선택, 타게팅은 여러 개 추가할 수 있고 타게팅 수만큼 세트가 한 번에 만들어집니다.</p>
       </div>
 
-      <div class="two-col">
-        <div>
+      <div class="build-forms">
           <div class="panel">
             <div class="panel-h"><span class="step">A</span>캠페인 기본 정보</div>
             <div class="grid g3">
@@ -291,30 +290,28 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
               <button class="btn btn-ghost btn-sm" onclick="addTam()">+ 추가</button>
             </div>
           </div>
-        </div>
-
-        <!-- right: preview + generate -->
-        <div>
-          <div class="panel" style="position:sticky;top:20px">
-            <div class="panel-h">미리보기 & 생성</div>
-            <div style="font-size:11px;color:var(--text2);margin-bottom:5px">광고세트명 (utm_campaign)</div>
-            <div class="preview" id="b_preview"><span class="ph">기본 정보를 채워주세요…</span></div>
-            <div style="font-size:11px;color:var(--text2);margin:13px 0 5px">한글 캠페인명 (참조용)</div>
-            <div class="preview" id="b_previewKr" style="min-height:auto;padding:10px 13px"><span class="ph">—</span></div>
-            <div style="display:flex;gap:14px;margin:14px 0 4px;font-size:11.5px;color:var(--text2)">
-              <div>합성코드 <b id="b_composite" style="color:var(--cyan)">—</b></div>
-              <div>생성 예정 <b id="b_genCount" style="color:var(--accent2)">0</b>개</div>
-            </div>
-            <div class="warnbox" id="b_warn"></div>
-            <div class="hint" style="margin-top:12px;text-align:center">↓ 아래 <b>META에 실제 생성</b>에서 모드(캠페인/세트/한번에)를 고르고 생성하세요</div>
-          </div>
-        </div>
       </div>
 
-
-      <!-- 생성 단계 (캠페인 + 광고세트) — 생성 클릭 시 표시 -->
-      <div class="panel" id="b_createWrap" style="margin-top:16px;border-color:#2a4a7a">
-        <div class="panel-h">Meta에 실제 생성 — 캠페인 · 광고세트 <span class="hint">생성 시 PAUSED(꺼짐) · 광고(소재)는 소재 세팅 탭에서</span></div>
+      <!-- 하단 도킹 바: 미리보기 + META 실제 생성 (소재 세팅 '신규 세팅'과 동일 인터페이스) -->
+      <div id="b_createWrap">
+        <div id="bxBarTop">
+          <div class="panel-h n5b-collap" onclick="bxBarToggle(this)" style="margin:0 0 12px">Meta에 실제 생성 — 캠페인 · 광고세트 <span class="hint">PAUSED(꺼짐) · 광고(소재)는 소재 세팅 탭에서</span><span class="n5b-chev">▾</span></div>
+          <div id="bxBarBody">
+            <div class="bx-prev-row">
+              <div style="flex:1;min-width:240px">
+                <div style="font-size:11px;color:var(--text2);margin-bottom:5px">광고세트명 (utm_campaign)</div>
+                <div class="preview" id="b_preview"><span class="ph">기본 정보를 채워주세요…</span></div>
+              </div>
+              <div style="flex:1;min-width:220px">
+                <div style="font-size:11px;color:var(--text2);margin-bottom:5px">한글 캠페인명 (참조용)</div>
+                <div class="preview" id="b_previewKr" style="min-height:auto;padding:10px 13px"><span class="ph">—</span></div>
+                <div style="display:flex;gap:14px;margin:10px 0 4px;font-size:11.5px;color:var(--text2)">
+                  <div>합성코드 <b id="b_composite" style="color:var(--cyan)">—</b></div>
+                  <div>생성 예정 <b id="b_genCount" style="color:var(--accent2)">0</b>개</div>
+                </div>
+              </div>
+            </div>
+            <div class="warnbox" id="b_warn"></div>
         <div class="seg-toggle" id="bx_modebar" style="margin-bottom:10px"><button id="bx_mA" onclick="bxSetMode('camp')">ⓐ 캠페인 생성</button><button id="bx_mB" onclick="bxSetMode('set')">ⓑ 세트 생성</button><button id="bx_mC" class="on" onclick="bxSetMode('both')">ⓒ 한번에</button></div>
         <div id="bx_camprow" style="font-size:12px;color:var(--text2);margin-bottom:6px"></div>
         <div id="bx_autoset" style="font-size:11px;color:var(--text3);margin-bottom:10px;padding:7px 9px;border:1px dashed rgba(255,255,255,.14);border-radius:8px">이름 기반 자동 세팅 — 채우면 표시됩니다</div>
@@ -340,12 +337,14 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
         </div>
         <div class="hint" style="margin-top:6px">전환 픽셀은 <b>계정별 고정 매핑</b> · 목표·최적화·입찰은 <b>이름 규칙에서 자동</b> · 광고(소재)는 <b>소재 세팅</b> 탭에서 붙입니다.</div>
         <div id="bx_check" style="margin-top:12px"></div>
-        <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
+            <div id="bx_out" style="margin-top:10px"></div>
+          </div>
+        </div>
+        <div id="bxBarAct">
           <button class="btn btn-ghost btn-sm" onclick="bxDryRun()">🔎 사전 점검</button>
           <div class="spacer"></div>
           <button class="btn btn-primary" id="bx_gen" onclick="bxCreate(this)">⚡ 캠페인·세트 생성 (PAUSED)</button>
         </div>
-        <div id="bx_out" style="margin-top:10px"></div>
       </div>
     </section>
 
@@ -1252,6 +1251,7 @@ function buildPreview(){
   const wb=$('b_warn');wb.innerHTML=w.join('<br>');wb.classList.toggle('show',w.length>0);
   try{ bxSyncFromBuilder(b, valid); }catch(e){}   // 빌더 → 실제 생성(META) 섹션 실시간 동기화
 }
+function bxBarToggle(hd){ var b=document.getElementById('bxBarBody'); if(!b)return; var open=b.style.display!=='none'; b.style.display=open?'none':''; var cv=hd&&hd.querySelector?hd.querySelector('.n5b-chev'):null; if(cv)cv.textContent=open?'▸':'▾'; }
 function bxSyncFromBuilder(b, valid){
   if(!$('b_createWrap')) return;
   var kr=buildKrName({...b,tams:[...bTams]});
@@ -3461,6 +3461,11 @@ main.main:has(#page-metacreate.active){max-width:1720px}
 .side-foot .rb-foot-acct label{display:block;font-size:10px;color:#657081;margin-bottom:4px}
 .side-foot #rbAcctSel{width:100%!important;margin:0!important;padding:6px 9px!important;border-radius:7px;background:#1e2530;color:#e8eef7;border:1px solid #38424f;font-size:12px}
 .side-foot .rb-foot-actmoved{display:flex!important;position:static!important;top:auto!important;right:auto!important;z-index:auto!important;background:none!important;border:none!important;box-shadow:none!important;color:#8fb6ff!important;font-size:11px!important;padding:6px 0!important;width:100%!important;margin:0!important;justify-content:flex-start!important;gap:7px}
+/* 캠페인·세트 생성 탭 — 소재 세팅 '신규 세팅'과 동일한 하단 도킹 바 */
+#b_createWrap{padding:0!important;border:none!important;border-radius:0!important;position:sticky;bottom:0;z-index:60;margin:16px -30px 0!important;background:var(--surface2);border-top:1px solid var(--border)!important;box-shadow:0 -6px 20px rgba(0,0,0,.4)}
+#bxBarTop{padding:14px 30px;border-bottom:1px solid var(--border);max-height:58vh;overflow:auto}
+#bxBarAct{padding:12px 30px;display:flex;align-items:center;gap:14px}
+#b_createWrap .bx-prev-row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;margin-bottom:8px}
 </style>
 <script id="RB_LAYOUT_TWEAKS">
 (function(){
