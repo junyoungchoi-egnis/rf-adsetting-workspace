@@ -165,6 +165,9 @@ module.exports = async function (req, res) {
         if (!db) return res.status(400).json({ ok: false, code: 'CBO_BUDGET_MISSING', error: 'CBO는 캠페인 일 예산이 필요합니다' });
         campPayload.daily_budget = db;
         campPayload.bid_strategy = BID_STRATS.indexOf(String(campaign.bidStrategy)) >= 0 ? campaign.bidStrategy : 'LOWEST_COST_WITHOUT_CAP';
+      } else {
+        // ABO(캠페인 예산 미사용): 메타가 is_adset_budget_sharing_enabled 명시를 요구 → false(예산 공유 안 함)
+        campPayload.is_adset_budget_sharing_enabled = false;
       }
     }
     const isCBO = !!(campaign && String(campaign.budgetMode) === 'CBO');
