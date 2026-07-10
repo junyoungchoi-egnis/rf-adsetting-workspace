@@ -238,13 +238,12 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
     <!-- ══════════ TAB 1: BUILDER ══════════ -->
     <section class="page active" id="page-build">
       <div class="page-head">
-        <h2>캠페인 · 광고세트 빌더</h2>
-        <p>제품·목표·입찰·스킴·타게팅·타겟 컨셉(구 TAM)을 조합하면 <b>광고세트명(=utm_campaign)</b>·합성코드·한글 캠페인명이 시트 규칙대로 자동 생성됩니다. 타겟 컨셉은 1개 선택, 타게팅은 여러 개 추가할 수 있고 타게팅 수만큼 세트가 한 번에 만들어집니다.</p>
+        <h2>캠페인 · 광고세트 생성</h2>
+        <p><b>ⓐ 캠페인 생성</b>에서 기본 정보로 캠페인을, <b>ⓑ 세트 생성</b>에서 대상 캠페인을 고르고 타게팅·타겟 컨셉으로 광고세트를 만듭니다. 이름·최적화·픽셀은 규칙대로 자동 · 생성은 모두 PAUSED(꺼짐).</p>
       </div>
 
-      <div class="two-col">
-        <div>
-          <div class="panel">
+      <div class="build-forms" style="display:none">
+          <div class="panel" id="bx_APanel">
             <div class="panel-h"><span class="step">A</span>캠페인 기본 정보</div>
             <div class="grid g3">
               <div class="field"><label>제품 <span class="req">*</span></label><select id="b_product" onchange="buildPreview()"></select></div>
@@ -263,8 +262,8 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
             </div>
           </div>
 
-          <div class="panel">
-            <div class="panel-h"><span class="step">B</span>타게팅 <span class="hint">한글 토큰 선택 → 규칙대로 자동 조합 (전환 V&gt;P, 유형 리타겟&gt;유사&gt;디타겟&gt;기타)</span></div>
+          <div class="panel" id="bx_BPanel">
+            <div class="panel-h"><span class="step">B</span>타게팅<span class="hint">한글 토큰 선택 → 규칙대로 자동 조합 (전환 V&gt;P, 유형 리타겟&gt;유사&gt;디타겟&gt;기타)</span></div>
             <div id="b_tokGroups" style="margin-bottom:8px"></div>
             <div class="row-flex" style="align-items:center;margin-bottom:10px">
               <span class="cnt">연령대</span>
@@ -283,7 +282,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
             </div>
           </div>
 
-          <div class="panel">
+          <div class="panel" id="bx_CPanel">
             <div class="panel-h"><span class="step">C</span>타겟 컨셉 (구 TAM) <span class="hint">콘텐츠마케터 영역 · 여러 개 선택 가능</span></div>
             <div class="chips" id="b_tamChips" style="margin-bottom:9px"></div>
             <div class="row-flex">
@@ -291,76 +290,65 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
               <button class="btn btn-ghost btn-sm" onclick="addTam()">+ 추가</button>
             </div>
           </div>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <div class="panel" id="b_createWrap">
+            <div class="panel-h">Meta에 실제 생성 — 캠페인 · 광고세트 <span class="hint">PAUSED(꺼짐) · 광고(소재)는 소재 세팅 탭에서</span></div>
+            <div class="seg-toggle" id="bx_modebar" style="margin-bottom:12px"><button id="bx_mA" class="on" onclick="bxSetMode('camp')">ⓐ 캠페인 생성</button><button id="bx_mB" onclick="bxSetMode('set')">ⓑ 세트 생성</button></div>
+            <div id="bx_camprow" style="font-size:12px;color:var(--text2);margin-bottom:10px"></div>
+            <div id="bx_campSlot"></div>
+            <div class="field" id="bx_acctBlock"><label>생성할 계정 <span class="req">*</span></label><select id="bx_acct" onchange="bxFillPixels(true);bxFillCampaigns();bxCheckClear()"></select></div>
+            <div class="field" id="bx_pickCampWrap"><label>대상 캠페인 <span class="opt">이 캠페인 하위에 세트 생성 · 기본정보 상속</span> <span id="bx_campLoad" style="color:var(--text3);font-size:10px"></span></label>
+              <input id="bx_campSearch" placeholder="🔍 캠페인 검색 (이름·ID)" oninput="bxRenderCampOptions()" style="margin-bottom:6px">
+              <select id="bx_pickCamp" size="1" onchange="bxOnPickCamp()"></select></div>
+            <div id="bx_setSlot"></div>
+            <div id="bx_autoset" style="font-size:11px;color:var(--text3);margin:12px 0;padding:7px 9px;border:1px dashed rgba(255,255,255,.14);border-radius:8px">이름 기반 자동 세팅 — 채우면 표시됩니다</div>
+            <div class="grid g3" id="bx_budgetBlock">
+              <div class="field"><label>예산 방식</label><select id="bx_budgetmode" onchange="bxToggle();bxCheckClear()"><option value="ABO">ABO · 세트별 예산</option><option value="CBO">CBO · 캠페인 예산</option></select></div>
+              <div class="field"><label id="bx_budgetlbl">세트 일 예산 (원)</label><input id="bx_budget" type="number" placeholder="예: 30000" oninput="bxCheckClear()"></div>
+            </div>
+            <div class="field" id="bx_campnameWrap"><label>✏️ 캠페인명 <span class="opt">규칙 자동 · 직접 수정 가능</span></label><input id="bx_campnameInput" class="t-mono" oninput="bxCheckClear()" placeholder="FB_..."></div>
+            <div id="bx_audCore">
+              <div class="field"><label>전환 픽셀 <span class="opt">계정 기본 자동 선택 · 변경 가능</span></label><select id="bx_pixel" onchange="bxCheckClear()"></select></div>
+              <div class="grid g3">
+                <div class="field"><label>연령 최소</label><input id="bx_agemin" type="number" value="18" min="13" max="65" oninput="bxCheckClear()"></div>
+                <div class="field"><label>연령 최대</label><input id="bx_agemax" type="number" value="65" min="13" max="65" oninput="bxCheckClear()"></div>
+                <div class="field"><label>국가</label><input value="대한민국 (KR)" disabled style="opacity:.65"></div>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:2px;padding:9px 11px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.02)">
+                <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="bx_advaud" style="width:auto"> 어드밴티지+ 오디언스 <span class="hint">기본 끔 · 정의한 연령/타게팅 그대로</span></label>
+                <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="bx_autopl" checked style="width:auto"> 자동 노출위치(어드밴티지+) <span class="hint">끄면 FB·IG만(오디언스 네트워크 제외)</span></label>
+              </div>
+            </div>
+            <div class="field" id="bx_setsWrap" style="margin-top:10px"><label>✏️ 만들어질 광고세트 <span class="opt">세트명 직접 수정 가능</span></label><div id="bx_setlist" style="max-height:220px;overflow:auto"></div></div>
+            <div class="hint" id="bx_hint" style="margin-top:6px">전환 픽셀은 <b>계정별 고정 매핑</b> · 목표·최적화·입찰은 <b>이름 규칙에서 자동</b> · 광고(소재)는 <b>소재 세팅</b> 탭에서 붙입니다.</div>
+            <div id="bx_check" style="margin-top:12px"></div>
+            <div id="bx_actions" style="display:flex;gap:8px;margin-top:14px;align-items:center">
+              <button class="btn btn-ghost btn-sm" onclick="bxDryRun()">🔎 사전 점검</button>
+              <div class="spacer"></div>
+              <button class="btn btn-primary" id="bx_gen" onclick="bxCreate(this)">⚡ 캠페인·세트 생성 (PAUSED)</button>
+            </div>
+            <div id="bx_out" style="margin-top:10px"></div>
+          </div>
         </div>
 
-        <!-- right: preview + generate -->
         <div>
-          <div class="panel" style="position:sticky;top:20px">
-            <div class="panel-h">미리보기 & 생성</div>
-            <div style="font-size:11px;color:var(--text2);margin-bottom:5px">광고세트명 (utm_campaign)</div>
-            <div class="preview" id="b_preview"><span class="ph">기본 정보를 채워주세요…</span></div>
-            <div style="font-size:11px;color:var(--text2);margin:13px 0 5px">한글 캠페인명 (참조용)</div>
+          <div class="panel">
+            <div class="panel-h">미리보기</div>
+            <div style="font-size:11px;color:var(--text2);margin-bottom:5px">한글 캠페인명 (참조용)</div>
             <div class="preview" id="b_previewKr" style="min-height:auto;padding:10px 13px"><span class="ph">—</span></div>
-            <div style="display:flex;gap:14px;margin:14px 0 4px;font-size:11.5px;color:var(--text2)">
-              <div>합성코드 <b id="b_composite" style="color:var(--cyan)">—</b></div>
-              <div>생성 예정 <b id="b_genCount" style="color:var(--accent2)">0</b>개</div>
+            <div id="b_setPrevWrap">
+              <div style="font-size:11px;color:var(--text2);margin:13px 0 5px">광고세트명 (utm_campaign)</div>
+              <div class="preview" id="b_preview"><span class="ph">기본 정보를 채워주세요…</span></div>
+              <div style="display:flex;gap:14px;margin:14px 0 4px;font-size:11.5px;color:var(--text2)">
+                <div>합성코드 <b id="b_composite" style="color:var(--cyan)">—</b></div>
+                <div>생성 예정 <b id="b_genCount" style="color:var(--accent2)">0</b>개</div>
+              </div>
             </div>
             <div class="warnbox" id="b_warn"></div>
-            <button class="btn btn-primary" style="width:100%;margin-top:12px;padding:12px" onclick="generateSets()">+ 캠페인·광고세트 생성</button>
           </div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-h">광고세트 라이브러리 <span class="hint" id="setLibCount"></span></div>
-        <div class="row-flex" style="margin-bottom:12px">
-          <input id="setSearch" placeholder="🔍 세트명 검색" style="max-width:260px" oninput="renderSetLib()">
-          <div class="seg-toggle"><button id="lsAll" class="on" onclick="setLibFilter('all')">전체</button><button id="lsActive" onclick="setLibFilter('active')">활성</button><button id="lsInactive" onclick="setLibFilter('inactive')">비활성</button></div>
-          <div class="spacer"></div>
-          <button class="btn btn-ghost btn-sm" onclick="exportSets()">📥 세트 CSV</button>
-        </div>
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr><th>제품</th><th>광고세트명 (utm_campaign)</th><th>합성</th><th>타게팅</th><th>1차</th><th>랜딩</th><th>생성일</th><th></th></tr></thead>
-            <tbody id="setLibBody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- 생성 단계 (캠페인 + 광고세트) — 생성 클릭 시 표시 -->
-      <div class="panel" id="b_createWrap" style="display:none;margin-top:16px;border-color:#2a4a7a">
-        <div class="panel-h">Meta 생성 — 캠페인 · 광고세트 <span class="hint">미리보기 전용 · 생성 시 PAUSED (실제 쓰기는 권한 확보 후)</span></div>
-        <div class="seg-toggle" style="margin-bottom:12px"><button id="bcCamp" class="on" onclick="bcSub('campaign')">① 캠페인</button><button id="bcSet" onclick="bcSub('adset')">② 광고세트</button></div>
-
-        <div class="bcsub" data-bcsub="campaign">
-          <div style="font-size:11px;color:var(--text3);margin-bottom:8px">📛 <b>이름 규칙</b>(제품·스킴·목표·입찰·타겟 컨셉·넘버링 → 캠페인명) · ⚙️ <b>설정</b>(목표→objective, 예산 방식). 빌더 값에서 자동으로 채워집니다.</div>
-          <div class="grid g3">
-            <div class="field"><label>제품 <span class="opt">📛</span></label><select id="mcc_product" onchange="mcAutoName()"></select></div>
-            <div class="field"><label>스킴 <span class="opt">📛</span></label><select id="mcc_scheme" onchange="mcAutoName()"></select></div>
-            <div class="field"><label>캠페인 목표 <span class="opt">📛+⚙️objective</span></label><select id="mcc_goal" onchange="mcAutoName()"></select></div>
-            <div class="field"><label>입찰 <span class="opt">📛</span></label><select id="mcc_bid" onchange="mcAutoName()"></select></div>
-            <div class="field"><label>타겟 컨셉 <span class="opt">📛</span></label><select id="mcc_tam" onchange="mcAutoName()"></select></div>
-            <div class="field"><label>넘버링 <span class="opt">📛끝 _01</span></label><input id="mcc_num" value="01" oninput="mcAutoName()"></div>
-          </div>
-          <div class="grid g3" style="margin-top:2px">
-            <div class="field" style="grid-column:span 2"><label>캠페인명 <span class="opt">📛 자동 · 수정 가능</span></label><input id="mcc_name" placeholder="캠페인명"></div>
-            <div class="field"><label>예산 방식 <span class="opt">⚙️</span></label><select id="mcc_budgetmode" onchange="mcToggleCbo()"><option value="ABO">ABO · 광고세트 예산</option><option value="CBO">CBO · 캠페인 예산</option></select></div>
-          </div>
-          <div class="grid g3"><div class="field" id="mcc_cboBudgetWrap" style="display:none"><label>캠페인 일 예산 (원) <span class="opt">⚙️CBO</span></label><input id="mcc_budget" type="number" placeholder="예: 100000"></div></div>
-          <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="mcPreviewCampaign()">🔎 캠페인 페이로드 미리보기</button>
-          <div id="mcc_out"></div>
-        </div>
-
-        <div class="bcsub" data-bcsub="adset" style="display:none">
-          <div class="grid g3">
-            <div class="field"><label>대상 캠페인</label><select id="mca_camp"></select></div>
-            <div class="field"><label>기준 광고세트 (빌더)</label><select id="mca_set"></select></div>
-            <div class="field" id="mca_budgetWrap"><label>광고세트 일 예산 (원) <span class="opt">⚙️ABO</span></label><input id="mca_budget" type="number" placeholder="예: 50000"></div>
-            <div class="field" id="mca_cboNote" style="display:none"><label>예산</label><div style="font-size:12px;color:var(--text3);padding-top:9px">CBO — 예산은 캠페인에서 관리</div></div>
-          </div>
-          <div class="notice" id="mca_batchBar" style="display:none;margin-top:10px"></div>
-          <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="mcPreviewAdset()">🔎 광고세트 페이로드 미리보기 (선택 1개)</button>
-          <div id="mca_out"></div>
         </div>
       </div>
     </section>
@@ -1266,6 +1254,19 @@ function buildPreview(){
   if(effectiveTargets().length===0)w.push('타게팅 토큰을 1개 이상 선택하세요.');
   if(bTams.size===0)w.push('타겟 컨셉을 1개 이상 선택하세요.');
   const wb=$('b_warn');wb.innerHTML=w.join('<br>');wb.classList.toggle('show',w.length>0);
+  try{ bxSyncFromBuilder(b, valid); }catch(e){}   // 빌더 → 실제 생성(META) 섹션 실시간 동기화
+}
+function bxBarToggle(hd){ var b=document.getElementById('bxBarBody'); if(!b)return; var open=b.style.display!=='none'; b.style.display=open?'none':''; var cv=hd&&hd.querySelector?hd.querySelector('.n5b-chev'):null; if(cv)cv.textContent=open?'▸':'▾'; }
+function bxSyncFromBuilder(b, valid){
+  if(!$('b_createWrap')) return;
+  var kr=buildKrName({...b,tams:[...bTams]});
+  var sets=[];
+  if(valid && effectiveTargets().length && bTams.size){
+    effectiveTargets().forEach(function(tg){ [...bTams].forEach(function(tm){ var o={...b,targeting:tg,tam:tm};
+      sets.push({name:buildSetName(o),product:b.product,brand:brandOf(b.product),media:b.media,goal:b.goal,bid:b.bid,targeting:tg,scheme:b.scheme,tam:tm,firstcat:b.firstcat,date:b.date,landing:landingFor(b.product,b.scheme)}); }); });
+  }
+  lastGen=(b.product&&b.goal&&b.bid)?{product:b.product,scheme:b.scheme,goal:b.goal,media:b.media,bid:b.bid,cnum:b.cnum,campaignName:kr,sets:sets}:null;
+  if(!window.__bxInited){ window.__bxInited=1; bxInit(); } else { bxRefreshLive(); }
 }
 function generateSets(){
   const b=currentBuilder();
@@ -1292,12 +1293,227 @@ function generateSets(){
   // ── 생성 단계(캠페인·광고세트)로 진입 — 같은 탭 하단에 표시 ──
   const tam0=[...bTams][0];
   lastGen={product:b.product, scheme:b.scheme, goal:b.goal, media:b.media, bid:b.bid, tam:tam0, cnum:b.cnum, campaignName:_krName, setIds:newIds};
-  const w=$('b_createWrap'); if(w){ w.style.display=''; bcSub('campaign'); renderBuildCreate(); w.scrollIntoView({behavior:'smooth',block:'start'}); }
-  toast(`광고세트 ${added}개 생성 · 아래 Meta 생성 단계로 진행하세요`);
+  const w=$('b_createWrap'); if(w){ w.style.display=''; bxInit(); w.scrollIntoView({behavior:'smooth',block:'start'}); }
+  toast(`광고세트 ${added}개 준비 · 아래에서 실제 생성(PAUSED)으로 진행하세요`);
+}
+/* ── 캠페인·세트 실제 생성 (/api/buildset) — 모드: camp(캠페인만)/set(기존 캠페인+세트)/both(한번에) ── */
+var BX_TEST_ACCT='539103343188615';
+/* 계정 → 전환 픽셀 고정 매핑. "계정 첫 픽셀 자동"이 TEST 로켓 픽셀을 잡는 문제 방지.
+   전 계정 cloop.1(562093002202082) 사용 — 스프린트 계정도 클룹몰 픽셀로 집행. */
+var BX_PIXEL={
+  '1462607070849777':{id:'562093002202082',name:'cloop.1 - Meta 픽셀'},   // 클룹 메인
+  '793134085895227':{id:'562093002202082',name:'cloop.1 - Meta 픽셀'},    // 클룹 서브
+  '3342733785912061':{id:'562093002202082',name:'cloop.1 - Meta 픽셀'},   // 스프린트 (클룹몰 픽셀 사용)
+  '539103343188615':{id:'562093002202082',name:'cloop.1 - Meta 픽셀'}      // 테스트(클룹 프로모션)
+};
+var bxMode='camp';
+var bxMadeCampaigns=[]; // 이 세션에서 ⓐ로 생성한 캠페인 {id,name,ctx}
+var bxCampLive=[];      // 계정에서 불러온 실제 캠페인 캐시 [{id,name,active}]
+var bxPendingPick=null;  // ⓐ 직후 ⓑ 진입 시 자동 선택할 캠페인 id(1회성 핸드오프)
+function bxGenLabel(){ return bxMode==='camp'?'⚡ 캠페인 생성 (PAUSED)':(bxMode==='set'?'⚡ 세트 생성 (PAUSED)':'⚡ 캠페인·세트 생성 (PAUSED)'); }
+function bxLayout(m){   // 모드별 항목 순서 재배치(카드 직속 블록 재정렬)
+  var card=$('b_createWrap'); if(!card)return;
+  var order=(m==='set')
+    ? ['bx_camprow','bx_acctBlock','bx_pickCampWrap','bx_setSlot','bx_budgetBlock','bx_audCore','bx_autoset','bx_setsWrap','bx_hint','bx_check','bx_actions','bx_out']
+    : ['bx_camprow','bx_campSlot','bx_autoset','bx_acctBlock','bx_budgetBlock','bx_campnameWrap','bx_hint','bx_check','bx_actions','bx_out'];
+  order.forEach(function(id){ var el=document.getElementById(id); if(el)card.appendChild(el); });
+}
+function bxSetMode(m){
+  if(m==='both')m='set';   // ⓒ 제거 — 호환용
+  bxMode=m;
+  [['bx_mA','camp'],['bx_mB','set']].forEach(function(p){ var b=$(p[0]); if(b)b.className=(p[1]===m?'on':''); });
+  var e;
+  if((e=$('bx_campSlot')))e.style.display=(m==='camp')?'':'none';
+  if((e=$('bx_campnameWrap')))e.style.display=(m==='camp')?'':'none';
+  if((e=$('bx_pickCampWrap')))e.style.display=(m==='set')?'':'none';
+  if((e=$('bx_setSlot')))e.style.display=(m==='set')?'':'none';
+  if((e=$('bx_audCore')))e.style.display=(m==='set')?'':'none';
+  if((e=$('bx_setsWrap')))e.style.display=(m==='set')?'':'none';
+  // ⓐ에선 세트명 미리보기 칸 숨기고 캠페인명만
+  if((e=$('b_setPrevWrap')))e.style.display=(m==='camp')?'none':'';
+  if((e=$('bx_gen')))e.textContent=bxGenLabel();
+  bxLayout(m);
+  if(m==='set'){ bxFillCampaigns(); bxFillPixels(); }
+  bxRenderCamprow(); bxCheckClear();
+}
+function bxRenderCamprow(){
+  var cr=$('bx_camprow'); if(!cr)return;
+  var n=(lastGen&&lastGen.sets)?lastGen.sets.length:0;
+  cr.innerHTML = bxMode==='camp' ? '<b style="color:var(--accent2)">캠페인 1개</b>를 생성합니다 · 세트는 ⓑ에서 이 캠페인을 골라 붙입니다'
+    : '선택한 캠페인에 <b style="color:var(--accent2)">광고세트 '+n+'개</b>를 생성합니다';
+}
+function bxAbsorbBuilder(){   // A~C 패널을 하단 바의 모드별 슬롯으로 이동 (별도 A~C 구간 제거)
+  if(window.__bxAbsorbed)return;
+  var camp=$('bx_campSlot'),set=$('bx_setSlot'); if(!camp||!set)return;
+  var A=$('bx_APanel'),B=$('bx_BPanel'),C=$('bx_CPanel');
+  if(A)camp.appendChild(A);   // A(캠페인 기본정보) → ⓐ 슬롯
+  if(B)set.appendChild(B);    // B(타게팅)·C(타겟 컨셉) → ⓑ 슬롯 (대상 캠페인은 카드 직속 블록으로 분리)
+  if(C)set.appendChild(C);
+  var bf=document.querySelector('.build-forms'); if(bf)bf.style.display='none';
+  window.__bxAbsorbed=1;
+}
+function bxSnapshotA(){ var g=function(id){var el=$(id);return el?el.value:'';}; return {product:g('b_product'),media:g('b_media'),date:g('b_date'),goal:g('b_goal'),bid:g('b_bid'),scheme:g('b_scheme'),firstcat:g('b_firstcat'),bidopt:g('b_bidopt'),cnum:g('b_cnum')}; }
+function bxApplyA(s){ if(!s)return; var st=function(id,v){var el=$(id); if(el&&v!=null&&v!=='')el.value=v;}; st('b_product',s.product);st('b_media',s.media);st('b_date',s.date);st('b_goal',s.goal);st('b_bid',s.bid);st('b_scheme',s.scheme);st('b_firstcat',s.firstcat);st('b_bidopt',s.bidopt);st('b_cnum',s.cnum); try{buildPreview();}catch(e){} }
+function bxTryParseCtx(name){ try{ var t=String(name||'').split('_'); var m=$('b_media'),p=$('b_product'),g=$('b_goal'),bd=$('b_bid'); var has=function(sel,v){return sel&&[].some.call(sel.options,function(o){return o.value===v;});}; if(has(m,t[0]))m.value=t[0]; if(has(p,t[1]))p.value=t[1]; if(has(g,t[2]))g.value=t[2]; if(has(bd,t[3]))bd.value=t[3]; buildPreview(); }catch(e){} }
+function bxOnPickCamp(){
+  var sel=$('bx_pickCamp'); if(!sel){bxCheckClear();return;} var cid=sel.value;
+  var made=null; for(var i=0;i<bxMadeCampaigns.length;i++){ if(String(bxMadeCampaigns[i].id)===String(cid)){made=bxMadeCampaigns[i];break;} }
+  if(made&&made.ctx) bxApplyA(made.ctx);            // 방금 만든 캠페인 → 기본정보 상속
+  else bxTryParseCtx((sel.selectedOptions&&sel.selectedOptions[0])?sel.selectedOptions[0].textContent:'');  // 라이브 → 이름에서 추정
+  bxCheckClear();
+}
+function bxInit(){
+  bxAbsorbBuilder();
+  var sel=$('bx_acct');
+  if(sel){ var cur=sel.value; sel.innerHTML=Object.keys(UC_ACCT).map(function(id){ return '<option value="'+id+'">'+esc(UC_ACCT[id]||id)+(id===BX_TEST_ACCT?' · 테스트':'')+'</option>'; }).join(''); sel.value=(cur&&UC_ACCT[cur])?cur:BX_TEST_ACCT; }
+  bxToggle(); bxSetMode(bxMode||'camp'); bxRefreshLive();
+}
+function bxRefreshLive(){   // 빌더 변경 시마다 캠페인명·세트목록·자동세팅 갱신
+  var ci=$('bx_campnameInput'); if(ci){ var auto=(lastGen&&lastGen.campaignName)||''; if(!ci.value||ci.value===ci.getAttribute('data-auto'))ci.value=auto; ci.setAttribute('data-auto',auto); }
+  bxRenderSets(); bxRenderCamprow(); bxRenderAutoset();
+}
+function bxRenderAutoset(){
+  var as=$('bx_autoset'); if(!as)return;
+  if(!lastGen||!lastGen.goal){ as.innerHTML='제품·목표·입찰 등 기본 정보를 채우면 자동 세팅이 표시됩니다'; return; }
+  var _obj=META_OBJECTIVE[lastGen.goal]||'OUTCOME_SALES'; var _bidm=META_BID[lastGen.bid]||META_BID.CMX;
+  as.innerHTML='이름 기반 자동 세팅 — 목표 <b style="color:var(--text2)">'+esc(goalKr(lastGen.goal))+' ('+_obj+')</b> · 최적화 <b style="color:var(--text2)">'+esc(bxOptLabel(_bidm.optimization_goal))+'</b> · 입찰 <b style="color:var(--text2)">최저비용(자동)</b> · 일정 세트 날짜(00:00 KST)';
+}
+async function bxFillPixels(force){
+  var sel=$('bx_pixel'); if(!sel)return;
+  if(bxMode==='camp')return;   // 캠페인만 생성은 픽셀 무관
+  var act=String((($('bx_acct')||{}).value)||'').replace(/^act_/,'');
+  if(!force && sel.getAttribute('data-act')===act && sel.options.length) return;
+  var def=(BX_PIXEL[act]||{}).id||'';
+  sel.setAttribute('data-act',act);
+  sel.innerHTML='<option value="">불러오는 중…</option>';
+  try{
+    var r=await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({listPixels:true,act:act})});
+    var j=await r.json(); var list=(j&&j.pixels)||[];
+    if(!list.length){ sel.innerHTML=def?('<option value="'+esc(def)+'">기본 픽셀 ('+esc(def)+')</option>'):'<option value="">픽셀 없음</option>'; return; }
+    sel.innerHTML=list.map(function(p){ var d=(p.id===def); return '<option value="'+esc(p.id)+'">'+esc(p.name||p.id)+' ('+esc(p.id)+')'+(d?' · 기본':'')+'</option>'; }).join('');
+    if(def && list.some(function(p){return p.id===def;})) sel.value=def;
+  }catch(e){ sel.innerHTML=def?('<option value="'+esc(def)+'">기본 픽셀 ('+esc(def)+')</option>'):'<option value="">불러오기 실패</option>'; }
+}
+function bxOptLabel(g){ return ({OFFSITE_CONVERSIONS:'전환',VALUE:'가치(ROAS)',LINK_CLICKS:'링크 클릭',LANDING_PAGE_VIEWS:'랜딩뷰',REACH:'도달',POST_ENGAGEMENT:'참여'})[g]||g; }
+function bxToggle(){ var cbo=(($('bx_budgetmode')||{}).value)==='CBO'; var l=$('bx_budgetlbl'); if(l)l.textContent=cbo?'캠페인 일 예산 (원)':'세트 일 예산 (원)'; }
+function bxCheckClear(){ var c=$('bx_check'); if(c)c.innerHTML=''; var o=$('bx_out'); if(o)o.innerHTML=''; }
+var bxNameOverride={};   // 자동 세트명 → 사용자 수정명 (라이브 재생성돼도 유지)
+function bxRenderSets(){
+  var wrap=$('bx_setlist'); if(!wrap)return;
+  var sets=(lastGen&&lastGen.sets)?lastGen.sets:[];
+  wrap.innerHTML=sets.length?sets.map(function(s){ var land=((s.landing||'')+'').trim(); var val=bxNameOverride[s.name]||s.name;
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px"><input class="bx-setname t-mono" data-name="'+esc(s.name)+'" value="'+esc(val)+'" oninput="bxNameEdit(this)" style="flex:1;font-size:11.5px"><span style="font-size:10px;white-space:nowrap;color:'+(land?'var(--green)':'var(--yellow)')+'">'+(land?'랜딩 ✓':'랜딩 ⚠')+'</span></div>';
+  }).join(''):'<div class="hint" style="padding:6px 0">타게팅·타겟 컨셉을 선택하면 세트가 표시됩니다</div>';
+}
+function bxNameEdit(inp){ var k=inp.getAttribute('data-name'); var v=(inp.value||'').trim(); if(v&&v!==k)bxNameOverride[k]=v; else delete bxNameOverride[k]; bxCheckClear(); }
+function bxSetName(autoName){ return bxNameOverride[autoName]||autoName; }
+function bxRenderCampOptions(){   // 검색어로 필터 후 옵션 재구성(옵션 hide 아님 — 안정적)
+  var sel=$('bx_pickCamp'); if(!sel)return; var cur=sel.value;
+  var q=((($('bx_campSearch')||{}).value)||'').trim().toLowerCase();
+  var f=function(list){ return q?list.filter(function(c){return ((c.name||'').toLowerCase().indexOf(q)>=0)||(String(c.id).toLowerCase().indexOf(q)>=0);}):list; };
+  var made=f(bxMadeCampaigns), live=f(bxCampLive);
+  var groups=[];
+  if(made.length) groups.push('<optgroup label="방금 만든 캠페인">'+made.map(function(c){return '<option value="'+esc(c.id)+'">'+esc(c.name)+'</option>';}).join('')+'</optgroup>');
+  if(live.length) groups.push('<optgroup label="계정 캠페인 ('+live.length+(q?' · 검색':'')+')">'+live.map(function(c){return '<option value="'+esc(c.id)+'">'+esc(c.name)+(c.active===false?' · 비활성':'')+'</option>';}).join('')+'</optgroup>');
+  sel.innerHTML=groups.join('')||('<option value="">'+(q?'검색 결과 없음':'대상 캠페인 없음 — ⓐ로 먼저 만들거나 Meta 연동/동기화')+'</option>');
+  if(bxPendingPick && [].some.call(sel.options,function(o){return o.value===String(bxPendingPick);})){ sel.value=String(bxPendingPick); bxPendingPick=null; bxOnPickCamp(); }
+  else if(cur && [].some.call(sel.options,function(o){return o.value===cur;})){ sel.value=cur; }
+  else if(!q && bxMadeCampaigns.length){ sel.value=bxMadeCampaigns[bxMadeCampaigns.length-1].id; bxOnPickCamp(); }
+}
+async function bxFillCampaigns(){
+  if(bxMode!=='set')return;   // camp 모드에선 A필드 덮어쓰기 방지
+  var act=String((($('bx_acct')||{}).value)||'').replace(/^act_/,'');
+  try{ bxCampLive=(typeof mcLiveCampaigns==='function')?(mcLiveCampaigns()||[]):[]; }catch(e){ bxCampLive=[]; }  // 스냅샷 즉시
+  bxRenderCampOptions();
+  if(!act)return;
+  var lbl=$('bx_campLoad'); if(lbl)lbl.textContent='· 불러오는 중…';
+  try{
+    var r=await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({listCampaigns:true,act:act})});
+    var j=await r.json();
+    if(j&&j.ok&&Array.isArray(j.campaigns)){ bxCampLive=j.campaigns; bxRenderCampOptions(); if(lbl)lbl.textContent='· 계정 캠페인 '+j.campaigns.length+'개'; }
+    else if(lbl)lbl.textContent='';
+  }catch(e){ if(lbl)lbl.textContent=''; }
+}
+function bxPayload(apply){
+  var act=String((($('bx_acct')||{}).value)||'').replace(/^act_/,'');
+  var mode=(($('bx_budgetmode')||{}).value)||'ABO';
+  var budget=Math.round(Number((($('bx_budget')||{}).value)||0))||0;
+  var objective=(lastGen&&META_OBJECTIVE[lastGen.goal])||'OUTCOME_SALES';
+  function campObj(){ var nm=((($('bx_campnameInput')||{}).value)||'').trim()||((lastGen&&lastGen.campaignName)||('FB_'+objective)); var c={name:nm,objective:objective,budgetMode:mode}; if(mode==='CBO')c.dailyBudget=budget; return c; }
+  function adsetArr(){
+    var sets=(lastGen&&lastGen.sets)?lastGen.sets:[];
+    var amin=Math.max(13,Math.min(65,Number((($('bx_agemin')||{}).value))||18));
+    var amax=Math.max(amin,Math.min(65,Number((($('bx_agemax')||{}).value))||65));
+    var targeting={geo_locations:{countries:['KR']},age_min:amin,age_max:amax};
+    var adv=!!(($('bx_advaud')||{}).checked);
+    var autopl=(($('bx_autopl')||{}).checked)!==false;
+    var placements=autopl?{mode:'auto'}:{mode:'manual',publisher_platforms:['facebook','instagram']};
+    var pxSel=(($('bx_pixel')||{}).value)||''; var px=pxSel||((BX_PIXEL[act]||{}).id||'');
+    return sets.map(function(s){
+      var bidm=META_BID[s.bid]||META_BID.CMX;
+      var o={name:bxSetName(s.name),targeting:targeting,budgetMode:mode,optimizationGoal:bidm.optimization_goal,bidStrategy:bidm.bid_strategy,advantageAudience:adv,placements:placements};
+      if(px)o.pixelId=px;   // 선택 픽셀(기본=계정 매핑, 변경 가능)
+      if(mode==='ABO')o.dailyBudget=budget; return o;
+    });
+  }
+  var hasSets=!!(lastGen&&lastGen.sets&&lastGen.sets.length);
+  if(bxMode==='camp') return {act:act,apply:apply===true,campaign:campObj(),adsets:[],campaignOnly:true};
+  if(bxMode==='set'){ var cid=String((($('bx_pickCamp')||{}).value)||''); if(!cid||!hasSets) return null; return {act:act,apply:apply===true,campaignId:cid,objective:objective,adsets:adsetArr()}; }
+  if(!hasSets) return null;
+  return {act:act,apply:apply===true,campaign:campObj(),adsets:adsetArr()};
+}
+function bxRenderCheck(j){
+  var c=$('bx_check'); if(!c)return;
+  var ok=function(t){return '<div style="color:#5fd08a">✅ '+t+'</div>';};
+  var bad=function(t){return '<div style="color:#fbbf24">⚠️ '+esc(t)+'</div>';};
+  var rows=[];
+  if(j&&j.ok){ rows.push(ok(bxMode==='camp'?'캠페인 1개 생성 준비 완료':(bxMode==='set'?'선택 캠페인에 광고세트 '+(j.count||0)+'개 준비':'캠페인 1개 · 광고세트 '+(j.count||0)+'개 준비 완료'))); rows.push(ok('예산 방식 '+(j.budgetMode||''))); if(bxMode!=='camp')rows.push(j.pixel?ok('전환 픽셀 자동: '+esc(j.pixel)):'<div class="hint">픽셀 없음 — 전환 목표면 설치 필요</div>'); }
+  else { ((j&&j.gaps)||[]).forEach(function(g){rows.push(bad(g));}); if(!(j&&j.gaps&&j.gaps.length))rows.push(bad((j&&j.error)||'점검 실패')); }
+  c.innerHTML='<div style="background:rgba(40,90,107,.18);border:1px solid #2f5a6b;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.7"><div style="font-size:11px;color:#7fb3c8;margin-bottom:6px">사전 점검</div>'+rows.join('')+'</div>';
+}
+async function bxDryRun(){
+  var body=bxPayload(false); if(!body){toast(bxMode==='set'?'대상 캠페인을 선택하세요':'먼저 위에서 준비하세요');return;}
+  var c=$('bx_check'); if(c)c.innerHTML='<div class="hint">점검 중…</div>';
+  try{ var r=await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); var j=await r.json(); bxRenderCheck(j); }
+  catch(e){ if(c)c.innerHTML='<div class="warnbox show">점검 실패: '+esc(String(e&&e.message||e))+'</div>'; }
+}
+async function bxCreate(btn){
+  var pre=bxPayload(false); if(!pre){toast(bxMode==='set'?'대상 캠페인을 선택하세요 (없으면 ⓐ로 먼저 생성)':'먼저 위에서 준비하세요');return;}
+  var c=$('bx_check'); if(c)c.innerHTML='<div class="hint">점검 중…</div>';
+  try{ var dr=await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pre)}); var dj=await dr.json(); bxRenderCheck(dj); if(!dj.ok){toast('보완 후 다시 시도하세요');return;} }
+  catch(e){ if(c)c.innerHTML='<div class="warnbox show">점검 실패: '+esc(String(e&&e.message||e))+'</div>'; return; }
+  var acctName=((($('bx_acct')||{}).selectedOptions||[])[0]||{}).textContent||'';
+  var nAd=(pre.adsets||[]).length;
+  var msg=bxMode==='camp'?('['+acctName+']에 캠페인 1개를 PAUSED(꺼짐)로 생성합니다.\n진행할까요?')
+    :bxMode==='set'?('선택한 캠페인에 광고세트 '+nAd+'개를 PAUSED(꺼짐)로 생성합니다.\n진행할까요?')
+    :('['+acctName+']에 캠페인 1개 + 광고세트 '+nAd+'개를 PAUSED(꺼짐)로 생성합니다.\n진행할까요?');
+  if(!confirm(msg)) return;
+  var body=bxPayload(true);
+  if(btn){btn.disabled=true;btn.textContent='생성 중…';}
+  try{ var r=await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); var j=await r.json();
+    bxRenderResult(j,body.act);
+    if(j&&j.ok){ if(j.campaign&&j.campaign.id){ if(!bxMadeCampaigns.some(function(x){return String(x.id)===String(j.campaign.id);})) bxMadeCampaigns.push({id:j.campaign.id,name:(j.campaign.name||'캠페인'),ctx:bxSnapshotA()}); if(bxMode==='camp')bxPendingPick=j.campaign.id; }
+      toast(bxMode==='camp'?'캠페인 생성됨 · ⓑ 세트 생성에서 자동 선택됩니다':'생성 완료 · 세트 '+(j.createdCount||0)+'개'); }
+    else toast('생성 실패 — 결과 확인');
+  }
+  catch(e){ bxRenderResult({ok:false,error:String(e&&e.message||e)},body.act); }
+  if(btn){btn.disabled=false;btn.textContent=bxGenLabel();}
+}
+function bxRenderResult(j,act){
+  var o=$('bx_out'); if(!o)return;
+  if(j&&j.ok){
+    var cid=(j.campaign&&j.campaign.id)||j.campaignId||'';
+    var dl=cid?('https://adsmanager.facebook.com/adsmanager/manage/adsets?act='+encodeURIComponent(act)+'&selected_campaign_ids='+encodeURIComponent(cid)):'';
+    var parts=[]; if(j.campaign&&j.campaign.id)parts.push('캠페인 «'+esc(j.campaign.name||'')+'» 생성'); if((j.createdCount||0)>0)parts.push('광고세트 '+j.createdCount+'개 생성');
+    var fails=(j.failed&&j.failed.length)?('<div style="color:#fbbf24;margin-top:5px">실패 '+j.failedCount+'개: '+j.failed.map(function(f){return esc(f.name)+' ('+esc(f.error)+')';}).join(', ')+'</div>'):'';
+    var extra=(bxMode==='camp'&&cid)?'<div class="hint" style="margin-top:6px">→ ⓑ 세트 생성에서 이 캠페인을 골라 세트를 붙이세요.</div>':'';
+    o.innerHTML='<div style="background:#0f2417;border:1px solid #1f7a52;border-radius:8px;padding:11px 13px;font-size:12.5px">✅ '+(parts.join(' · ')||'생성 완료')+' (PAUSED)'+fails+(dl?('<div style="margin-top:8px"><a href="'+dl+'" target="_blank" rel="noopener" class="btn btn-primary btn-sm" style="text-decoration:none">메타 광고관리자에서 열기 ↗</a></div>'):'')+extra+'</div>';
+  } else { o.innerHTML='<div class="warnbox show">생성 실패: '+esc(String((j&&j.error)||'알 수 없는 오류'))+'</div>'; }
 }
 let libFilter='all';
 function setLibFilter(v){ libFilter=v; ['all','active','inactive'].forEach(x=>$('ls'+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle('on',x===v)); renderSetLib(); }
 function renderSetLib(){
+  if(!$('setLibBody')||!$('setSearch')) return;   // 광고세트 라이브러리 표 제거됨 — 요소 없으면 스킵
   const q=($('setSearch').value||'').toLowerCase();
   const scoped=DB.sets.filter(s=>areaOf(s.product)===areaScope);
   let list=scoped.filter(s=>!q||s.name.toLowerCase().includes(q));
@@ -3300,6 +3516,11 @@ main.main:has(#page-metacreate.active){max-width:1720px}
 .side-foot .rb-foot-acct label{display:block;font-size:10px;color:#657081;margin-bottom:4px}
 .side-foot #rbAcctSel{width:100%!important;margin:0!important;padding:6px 9px!important;border-radius:7px;background:#1e2530;color:#e8eef7;border:1px solid #38424f;font-size:12px}
 .side-foot .rb-foot-actmoved{display:flex!important;position:static!important;top:auto!important;right:auto!important;z-index:auto!important;background:none!important;border:none!important;box-shadow:none!important;color:#8fb6ff!important;font-size:11px!important;padding:6px 0!important;width:100%!important;margin:0!important;justify-content:flex-start!important;gap:7px}
+/* 캠페인·세트 생성 탭 — 소재 세팅과 동일한 2단 흐름(오른쪽 미리보기 sticky, 내부 스크롤 박스 없음) */
+main.main:has(#page-build.active) .two-col > div:last-child > .panel{position:sticky;top:14px;max-height:calc(100vh - 28px);overflow:auto}
+/* 모드 슬롯 안의 A~C는 카드가 아니라 '섹션'으로 평탄화(창 안에 창 느낌 제거) */
+#bx_campSlot .panel,#bx_setSlot .panel{border:none!important;background:none!important;padding:0!important;margin:0 0 6px!important;box-shadow:none!important}
+#bx_campSlot .panel .panel-h,#bx_setSlot .panel .panel-h{padding-left:0;padding-right:0}
 </style>
 <script id="RB_LAYOUT_TWEAKS">
 (function(){
@@ -3609,6 +3830,15 @@ main.main:has(#page-metacreate.active){max-width:1720px}
     padding:7px 12px;border-radius:8px;text-decoration:none}
   #rbDeepBanner .rb-deep-go:hover{background:#7ee0a0}
   #rbDeepBanner .rb-deep-x{position:absolute;top:8px;right:10px;background:transparent;border:0;color:#9aa3b2;font-size:13px;cursor:pointer}
+  #rbDeepBanner .rb-deep-t b{color:#fff}
+  #rbDeepBanner .rb-err-sec{font-size:11px;color:#7fb3c8;font-weight:600;margin-top:2px}
+  #rbDeepBanner .rb-err-reason{font-size:12px;color:#f0c4c4;line-height:1.6;background:rgba(255,255,255,.03);border:1px solid #4a2020;border-radius:9px;padding:9px 11px}
+  #rbDeepBanner .rb-err-report{display:flex;align-items:center;gap:10px;margin-top:2px}
+  #rbDeepBanner .rb-err-report span{flex:1;font-size:11.5px;color:#9aa3b2;line-height:1.45}
+  #rbDeepBanner .rb-err-report b{color:#e6e9ef}
+  #rbDeepBanner .rb-err-cp{flex:none;font-size:11.5px;font-weight:600;color:#fff;background:#1f6feb;border:none;border-radius:8px;padding:8px 13px;cursor:pointer}
+  #rbDeepBanner .rb-err-cp:hover{background:#2f7bf6}
+  #rbDeepBanner .rb-err-cp.done{background:#1f7a52}
 </style>
 <script>
 /* RB_DEEPLINK — 소재 생성 직후 "메타 광고관리자에서 열기/활성화" 바로가기 배너.
@@ -3616,7 +3846,28 @@ main.main:has(#page-metacreate.active){max-width:1720px}
    계정별로 광고관리자 딥링크를 만든다. (생성 코드 자체는 건드리지 않음) */
 (function(){
   if(window.__rbDeepHooked) return; window.__rbDeepHooked=1;
-  var buf={}, fails=[], manual=[], tmr=null, el=null;
+  var buf={}, fails=[], tmr=null, el=null;
+  function isDev(){ try{ return /-git-dev-/.test(location.host); }catch(e){ return false; } }
+  function screenLabel(){ try{ if(document.querySelector('#n5_mC.on'))return '소재 세팅 · 복제'; if(document.querySelector('#n5_mB.on'))return '소재 세팅 · 신규 세팅'; var u=document.getElementById('page-unified'); if(u&&u.classList.contains('active'))return '통합 세팅'; return '소재 세팅'; }catch(e){ return '소재 세팅'; } }
+  var REASONS={
+    PAGE_NO_PUBLISH:'이 소재의 페이지에 게시 권한이 없어요. 권한 있는 자사 페이지(예: CLOOP) 소재로 복제하거나, 개발자에게 페이지 권한을 요청하세요.',
+    ASSET_NOT_SELECTED:'소재(이미지·영상)가 선택되지 않았어요. 소재를 다시 고르거나, 영상은 “복제(기존 소재)” 방식으로 만들어 주세요.',
+    LANDING_MISSING:'랜딩 URL이 없어요. 설정/매핑에서 이 세트의 스킴–랜딩 연결을 확인해 주세요.',
+    IMAGE_ACCOUNT_MISMATCH:'선택한 소재의 이미지가 이 광고 계정에 없어요(다른 계정 이미지). 같은 계정 소재를 고르거나, 대상 세트를 그 소재의 계정으로 맞춰 주세요.'
+  };
+  function reasonOf(f){ if(f.code&&REASONS[f.code])return REASONS[f.code]; if(/limit/i.test(f.error||''))return '메타 생성 한도에 도달했어요. 잠시 후 다시 시도해 주세요.'; return '예상치 못한 오류입니다. 아래 진단 정보를 개발자님께 전달해 주세요. ('+(f.error||'')+')'; }
+  function diagText(){
+    var succ=Object.keys(buf).reduce(function(s,a){return s+buf[a].length;},0);
+    var accts=Object.keys(buf).concat(fails.map(function(f){return f.act;})).filter(function(a,i,arr){return a&&arr.indexOf(a)===i;});
+    var L=['[rf-adsetting 오류 제보]'];
+    try{ L.push('시각: '+new Date().toLocaleString('ko-KR')); }catch(e){}
+    L.push('화면: '+screenLabel());
+    L.push('계정: '+accts.map(function(a){return acctName(a)+' (act_'+String(a).replace(/^act_/,'')+')';}).join(', '));
+    L.push('결과: 성공 '+succ+' / 실패 '+fails.length, '', '실패 '+fails.length+'건:');
+    fails.forEach(function(f){ L.push('· 소재: '+(f.name||'(이름 없음)')); if(f.set)L.push('  세트: '+f.set); L.push('  사유: '+(f.code?f.code+' — ':'')+(f.error||'')); if(f.landing)L.push('  랜딩/UTM: '+utmUrl(f.landing,f.camp,f.cont)); });
+    L.push('앱: '+(isDev()?'dev':'prod')+' · '+location.host);
+    return L.join('\n');
+  }
   function acctName(act){ try{ var m=(typeof META_ACCOUNTS!=='undefined')?META_ACCOUNTS.filter(function(x){return String(x.id).replace(/^act_/,'')===String(act).replace(/^act_/,'');})[0]:null; return m?m.name:('계정 '+act); }catch(e){ return '광고관리자'; } }
   function amUrl(act, ids){ return 'https://adsmanager.facebook.com/adsmanager/manage/ads?act='+encodeURIComponent(act)+'&selected_ad_ids='+encodeURIComponent(ids.join(',')); }
   function esc2(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
@@ -3631,44 +3882,31 @@ main.main:has(#page-metacreate.active){max-width:1720px}
   }
   function show(){
     var accts=Object.keys(buf).filter(function(a){return buf[a]&&buf[a].length;});
-    var uniqFails=fails.filter(function(f,i){ return fails.indexOf(f)===i; });
-    if(!accts.length && !uniqFails.length && !manual.length) return;
-    if(!el){
-      el=document.createElement('div'); el.id='rbDeepBanner'; document.body.appendChild(el);
-      el.addEventListener('click', function(e){
-        var cb=e.target.closest && e.target.closest('[data-copy-idx]'); if(!cb) return;
-        var i=+cb.getAttribute('data-copy-idx'), f=cb.getAttribute('data-copy-field'); var m=manual[i]; if(!m) return;
-        var val=(f==='name')?m.name:utmUrl(m.landing,m.camp,m.cont);
-        try{ navigator.clipboard.writeText(val); var o=cb.textContent; cb.textContent='복사됨'; setTimeout(function(){cb.textContent=o;},1200); }catch(x){}
-      });
-    }
+    if(!accts.length && !fails.length) return;
+    if(!el){ el=document.createElement('div'); el.id='rbDeepBanner'; document.body.appendChild(el); }
+    var succ=accts.reduce(function(s,a){return s+buf[a].length;},0);
     var html='<button class="rb-deep-x" aria-label="닫기">✕</button>';
-    if(manual.length){
-      html+='<div class="rb-deep-t" style="color:#ffd28a">📋 앱에서 게시 불가 페이지 '+manual.length+'건 — 메타에서 수동 복제용</div>'
-        +'<div style="font-size:10.5px;color:#c9b98f;margin:2px 0 6px">이 페이지는 rf API에 게시 권한이 없어요. 메타에서 원본 광고를 복제한 뒤, 아래 값으로 이름·UTM만 바꿔주세요.</div>'
-        +'<div style="max-height:200px;overflow:auto">'
-        + manual.map(function(m,i){ return '<div style="border:1px solid #5a4a25;border-radius:8px;padding:7px 9px;margin-bottom:6px;background:rgba(0,0,0,.18)">'
-            +'<div style="font-size:11px;color:#cbb28a;margin-bottom:2px">소재명 <button data-copy-idx="'+i+'" data-copy-field="name" style="float:right;font-size:10px;padding:1px 8px;border-radius:5px;border:1px solid #6b5a33;background:transparent;color:#ffd28a;cursor:pointer">복사</button></div>'
-            +'<div style="font-size:11px;color:#e6e9ef;word-break:break-all;margin-bottom:5px">'+esc2(m.name||'(이름 없음)')+'</div>'
-            +'<div style="font-size:11px;color:#cbb28a;margin-bottom:2px">UTM URL <button data-copy-idx="'+i+'" data-copy-field="url" style="float:right;font-size:10px;padding:1px 8px;border-radius:5px;border:1px solid #6b5a33;background:transparent;color:#ffd28a;cursor:pointer">복사</button></div>'
-            +'<div style="font-size:10.5px;color:#9aa3b2;word-break:break-all">'+esc2(utmUrl(m.landing,m.camp,m.cont)||'(랜딩 URL 없음 — 원본 유지)')+'</div>'
-          +'</div>'; }).join('')
-        +'</div>';
-    }
-    if(uniqFails.length){
-      html+='<div class="rb-deep-t"'+(manual.length?' style="margin-top:8px;color:#ff9b9b"':' style="color:#ff9b9b"')+'>⚠️ 생성 실패 '+fails.length+'건 <span style="color:#d98a8a">· 사유:</span></div>'
-        + uniqFails.slice(0,4).map(function(f){ return '<div style="font-size:11.5px;color:#e7b3b3;line-height:1.5">· '+esc2(f)+'</div>'; }).join('');
+    if(fails.length){
+      html+='<div class="rb-deep-t" style="color:#ff9b9b">⚠️ 생성 일부 실패 — <b>성공 '+succ+' / 실패 '+fails.length+'</b></div>';
+      var seen={}, reasons=[]; fails.forEach(function(f){ var r=reasonOf(f); if(!seen[r]){ seen[r]=1; reasons.push(r); } });
+      html+='<div class="rb-err-sec">① 왜 실패했나요</div>'
+        + '<div class="rb-err-reason">'+reasons.map(function(r){ return '· '+esc2(r); }).join('<br>')+'</div>'
+        + '<div class="rb-err-report"><span>② 반복되면 <b>개발자님께 제보</b>해 주세요 — 진단 정보가 버튼에 담깁니다</span>'
+        + '<button class="rb-err-cp" id="rbErrCp">📋 진단 정보 복사</button></div>';
     }
     if(accts.length){
-      var total=accts.reduce(function(s,a){return s+buf[a].length;},0);
-      html+='<div class="rb-deep-t"'+((uniqFails.length||manual.length)?' style="margin-top:8px"':'')+'>✅ 방금 '+total+'개 광고 생성됨 <span>· PAUSED 상태예요 — 열어서 검토 후 활성화하세요</span></div>'
+      html+='<div class="rb-deep-t"'+(fails.length?' style="margin-top:10px"':'')+'>✅ 방금 '+succ+'개 광고 생성됨 <span>· PAUSED 상태예요 — 열어서 검토 후 활성화하세요</span></div>'
         + accts.map(function(a){ return '<a class="rb-deep-go" href="'+amUrl(a,buf[a])+'" target="_blank" rel="noopener">🔗 '+esc2(acctName(a))+' 광고관리자에서 열기 ('+buf[a].length+') ↗</a>'; }).join('');
     }
     el.innerHTML=html;
-    // 톤: 수동복제(노랑) > 실패(빨강) > 성공(초록)
-    el.style.background = manual.length ? '#2a2416' : (uniqFails.length ? '#2a1618' : '#12331f');
-    el.style.borderColor = manual.length ? '#6b5a33' : (uniqFails.length ? '#7a3535' : '#2f7a4a');
-    el.querySelector('.rb-deep-x').onclick=function(){ if(el){el.remove();el=null;} buf={}; fails=[]; manual=[]; };
+    el.style.background = fails.length ? '#2a1618' : '#12331f';
+    el.style.borderColor = fails.length ? '#7a3535' : '#2f7a4a';
+    var xb=el.querySelector('.rb-deep-x'); if(xb) xb.onclick=function(){ if(el){el.remove();el=null;} buf={}; fails=[]; };
+    var cp=el.querySelector('#rbErrCp'); if(cp) cp.onclick=function(){ var t=diagText();
+      function done(){ cp.textContent='✓ 복사됨 — 개발자님께 붙여넣기'; cp.classList.add('done'); setTimeout(function(){ cp.textContent='📋 진단 정보 복사'; cp.classList.remove('done'); },1800); }
+      function fb(){ try{ var ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done(); }catch(x){ cp.textContent='복사 실패'; } }
+      try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(done,fb); } else fb(); }catch(e){ fb(); }
+    };
   }
   var _f=window.fetch;
   window.fetch=function(url,opts){
@@ -3679,25 +3917,24 @@ main.main:has(#page-metacreate.active){max-width:1720px}
         var b=JSON.parse(opts.body);
         if(b && b.apply===true && b.act){
           pr.then(function(resp){ resp.clone().json().then(function(j){
+            var act=String(b.act).replace(/^act_/,'');
             if(j && j.ok && j.newAdId){
-              var act=String(b.act).replace(/^act_/,'');
               (buf[act]=buf[act]||[]).push(j.newAdId);
-              if(tmr)clearTimeout(tmr); tmr=setTimeout(show,1200);   // 배치 생성이 끝나면(1.2s 유휴) 배너 표시
             } else if(j && j.code==='PAGE_NO_PUBLISH'){
-              // 페이지 게시 권한 없음 → 메타 수동 복제용 정보(소재명·랜딩·UTM)를 복사 팝업으로
-              var _nm=(j.newName||b.newName||'');
-              if(!manual.some(function(x){return x.name===_nm;})) manual.push({name:_nm, landing:(j.landing||''), camp:(j.utmCampaign||b.utmCampaign||''), cont:(j.utmContent||b.utmContent||'')});
-              if(tmr)clearTimeout(tmr); tmr=setTimeout(show,1200);
+              // 페이지 게시 권한 없음 → 실패로 수집(사유·소재명·랜딩·UTM은 진단 정보 복사에 담김)
+              fails.push({act:act, code:'PAGE_NO_PUBLISH', name:(j.newName||b.newName||''), set:(b.utmCampaign||''), error:(j.error||'이 소재의 페이지 게시 권한 없음'), landing:(j.landing||''), camp:(j.utmCampaign||b.utmCampaign||''), cont:(j.utmContent||b.utmContent||'')});
             } else if(j && j.ok===false && j.needConnect!==true){
-              fails.push(String(j.error||'알 수 없는 오류'));           // 생성 실패 사유 수집 → 배너로 표시
-              if(tmr)clearTimeout(tmr); tmr=setTimeout(show,1200);
-            }
+              fails.push({act:act, code:(j.code||''), name:(b.newName||''), set:(b.utmCampaign||''), error:String(j.error||'알 수 없는 오류')});
+            } else { return; }
+            if(tmr)clearTimeout(tmr); tmr=setTimeout(show,1200);   // 배치 생성이 끝나면(1.2s 유휴) 알럿 표시
           }).catch(function(){}); }).catch(function(){});
         }
       }
     }catch(e){}
     return pr;
   };
+  // dev 전용 미리보기: 개발 서버 콘솔에서 rbErrDemo() 실행 시 샘플 오류 알럿 표시
+  try{ if(/-git-dev-/.test(location.host)){ window.rbErrDemo=function(){ buf={}; fails=[]; var a='3342733785912061'; buf[a]=['1','2','3','4','5','6','7','8','9','10','11','12']; fails.push({act:a,code:'PAGE_NO_PUBLISH',name:'260703_FB_SPED_I_PR-ED-ppp_free.90-BENEFIT_PRC_ALL_REG_2607BF_jhg',set:'FB_SPED_PUR_CMX_ALL_2607BF_BENEFIT_260703',error:'이 소재의 페이지에 게시 권한이 없습니다',landing:'https://sprintenergy.kr/article/event/8/62040/',camp:'FB_SPED_PUR_CMX_ALL_2607BF_BENEFIT_260703',cont:'260703_FB_SPED_I_PR-ED-ppp_free.90-BENEFIT_PRC_ALL_REG_2607BF_jhg'}); show(); }; } }catch(e){}
 })();
 </script>
 <script>
