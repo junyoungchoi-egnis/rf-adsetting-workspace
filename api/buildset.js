@@ -137,6 +137,15 @@ module.exports = async function (req, res) {
       } catch (e) { return res.status(200).json({ ok: false, error: String((e && e.message) || e) }); }
     }
 
+    // 캠페인명 변경: { updateCampaignName:true, campaignId, name } → 세트 추가 후 타겟 컨셉 반영
+    if (b.updateCampaignName === true) {
+      const _cid = String(b.campaignId || '').trim();
+      const _nm = String(b.name || '').trim();
+      if (!_cid || !_nm) return res.status(400).json({ ok: false, error: 'campaignId·name 필요' });
+      try { await gpost(GRAPH + '/' + enc(_cid) + '?access_token=' + enc(token), { name: _nm }); return res.status(200).json({ ok: true, campaignId: _cid, name: _nm }); }
+      catch (e) { return res.status(200).json({ ok: false, error: String((e && e.message) || e) }); }
+    }
+
     const campaignId = String(b.campaignId || '').trim();
     const campaign = b.campaign || null;
     const adsets = Array.isArray(b.adsets) ? b.adsets : [];
