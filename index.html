@@ -1376,7 +1376,8 @@ function bxRenderAutoset(){
   var as=$('bx_autoset'); if(!as)return;
   if(!lastGen||!lastGen.goal){ as.innerHTML='제품·목표·입찰 등 기본 정보를 채우면 자동 세팅이 표시됩니다'; return; }
   var _obj=META_OBJECTIVE[lastGen.goal]||'OUTCOME_SALES'; var _bidm=META_BID[lastGen.bid]||META_BID.CMX;
-  as.innerHTML='이름 기반 자동 세팅 — 목표 <b style="color:var(--text2)">'+esc(goalKr(lastGen.goal))+' ('+_obj+')</b> · 최적화 <b style="color:var(--text2)">'+esc(bxOptLabel(_bidm.optimization_goal))+'</b> · 입찰 <b style="color:var(--text2)">최저비용(자동)</b> · 일정 세트 날짜(00:00 KST)';
+  var _og=_bidm.optimization_goal; var _attr=(_og==='OFFSITE_CONVERSIONS'||_og==='VALUE')?' · 기여 <b style="color:var(--text2)">클릭 7일·조회 1일·참여 1일</b>':'';
+  as.innerHTML='이름 기반 자동 세팅 — 목표 <b style="color:var(--text2)">'+esc(goalKr(lastGen.goal))+' ('+_obj+')</b> · 최적화 <b style="color:var(--text2)">'+esc(bxOptLabel(_og))+'</b> · 입찰 <b style="color:var(--text2)">최저비용(자동)</b>'+_attr+' · 일정 세트 날짜(00:00 KST)';
 }
 async function bxFillPixels(force){
   var sel=$('bx_pixel'); if(!sel)return;
