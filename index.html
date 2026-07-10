@@ -501,8 +501,8 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
         <div class="panel" style="margin-bottom:14px">
         <div class="panel-h">① 소재 선택 (기존 소재) <span class="bdg bdg-ok">세트마다 자동 이름·UTM</span></div>
         <div>
-          <div class="field"><label>① 기존 소재 복제 — 다중 선택 가능 · <span class="hint" id="ms_srcCount">0개 선택</span></label><input id="ms_srcSearch" placeholder="🔎 소재명 검색" oninput="msRenderSrc()" style="margin-bottom:6px"><div style="display:flex;gap:6px;margin-bottom:6px"><select id="ms_srcProduct" onchange="msRenderSrc()" style="flex:1"><option value="">상품 전체</option></select><select id="ms_srcManager" onchange="msRenderSrc()" style="flex:1"><option value="">담당자 전체</option></select></div><div id="ms_srclist" style="max-height:200px;overflow:auto;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:4px"></div><select id="ms_src" style="display:none"></select></div>
-          <div class="field"><label>② 광고 세트 선택 — 다중 선택 가능 · <span class="hint" id="ms_setCount">0개 선택</span> &nbsp;<label style="display:inline;font-weight:400;color:var(--text3)"><input type="checkbox" id="ms_setActive" checked onchange="msRenderSets()" style="width:auto;vertical-align:middle"> 활성만</label></label><input id="ms_setSearch" placeholder="🔎 세트명 검색" oninput="msRenderSets()" style="margin-bottom:6px"><div id="ms_setlist" style="max-height:200px;overflow:auto;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:4px"></div></div>
+          <div class="field"><label>① 기존 소재 복제 — 다중 선택 가능 · <span class="hint" id="ms_srcCount">0개 선택</span> <span id="ms_srcAllBtn" onclick="msSrcSelectAll()" style="margin-left:8px;cursor:pointer;color:var(--accent2);font-weight:700;font-size:11px">전체 선택</span></label><input id="ms_srcSearch" placeholder="🔎 소재명 검색" oninput="msRenderSrc()" style="margin-bottom:6px"><div style="display:flex;gap:6px;margin-bottom:6px"><select id="ms_srcProduct" onchange="msRenderSrc()" style="flex:1"><option value="">상품 전체</option></select><select id="ms_srcManager" onchange="msRenderSrc()" style="flex:1"><option value="">담당자 전체</option></select></div><div id="ms_srclist" style="max-height:200px;overflow:auto;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:4px"></div><select id="ms_src" style="display:none"></select></div>
+          <div class="field"><label>② 광고 세트 선택 — 다중 선택 가능 · <span class="hint" id="ms_setCount">0개 선택</span> &nbsp;<label style="display:inline;font-weight:400;color:var(--text3)"><input type="checkbox" id="ms_setActive" checked onchange="msRenderSets()" style="width:auto;vertical-align:middle"> 활성만</label></label><span id="ms_setAllBtn" onclick="msSetSelectAll()" style="cursor:pointer;color:var(--accent2);font-weight:700;font-size:11px;display:inline-block;margin-bottom:6px">전체 선택</span><input id="ms_setSearch" placeholder="🔎 세트명 검색" oninput="msRenderSets()" style="margin-bottom:6px"><div id="ms_setlist" style="max-height:200px;overflow:auto;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:4px"></div></div>
         </div>
         <div style="margin-top:10px"><div class="hint" style="margin-bottom:4px">③ 세팅 미리보기</div><div id="ms_preview"></div></div>
         <div id="ms_genRow" style="margin-top:8px;display:none"><button class="btn btn-primary" onclick="msCreate(this)">세트마다 생성 (PAUSED)</button></div>
@@ -2292,6 +2292,7 @@ function msRenderSrc(){
   // 하위호환: 숨은 select에 옵션 채우고 대표(첫 선택) 소재를 value로 (실미리보기/스펙 참조용)
   if(hidden){ hidden.innerHTML=list.map(function(s){ return '<option value="'+s.cid+'">'+esc(s.name||s.cid)+'</option>'; }).join(''); var pr=msPrimarySrc(); hidden.value=pr?pr.cid:''; }
   const cnt=document.getElementById('ms_srcCount'); if(cnt)cnt.textContent=Object.keys(msSrcSel).length+'개 선택';
+  var _sab=document.getElementById('ms_srcAllBtn'); if(_sab)_sab.textContent=(list.length&&list.every(function(s){return !!msSrcSel[s.cid];}))?'전체 해제':'전체 선택';
   msRenderPreview();
 }
 function msSrcToggle(i){ const s=(window.__msSrcList||[])[i]; if(!s)return; if(msSrcSel[s.cid])delete msSrcSel[s.cid]; else msSrcSel[s.cid]=s; msRenderSrc(); }
@@ -2299,6 +2300,15 @@ function msSelectedSrcs(){ return Object.keys(msSrcSel).map(function(k){return m
 function msPrimarySrc(){ const l=window.__msSrcList||[]; for(let i=0;i<l.length;i++){ if(msSrcSel[l[i].cid]) return msSrcSel[l[i].cid]; } const ks=Object.keys(msSrcSel); return ks.length?msSrcSel[ks[0]]:null; }
 window.msSrcToggle=msSrcToggle;
 window.msSrcSelectCid=function(cid){ if(!cid)return; const s=msSources().find(function(x){return x.cid===cid;}); if(s){ msSrcSel[cid]=s; msRenderSrc(); } };
+function msSrcSelectAll(){ var list=window.__msSrcList||[]; if(!list.length){ if(typeof toast==='function')toast('선택할 소재가 없습니다'); return; }
+  var allOn=list.every(function(s){return !!msSrcSel[s.cid];});
+  if(allOn) list.forEach(function(s){ delete msSrcSel[s.cid]; }); else list.forEach(function(s){ msSrcSel[s.cid]=s; });   // 보이는(검색·필터 반영) 항목 기준 토글
+  msRenderSrc(); }
+function msSetSelectAll(){ var list=window.__msCands||[]; if(!list.length){ if(typeof toast==='function')toast('선택할 세트가 없습니다'); return; }
+  var allOn=list.every(function(c){return !!msTargets[c.adsetId];});
+  if(allOn) list.forEach(function(c){ delete msTargets[c.adsetId]; }); else list.forEach(function(c){ msTargets[c.adsetId]=c; });
+  msRenderSets(); msRenderPreview(); }
+window.msSrcSelectAll=msSrcSelectAll; window.msSetSelectAll=msSetSelectAll;
 function msRenderSets(){
   const wrap=document.getElementById('ms_setlist'); if(!wrap) return;
   const q=((document.getElementById('ms_setSearch')||{}).value||'').toLowerCase();
@@ -2313,6 +2323,7 @@ function msRenderSets(){
     return '<div class="diverge-row" style="cursor:pointer;gap:9px;background:'+(on?'var(--accentbg)':'rgba(255,255,255,.02)')+';border-color:'+(on?'var(--accent)':'var(--border)')+'" onclick="msToggle('+i+')"><span style="font-size:15px;font-style:normal;color:'+(on?'var(--accent2)':'var(--text3)')+'">'+(on?'☑':'☐')+'</span><div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:600;color:'+(on?'var(--text)':'var(--text2)')+'">'+esc((c.brand||c.product||''))+' · '+esc(schemeKr(c.scheme))+' <span style="color:var(--accent2)">/ '+esc(tamKr(c.tam)||'')+'</span></div><div class="t-mono" style="font-size:10px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(c.name)+'</div></div><span style="font-size:10px;white-space:nowrap;color:'+(((c.landing||'').trim())?'var(--green)':'var(--yellow)')+'">'+(((c.landing||'').trim())?'랜딩 ✓':'랜딩 ⚠')+'</span></div>';
   }).join(''):'<div class="empty" style="padding:10px">조건에 맞는 세트 없음</div>';
   const cnt=document.getElementById('ms_setCount'); if(cnt)cnt.textContent=Object.keys(msTargets).length+'개 선택';
+  var _tab=document.getElementById('ms_setAllBtn'); if(_tab)_tab.textContent=(cands.length&&cands.every(function(c){return !!msTargets[c.adsetId];}))?'전체 해제':'전체 선택';
   const _st=document.getElementById('n5cloneStat'); if(_st){ const keys=Object.keys(msTargets); const sel=keys.length; const land=keys.filter(function(k){ return ((msTargets[k].landing||'')+'').trim(); }).length; const nsrc=(typeof msSrcSel!=='undefined')?Object.keys(msSrcSel).length:0; _st.innerHTML=sel?('소재 <b style="color:var(--text)">'+nsrc+'</b> × 세트 <b style="color:var(--text)">'+sel+'</b> = '+(nsrc*sel)+'건 · 랜딩 '+land+'/'+sel+((sel>land)?(' <span style="color:var(--yellow)">(미매핑 '+(sel-land)+' 제외)</span>'):'')):'생성할 광고 세트를 선택하세요'; }
 }
 function msToggle(i){ const c=(window.__msCands||[])[i]; if(!c)return; if(msTargets[c.adsetId])delete msTargets[c.adsetId]; else msTargets[c.adsetId]=c; msRenderSets(); msRenderPreview(); }
