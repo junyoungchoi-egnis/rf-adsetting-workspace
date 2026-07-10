@@ -214,6 +214,15 @@ module.exports = async function (req, res) {
       } else if (a.pageId) {
         p.promoted_object = { page_id: String(a.pageId) };
       }
+      // 기여 설정(전환 목표): 기본 클릭 7일 + 조회 1일 + 참여(조회) 1일 = 1d_view_7d_click_1d_ev.
+      // 요청에 attributionSpec 배열이 오면 그대로 사용(향후 UI 선택 대비).
+      if (optGoal === 'OFFSITE_CONVERSIONS' || optGoal === 'VALUE') {
+        p.attribution_spec = (Array.isArray(a.attributionSpec) && a.attributionSpec.length) ? a.attributionSpec : [
+          { event_type: 'CLICK_THROUGH', window_days: 7 },
+          { event_type: 'VIEW_THROUGH', window_days: 1 },
+          { event_type: 'ENGAGED_VIDEO_VIEW', window_days: 1 }
+        ];
+      }
       // 예산: ABO 면 광고세트에, CBO 면 캠페인에(여기선 미포함)
       if (!isCBO) {
         const db = budgetStr(a.dailyBudget);
