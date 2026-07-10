@@ -299,18 +299,18 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
             <div class="seg-toggle" id="bx_modebar" style="margin-bottom:12px"><button id="bx_mA" class="on" onclick="bxSetMode('camp')">ⓐ 캠페인 생성</button><button id="bx_mB" onclick="bxSetMode('set')">ⓑ 세트 생성</button></div>
             <div id="bx_camprow" style="font-size:12px;color:var(--text2);margin-bottom:10px"></div>
             <div id="bx_campSlot"></div>
+            <div class="field" id="bx_acctBlock"><label>생성할 계정 <span class="req">*</span></label><select id="bx_acct" onchange="bxFillPixels(true);bxFillCampaigns();bxCheckClear()"></select></div>
+            <div class="field" id="bx_pickCampWrap"><label>대상 캠페인 <span class="opt">이 캠페인 하위에 세트 생성 · 기본정보 상속</span> <span id="bx_campLoad" style="color:var(--text3);font-size:10px"></span></label>
+              <input id="bx_campSearch" placeholder="🔍 캠페인 검색 (이름·ID)" oninput="bxRenderCampOptions()" style="margin-bottom:6px">
+              <select id="bx_pickCamp" size="1" onchange="bxOnPickCamp()"></select></div>
             <div id="bx_setSlot"></div>
             <div id="bx_autoset" style="font-size:11px;color:var(--text3);margin:12px 0;padding:7px 9px;border:1px dashed rgba(255,255,255,.14);border-radius:8px">이름 기반 자동 세팅 — 채우면 표시됩니다</div>
-            <div class="grid g3">
-              <div class="field"><label>생성할 계정 <span class="req">*</span></label><select id="bx_acct" onchange="bxFillPixels(true);bxFillCampaigns();bxCheckClear()"></select></div>
+            <div class="grid g3" id="bx_budgetBlock">
               <div class="field"><label>예산 방식</label><select id="bx_budgetmode" onchange="bxToggle();bxCheckClear()"><option value="ABO">ABO · 세트별 예산</option><option value="CBO">CBO · 캠페인 예산</option></select></div>
               <div class="field"><label id="bx_budgetlbl">세트 일 예산 (원)</label><input id="bx_budget" type="number" placeholder="예: 30000" oninput="bxCheckClear()"></div>
             </div>
             <div class="field" id="bx_campnameWrap"><label>✏️ 캠페인명 <span class="opt">규칙 자동 · 직접 수정 가능</span></label><input id="bx_campnameInput" class="t-mono" oninput="bxCheckClear()" placeholder="FB_..."></div>
-            <div class="field" id="bx_pickCampWrap"><label>① 대상 캠페인 <span class="opt">이 캠페인 하위에 세트 생성 · 기본정보 상속</span> <span id="bx_campLoad" style="color:var(--text3);font-size:10px"></span></label>
-              <input id="bx_campSearch" placeholder="🔍 캠페인 검색 (이름·ID)" oninput="bxRenderCampOptions()" style="margin-bottom:6px">
-              <select id="bx_pickCamp" size="1" onchange="bxOnPickCamp()"></select></div>
-            <div id="bx_audienceWrap">
+            <div id="bx_audCore">
               <div class="field"><label>전환 픽셀 <span class="opt">계정 기본 자동 선택 · 변경 가능</span></label><select id="bx_pixel" onchange="bxCheckClear()"></select></div>
               <div class="grid g3">
                 <div class="field"><label>연령 최소</label><input id="bx_agemin" type="number" value="18" min="13" max="65" oninput="bxCheckClear()"></div>
@@ -321,11 +321,11 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
                 <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="bx_advaud" style="width:auto"> 어드밴티지+ 오디언스 <span class="hint">기본 끔 · 정의한 연령/타게팅 그대로</span></label>
                 <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="bx_autopl" checked style="width:auto"> 자동 노출위치(어드밴티지+) <span class="hint">끄면 FB·IG만(오디언스 네트워크 제외)</span></label>
               </div>
-              <div class="field" id="bx_setsWrap" style="margin-top:10px"><label>✏️ 광고세트 — 세트명 직접 수정 가능</label><div id="bx_setlist" style="max-height:220px;overflow:auto"></div></div>
             </div>
-            <div class="hint" style="margin-top:6px">전환 픽셀은 <b>계정별 고정 매핑</b> · 목표·최적화·입찰은 <b>이름 규칙에서 자동</b> · 광고(소재)는 <b>소재 세팅</b> 탭에서 붙입니다.</div>
+            <div class="field" id="bx_setsWrap" style="margin-top:10px"><label>✏️ 만들어질 광고세트 <span class="opt">세트명 직접 수정 가능</span></label><div id="bx_setlist" style="max-height:220px;overflow:auto"></div></div>
+            <div class="hint" id="bx_hint" style="margin-top:6px">전환 픽셀은 <b>계정별 고정 매핑</b> · 목표·최적화·입찰은 <b>이름 규칙에서 자동</b> · 광고(소재)는 <b>소재 세팅</b> 탭에서 붙입니다.</div>
             <div id="bx_check" style="margin-top:12px"></div>
-            <div style="display:flex;gap:8px;margin-top:14px;align-items:center">
+            <div id="bx_actions" style="display:flex;gap:8px;margin-top:14px;align-items:center">
               <button class="btn btn-ghost btn-sm" onclick="bxDryRun()">🔎 사전 점검</button>
               <div class="spacer"></div>
               <button class="btn btn-primary" id="bx_gen" onclick="bxCreate(this)">⚡ 캠페인·세트 생성 (PAUSED)</button>
@@ -1311,6 +1311,13 @@ var bxMadeCampaigns=[]; // 이 세션에서 ⓐ로 생성한 캠페인 {id,name,
 var bxCampLive=[];      // 계정에서 불러온 실제 캠페인 캐시 [{id,name,active}]
 var bxPendingPick=null;  // ⓐ 직후 ⓑ 진입 시 자동 선택할 캠페인 id(1회성 핸드오프)
 function bxGenLabel(){ return bxMode==='camp'?'⚡ 캠페인 생성 (PAUSED)':(bxMode==='set'?'⚡ 세트 생성 (PAUSED)':'⚡ 캠페인·세트 생성 (PAUSED)'); }
+function bxLayout(m){   // 모드별 항목 순서 재배치(카드 직속 블록 재정렬)
+  var card=$('b_createWrap'); if(!card)return;
+  var order=(m==='set')
+    ? ['bx_camprow','bx_acctBlock','bx_pickCampWrap','bx_setSlot','bx_budgetBlock','bx_audCore','bx_autoset','bx_setsWrap','bx_hint','bx_check','bx_actions','bx_out']
+    : ['bx_camprow','bx_campSlot','bx_autoset','bx_acctBlock','bx_budgetBlock','bx_campnameWrap','bx_hint','bx_check','bx_actions','bx_out'];
+  order.forEach(function(id){ var el=document.getElementById(id); if(el)card.appendChild(el); });
+}
 function bxSetMode(m){
   if(m==='both')m='set';   // ⓒ 제거 — 호환용
   bxMode=m;
@@ -1318,11 +1325,14 @@ function bxSetMode(m){
   var e;
   if((e=$('bx_campSlot')))e.style.display=(m==='camp')?'':'none';
   if((e=$('bx_campnameWrap')))e.style.display=(m==='camp')?'':'none';
+  if((e=$('bx_pickCampWrap')))e.style.display=(m==='set')?'':'none';
   if((e=$('bx_setSlot')))e.style.display=(m==='set')?'':'none';
-  if((e=$('bx_audienceWrap')))e.style.display=(m==='set')?'':'none';
+  if((e=$('bx_audCore')))e.style.display=(m==='set')?'':'none';
+  if((e=$('bx_setsWrap')))e.style.display=(m==='set')?'':'none';
   // ⓐ에선 세트명 미리보기 칸 숨기고 캠페인명만
   if((e=$('b_setPrevWrap')))e.style.display=(m==='camp')?'none':'';
   if((e=$('bx_gen')))e.textContent=bxGenLabel();
+  bxLayout(m);
   if(m==='set'){ bxFillCampaigns(); bxFillPixels(); }
   bxRenderCamprow(); bxCheckClear();
 }
@@ -1335,10 +1345,9 @@ function bxRenderCamprow(){
 function bxAbsorbBuilder(){   // A~C 패널을 하단 바의 모드별 슬롯으로 이동 (별도 A~C 구간 제거)
   if(window.__bxAbsorbed)return;
   var camp=$('bx_campSlot'),set=$('bx_setSlot'); if(!camp||!set)return;
-  var A=$('bx_APanel'),B=$('bx_BPanel'),C=$('bx_CPanel'),pick=$('bx_pickCampWrap');
-  if(A)camp.appendChild(A);
-  if(pick)set.appendChild(pick);
-  if(B)set.appendChild(B);
+  var A=$('bx_APanel'),B=$('bx_BPanel'),C=$('bx_CPanel');
+  if(A)camp.appendChild(A);   // A(캠페인 기본정보) → ⓐ 슬롯
+  if(B)set.appendChild(B);    // B(타게팅)·C(타겟 컨셉) → ⓑ 슬롯 (대상 캠페인은 카드 직속 블록으로 분리)
   if(C)set.appendChild(C);
   var bf=document.querySelector('.build-forms'); if(bf)bf.style.display='none';
   window.__bxAbsorbed=1;
