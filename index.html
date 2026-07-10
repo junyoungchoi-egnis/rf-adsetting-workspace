@@ -1689,7 +1689,9 @@ function readCreativeRow(id){
   return {fmt,msg:[m1,m2,m3].filter(Boolean).join('-'),soje};
 }
 function buildCreativeName(set,date,cr,manager){
-  const base=`${date}_${set.media}_${set.product}_${cr.fmt}_${cr.msg}_${cr.soje}-${set.tam}_${set.composite}_${set.targeting}_${firstcatCode(set.firstcat)}_${set.scheme}`;
+  cr=cr||{}; set=set||{};
+  var NA=function(x){ return (x==null||x==='')?'NA':String(x); };   // undefined/빈값 절대 방지
+  const base=`${NA(date)}_${NA(set.media)}_${NA(set.product)}_${NA(cr.fmt)}_${NA(cr.msg)}_${NA(cr.soje)}-${NA(set.tam)}_${NA(set.composite)}_${NA(set.targeting)}_${NA(firstcatCode(set.firstcat))}_${NA(set.scheme)}`;
   return manager?`${base}_${manager}`:base;
 }
 function buildUTM(set,creativeName,landingOverride){
@@ -1768,6 +1770,19 @@ function itemPayload(a){
   if(t.length<10||t.length>11) return null;
   if(t[5].indexOf('-')<0) return null;
   return {fmt:t[3],msg:t[4],soje:t[5].slice(0,t[5].lastIndexOf('-')),date:t[0],manager:t.length===11?t[10]:''};
+}
+function yymmddToday(){ try{ var d=new Date(); return String(d.getFullYear()).slice(2)+('0'+(d.getMonth()+1)).slice(-2)+('0'+d.getDate()).slice(-2); }catch(e){ return '000000'; } }
+// 복제 소재명 생성용 파트 — 표준 이름이면 itemPayload 그대로, 비표준(메타 검색 등)이면
+// undefined 방지 위해 소스 이름 기반으로 안전·추적가능하게 유추(막지 않고 되게).
+function cloneCreativeParts(src){
+  var p=itemPayload(src); if(p) return p;
+  var nm=String((src&&src.name)||(src&&src.cid)||'clone');
+  var t=nm.split('_');
+  var date=(/^\d{6}$/.test(t[0]))?t[0]:yymmddToday();
+  var fmt=(/^[A-Z]{1,3}$/.test(t[3]||''))?t[3]:'I';
+  var core=nm.replace(/[^0-9A-Za-z-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||'CLONE';   // 소스명 요약(추적용, _→-)
+  var mgr=(/^[a-z]{2,4}$/.test(t[t.length-1]||''))?t[t.length-1]:'';
+  return {fmt:fmt, msg:core, soje:'NA', date:date, manager:mgr, _nonstd:true};
 }
 let cloneSrcMode='archive';
 function metaCloneSources(){
@@ -2286,8 +2301,8 @@ function msRenderSrc(){
   var _pinned=[]; Object.keys(msSrcSel).forEach(function(cid){ if(!_shown[cid]&&msSrcSel[cid]) _pinned.push(msSrcSel[cid]); });
   if(_pinned.length) list=_pinned.concat(list);
   window.__msSrcList=list;
-  wrap.innerHTML=list.length?list.map(function(s,i){ const on=!!msSrcSel[s.cid]; const stop=(s._status&&s._status!=='ACTIVE');
-    return '<div class="diverge-row" style="cursor:pointer;gap:9px;background:'+(on?'var(--accentbg)':'rgba(255,255,255,.02)')+';border-color:'+(on?'var(--accent)':'var(--border)')+'" onclick="msSrcToggle('+i+')"><span style="font-size:15px;font-style:normal;color:'+(on?'var(--accent2)':'var(--text3)')+'">'+(on?'☑':'☐')+'</span><div style="flex:1;min-width:0"><div class="t-mono" style="font-size:11px;color:'+(on?'var(--text)':'var(--text2)')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(s.name||s.cid)+'</div></div>'+(stop?'<span style="font-size:10px;white-space:nowrap;color:var(--yellow)">⏸중지</span>':'')+'</div>';
+  wrap.innerHTML=list.length?list.map(function(s,i){ const on=!!msSrcSel[s.cid]; const stop=(s._status&&s._status!=='ACTIVE'); const bad=!itemPayload(s);   // 비표준 이름 → 자동명 생성(복제는 정상 진행)
+    return '<div class="diverge-row" style="cursor:pointer;gap:9px;background:'+(on?'var(--accentbg)':'rgba(255,255,255,.02)')+';border-color:'+(on?'var(--accent)':'var(--border)')+'" onclick="msSrcToggle('+i+')"><span style="font-size:15px;font-style:normal;color:'+(on?'var(--accent2)':'var(--text3)')+'">'+(on?'☑':'☐')+'</span><div style="flex:1;min-width:0"><div class="t-mono" style="font-size:11px;color:'+(on?'var(--text)':'var(--text2)')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(s.name||s.cid)+'</div></div>'+(bad?'<span style="font-size:10px;white-space:nowrap;color:var(--cyan)" title="이름 규칙과 달라, 복제 시 소스 이름 기반으로 안전한 이름을 자동 생성합니다(정상 복제됨·undefined 아님)">비표준→자동명</span>':'')+(stop?'<span style="font-size:10px;white-space:nowrap;color:var(--yellow)">⏸중지</span>':'')+'</div>';
   }).join(''):'<div class="empty" style="padding:10px">메타 라이브러리 소재 없음 — 🔄 동기화 또는 "메타에서 검색"</div>';
   // 하위호환: 숨은 select에 옵션 채우고 대표(첫 선택) 소재를 value로 (실미리보기/스펙 참조용)
   if(hidden){ hidden.innerHTML=list.map(function(s){ return '<option value="'+s.cid+'">'+esc(s.name||s.cid)+'</option>'; }).join(''); var pr=msPrimarySrc(); hidden.value=pr?pr.cid:''; }
@@ -2336,7 +2351,7 @@ function msRenderPreview(){
   if(!srcs.length||!sets.length){ wrap.innerHTML='<div class="hint" style="padding:8px">소재와 세트를 선택하면 조합(소재×세트)별 소재명·UTM이 보입니다.</div>'; return; }
   const total=srcs.length*sets.length; const CAP=40; let shown=0; const rows=[];
   rows.push('<div class="hint" style="margin-bottom:6px">소재 <b style="color:var(--accent2)">'+srcs.length+'</b> × 세트 <b style="color:var(--accent2)">'+sets.length+'</b> = <b style="color:var(--accent2)">'+total+'건</b> 생성 예정'+(srcs.length>1?' · 대표 소재로 미리보기 표시':'')+'</div>');
-  for(let si=0; si<srcs.length && shown<CAP; si++){ const p=itemPayload(srcs[si])||{}; const sName=(srcs[si].name||srcs[si].cid||'');
+  for(let si=0; si<srcs.length && shown<CAP; si++){ const p=cloneCreativeParts(srcs[si]); const sName=(srcs[si].name||srcs[si].cid||'');
     for(let ti=0; ti<sets.length; ti++){ if(shown>=CAP){ rows.push('<div class="hint">… 외 '+(total-shown)+'건 (생성은 전체 진행)</div>'); break; } const set=sets[ti];
       const name=buildCreativeName(set,p.date,{fmt:p.fmt,msg:p.msg,soje:p.soje},p.manager||'');
       const lu=(set.landing||''); const fu=lu?(lu+(lu.indexOf('?')>=0?'&':'?')+'utm_source=facebook&utm_medium=social&utm_campaign='+set.name+'&utm_term={{ad.id}}&utm_content='+name):'(랜딩 미매핑 — 생성 제외)';
@@ -2351,8 +2366,8 @@ async function msCreate(btn){
   const sets=msSelectedSets();
   if(!srcs.length){ toast('복제할 소재를 선택하세요'); return; }
   if(!sets.length){ toast('대상 세트를 선택하세요'); return; }
-  const plan=[];
-  srcs.forEach(function(src){ const p=itemPayload(src)||{}; sets.forEach(function(set){ const name=buildCreativeName(set,p.date,{fmt:p.fmt,msg:p.msg,soje:p.soje},p.manager||''); if(set._acct&&set.adsetId) plan.push({act:set._acct, srcCreativeId:src.cid, targetAdsetId:set.adsetId, newName:name, utmCampaign:set.name, utmContent:name}); }); });
+  const plan=[];   // 비표준 이름 소스도 cloneCreativeParts로 안전 이름 자동 생성(막지 않고 되게, undefined 방지)
+  srcs.forEach(function(src){ const p=cloneCreativeParts(src); sets.forEach(function(set){ const name=buildCreativeName(set,p.date,{fmt:p.fmt,msg:p.msg,soje:p.soje},p.manager||''); if(set._acct&&set.adsetId) plan.push({act:set._acct, srcCreativeId:src.cid, targetAdsetId:set.adsetId, newName:name, utmCampaign:set.name, utmContent:name}); }); });
   if(!plan.length){ toast('생성 가능한 라이브 세트가 없습니다'); return; }
   if(!confirm('소재 '+srcs.length+' × 세트 '+sets.length+' = '+plan.length+'건을 각각 PAUSED(꺼짐)로 생성합니다. 진행할까요?')){ toast('취소됨'); return; }
   if(btn){ btn.disabled=true; btn.textContent='생성 중…'; }
