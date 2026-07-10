@@ -1771,10 +1771,22 @@ function itemPayload(a){
 let cloneSrcMode='archive';
 function metaCloneSources(){
   if(!metaSnap||!metaSnap.assets) return [];
+  const A=metaSnap.assets;
+  // 선택 계정 기준으로 소재를 가져온다(교차집행 지원 — 스프린트 계정에서 클룹 제품 CLSE 집행 등).
+  // 계정 키 포맷(act_ 유무) 흡수. 계정 미선택 시에만 옛 방식(제품 브랜드 스코프)으로 폴백.
+  let sel=''; try{ sel=(typeof mcdTargetAccount==='function')?String(mcdTargetAccount()||''):''; }catch(e){}
+  let buckets;
+  if(sel){
+    const s2=sel.replace(/^act_/,'');
+    const b=A[sel]||A[s2]||A['act_'+s2];
+    buckets=b?[b]:[];                                   // 선택 계정에 소재 없으면 빈 것이 정답(오계정 노출 방지)
+  } else {
+    buckets=Object.values(A);
+  }
   const out=[]; const seen={};
-  Object.values(metaSnap.assets).forEach(acct=>{ (acct&&acct.ads||[]).forEach(ad=>{
+  buckets.forEach(acct=>{ (acct&&acct.ads||[]).forEach(ad=>{
     if(!ad||!ad.name||!itemPayload(ad)) return;
-    const prod=String(ad.name).split('_')[2]||''; if(areaOf(prod)!==areaScope) return;
+    if(!sel){ const prod=String(ad.name).split('_')[2]||''; if(areaOf(prod)!==areaScope) return; }  // 폴백 경로만 스코프 필터
     const id='meta:'+(ad.cid||ad.name); if(seen[id]) return; seen[id]=1;
     out.push(Object.assign({},ad,{id:id,_meta:true}));
   }); });
