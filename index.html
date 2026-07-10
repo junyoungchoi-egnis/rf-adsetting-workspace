@@ -238,12 +238,12 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
     <!-- ══════════ TAB 1: BUILDER ══════════ -->
     <section class="page active" id="page-build">
       <div class="page-head">
-        <h2>캠페인 · 광고세트 빌더</h2>
-        <p>제품·목표·입찰·스킴·타게팅·타겟 컨셉(구 TAM)을 조합하면 <b>광고세트명(=utm_campaign)</b>·합성코드·한글 캠페인명이 시트 규칙대로 자동 생성됩니다. 타겟 컨셉은 1개 선택, 타게팅은 여러 개 추가할 수 있고 타게팅 수만큼 세트가 한 번에 만들어집니다.</p>
+        <h2>캠페인 · 광고세트 생성</h2>
+        <p><b>ⓐ 캠페인 생성</b>에서 기본 정보로 캠페인을, <b>ⓑ 세트 생성</b>에서 대상 캠페인을 고르고 타게팅·타겟 컨셉으로 광고세트를 만듭니다. 이름·최적화·픽셀은 규칙대로 자동 · 생성은 모두 PAUSED(꺼짐).</p>
       </div>
 
       <div class="build-forms">
-          <div class="panel">
+          <div class="panel" id="bx_APanel">
             <div class="panel-h"><span class="step">A</span>캠페인 기본 정보</div>
             <div class="grid g3">
               <div class="field"><label>제품 <span class="req">*</span></label><select id="b_product" onchange="buildPreview()"></select></div>
@@ -262,8 +262,8 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
             </div>
           </div>
 
-          <div class="panel">
-            <div class="panel-h"><span class="step">B</span>타게팅 <span class="hint">한글 토큰 선택 → 규칙대로 자동 조합 (전환 V&gt;P, 유형 리타겟&gt;유사&gt;디타겟&gt;기타)</span></div>
+          <div class="panel" id="bx_BPanel">
+            <div class="panel-h"><span class="step">B</span>타게팅<span class="hint">한글 토큰 선택 → 규칙대로 자동 조합 (전환 V&gt;P, 유형 리타겟&gt;유사&gt;디타겟&gt;기타)</span></div>
             <div id="b_tokGroups" style="margin-bottom:8px"></div>
             <div class="row-flex" style="align-items:center;margin-bottom:10px">
               <span class="cnt">연령대</span>
@@ -282,7 +282,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
             </div>
           </div>
 
-          <div class="panel">
+          <div class="panel" id="bx_CPanel">
             <div class="panel-h"><span class="step">C</span>타겟 컨셉 (구 TAM) <span class="hint">콘텐츠마케터 영역 · 여러 개 선택 가능</span></div>
             <div class="chips" id="b_tamChips" style="margin-bottom:9px"></div>
             <div class="row-flex">
@@ -312,8 +312,10 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
               </div>
             </div>
             <div class="warnbox" id="b_warn"></div>
-        <div class="seg-toggle" id="bx_modebar" style="margin-bottom:10px"><button id="bx_mA" onclick="bxSetMode('camp')">ⓐ 캠페인 생성</button><button id="bx_mB" onclick="bxSetMode('set')">ⓑ 세트 생성</button><button id="bx_mC" class="on" onclick="bxSetMode('both')">ⓒ 한번에</button></div>
+        <div class="seg-toggle" id="bx_modebar" style="margin-bottom:10px"><button id="bx_mA" class="on" onclick="bxSetMode('camp')">ⓐ 캠페인 생성</button><button id="bx_mB" onclick="bxSetMode('set')">ⓑ 세트 생성</button></div>
         <div id="bx_camprow" style="font-size:12px;color:var(--text2);margin-bottom:6px"></div>
+        <div id="bx_campSlot"></div>
+        <div id="bx_setSlot"></div>
         <div id="bx_autoset" style="font-size:11px;color:var(--text3);margin-bottom:10px;padding:7px 9px;border:1px dashed rgba(255,255,255,.14);border-radius:8px">이름 기반 자동 세팅 — 채우면 표시됩니다</div>
         <div class="grid g3">
           <div class="field"><label>생성할 계정 <span class="req">*</span></label><select id="bx_acct" onchange="bxFillPixels(true);bxCheckClear()"></select></div>
@@ -321,7 +323,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
           <div class="field"><label id="bx_budgetlbl">세트 일 예산 (원)</label><input id="bx_budget" type="number" placeholder="예: 30000" oninput="bxCheckClear()"></div>
         </div>
         <div class="field" id="bx_campnameWrap"><label>✏️ 캠페인명 <span class="opt">규칙 자동 · 직접 수정 가능</span></label><input id="bx_campnameInput" class="t-mono" oninput="bxCheckClear()" placeholder="FB_..."></div>
-        <div class="field" id="bx_pickCampWrap" style="display:none"><label>대상 캠페인 <span class="opt">방금 만든 것 + 메타 라이브</span></label><select id="bx_pickCamp" onchange="bxCheckClear()"></select></div>
+        <div class="field" id="bx_pickCampWrap" style="display:none"><label>① 대상 캠페인 <span class="opt">방금 만든 것 + 메타 라이브 · 기본정보를 상속</span></label><select id="bx_pickCamp" onchange="bxOnPickCamp()"></select></div>
         <div id="bx_audienceWrap">
           <div class="field"><label>전환 픽셀 <span class="opt">계정 기본 자동 선택 · 변경 가능</span></label><select id="bx_pixel" onchange="bxCheckClear()"></select></div>
           <div class="grid g3">
@@ -1301,32 +1303,57 @@ var BX_PIXEL={
   '3342733785912061':{id:'562093002202082',name:'cloop.1 - Meta 픽셀'},   // 스프린트 (클룹몰 픽셀 사용)
   '539103343188615':{id:'562093002202082',name:'cloop.1 - Meta 픽셀'}      // 테스트(클룹 프로모션)
 };
-var bxMode='both';
-var bxMadeCampaigns=[]; // 이 세션에서 ⓐ로 생성한 캠페인 {id,name}
+var bxMode='camp';
+var bxMadeCampaigns=[]; // 이 세션에서 ⓐ로 생성한 캠페인 {id,name,ctx}
 var bxPendingPick=null;  // ⓐ 직후 ⓑ 진입 시 자동 선택할 캠페인 id(1회성 핸드오프)
 function bxGenLabel(){ return bxMode==='camp'?'⚡ 캠페인 생성 (PAUSED)':(bxMode==='set'?'⚡ 세트 생성 (PAUSED)':'⚡ 캠페인·세트 생성 (PAUSED)'); }
 function bxSetMode(m){
+  if(m==='both')m='set';   // ⓒ 제거 — 호환용
   bxMode=m;
-  [['bx_mA','camp'],['bx_mB','set'],['bx_mC','both']].forEach(function(p){ var b=$(p[0]); if(b)b.className=(p[1]===m?'on':''); });
+  [['bx_mA','camp'],['bx_mB','set']].forEach(function(p){ var b=$(p[0]); if(b)b.className=(p[1]===m?'on':''); });
   var e;
-  if((e=$('bx_campnameWrap')))e.style.display=(m==='camp'||m==='both')?'':'none';
-  if((e=$('bx_pickCampWrap')))e.style.display=(m==='set')?'':'none';
-  if((e=$('bx_audienceWrap')))e.style.display=(m==='set'||m==='both')?'':'none';
+  if((e=$('bx_campSlot')))e.style.display=(m==='camp')?'':'none';
+  if((e=$('bx_campnameWrap')))e.style.display=(m==='camp')?'':'none';
+  if((e=$('bx_setSlot')))e.style.display=(m==='set')?'':'none';
+  if((e=$('bx_audienceWrap')))e.style.display=(m==='set')?'':'none';
+  // ⓐ에선 세트명 미리보기 칸 숨기고 캠페인명만
+  var pr=document.querySelector('#bxBarBody .bx-prev-row'); if(pr&&pr.children[0])pr.children[0].style.display=(m==='camp')?'none':'';
   if((e=$('bx_gen')))e.textContent=bxGenLabel();
-  if(m==='set') bxFillCampaigns();
-  bxRenderCamprow(); if(m!=='camp')bxFillPixels(); bxCheckClear();
+  if(m==='set'){ bxFillCampaigns(); bxFillPixels(); }
+  bxRenderCamprow(); bxCheckClear();
 }
 function bxRenderCamprow(){
   var cr=$('bx_camprow'); if(!cr)return;
   var n=(lastGen&&lastGen.sets)?lastGen.sets.length:0;
-  cr.innerHTML = bxMode==='camp' ? '<b style="color:var(--accent2)">캠페인 1개</b>만 생성합니다 (세트는 ⓑ에서 붙이기)'
-    : bxMode==='set' ? '기존 캠페인에 <b style="color:var(--accent2)">광고세트 '+n+'개</b> 생성'
-    : '<b style="color:var(--accent2)">캠페인 1 + 광고세트 '+n+'개</b>를 한번에 생성';
+  cr.innerHTML = bxMode==='camp' ? '<b style="color:var(--accent2)">캠페인 1개</b>를 생성합니다 · 세트는 ⓑ에서 이 캠페인을 골라 붙입니다'
+    : '선택한 캠페인에 <b style="color:var(--accent2)">광고세트 '+n+'개</b>를 생성합니다';
+}
+function bxAbsorbBuilder(){   // A~C 패널을 하단 바의 모드별 슬롯으로 이동 (별도 A~C 구간 제거)
+  if(window.__bxAbsorbed)return;
+  var camp=$('bx_campSlot'),set=$('bx_setSlot'); if(!camp||!set)return;
+  var A=$('bx_APanel'),B=$('bx_BPanel'),C=$('bx_CPanel'),pick=$('bx_pickCampWrap');
+  if(A)camp.appendChild(A);
+  if(pick)set.appendChild(pick);
+  if(B)set.appendChild(B);
+  if(C)set.appendChild(C);
+  var bf=document.querySelector('.build-forms'); if(bf)bf.style.display='none';
+  window.__bxAbsorbed=1;
+}
+function bxSnapshotA(){ var g=function(id){var el=$(id);return el?el.value:'';}; return {product:g('b_product'),media:g('b_media'),date:g('b_date'),goal:g('b_goal'),bid:g('b_bid'),scheme:g('b_scheme'),firstcat:g('b_firstcat'),bidopt:g('b_bidopt'),cnum:g('b_cnum')}; }
+function bxApplyA(s){ if(!s)return; var st=function(id,v){var el=$(id); if(el&&v!=null&&v!=='')el.value=v;}; st('b_product',s.product);st('b_media',s.media);st('b_date',s.date);st('b_goal',s.goal);st('b_bid',s.bid);st('b_scheme',s.scheme);st('b_firstcat',s.firstcat);st('b_bidopt',s.bidopt);st('b_cnum',s.cnum); try{buildPreview();}catch(e){} }
+function bxTryParseCtx(name){ try{ var t=String(name||'').split('_'); var m=$('b_media'),p=$('b_product'),g=$('b_goal'),bd=$('b_bid'); var has=function(sel,v){return sel&&[].some.call(sel.options,function(o){return o.value===v;});}; if(has(m,t[0]))m.value=t[0]; if(has(p,t[1]))p.value=t[1]; if(has(g,t[2]))g.value=t[2]; if(has(bd,t[3]))bd.value=t[3]; buildPreview(); }catch(e){} }
+function bxOnPickCamp(){
+  var sel=$('bx_pickCamp'); if(!sel){bxCheckClear();return;} var cid=sel.value;
+  var made=null; for(var i=0;i<bxMadeCampaigns.length;i++){ if(String(bxMadeCampaigns[i].id)===String(cid)){made=bxMadeCampaigns[i];break;} }
+  if(made&&made.ctx) bxApplyA(made.ctx);            // 방금 만든 캠페인 → 기본정보 상속
+  else bxTryParseCtx((sel.selectedOptions&&sel.selectedOptions[0])?sel.selectedOptions[0].textContent:'');  // 라이브 → 이름에서 추정
+  bxCheckClear();
 }
 function bxInit(){
+  bxAbsorbBuilder();
   var sel=$('bx_acct');
   if(sel){ var cur=sel.value; sel.innerHTML=Object.keys(UC_ACCT).map(function(id){ return '<option value="'+id+'">'+esc(UC_ACCT[id]||id)+(id===BX_TEST_ACCT?' · 테스트':'')+'</option>'; }).join(''); sel.value=(cur&&UC_ACCT[cur])?cur:BX_TEST_ACCT; }
-  bxToggle(); bxSetMode(bxMode||'both'); bxRefreshLive();
+  bxToggle(); bxSetMode(bxMode||'camp'); bxRefreshLive();
 }
 function bxRefreshLive(){   // 빌더 변경 시마다 캠페인명·세트목록·자동세팅 갱신
   var ci=$('bx_campnameInput'); if(ci){ var auto=(lastGen&&lastGen.campaignName)||''; if(!ci.value||ci.value===ci.getAttribute('data-auto'))ci.value=auto; ci.setAttribute('data-auto',auto); }
@@ -1345,7 +1372,7 @@ async function bxFillPixels(force){
   if(!force && sel.getAttribute('data-act')===act && sel.options.length) return;
   var def=(BX_PIXEL[act]||{}).id||'';
   sel.setAttribute('data-act',act);
-  sel.innerHTML='<option>불러오는 중…</option>';
+  sel.innerHTML='<option value="">불러오는 중…</option>';
   try{
     var r=await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({listPixels:true,act:act})});
     var j=await r.json(); var list=(j&&j.pixels)||[];
@@ -1378,6 +1405,7 @@ function bxFillCampaigns(){
   if(bxPendingPick && all.some(function(c){return String(c.id)===String(bxPendingPick);})){ sel.value=bxPendingPick; bxPendingPick=null; }   // ⓐ 직후 핸드오프(1회성)
   else if(cur && all.some(function(c){return String(c.id)===String(cur);})){ sel.value=cur; }
   else if(bxMadeCampaigns.length){ sel.value=bxMadeCampaigns[bxMadeCampaigns.length-1].id; }
+  if(sel.value)bxOnPickCamp();   // 선택된 캠페인의 기본정보 상속
 }
 function bxPayload(apply){
   var act=String((($('bx_acct')||{}).value)||'').replace(/^act_/,'');
@@ -1437,7 +1465,7 @@ async function bxCreate(btn){
   if(btn){btn.disabled=true;btn.textContent='생성 중…';}
   try{ var r=await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); var j=await r.json();
     bxRenderResult(j,body.act);
-    if(j&&j.ok){ if(j.campaign&&j.campaign.id){ if(!bxMadeCampaigns.some(function(x){return String(x.id)===String(j.campaign.id);})) bxMadeCampaigns.push({id:j.campaign.id,name:(j.campaign.name||'캠페인')}); if(bxMode==='camp')bxPendingPick=j.campaign.id; }
+    if(j&&j.ok){ if(j.campaign&&j.campaign.id){ if(!bxMadeCampaigns.some(function(x){return String(x.id)===String(j.campaign.id);})) bxMadeCampaigns.push({id:j.campaign.id,name:(j.campaign.name||'캠페인'),ctx:bxSnapshotA()}); if(bxMode==='camp')bxPendingPick=j.campaign.id; }
       toast(bxMode==='camp'?'캠페인 생성됨 · ⓑ 세트 생성에서 자동 선택됩니다':'생성 완료 · 세트 '+(j.createdCount||0)+'개'); }
     else toast('생성 실패 — 결과 확인');
   }
