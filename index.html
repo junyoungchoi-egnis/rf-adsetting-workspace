@@ -1312,12 +1312,24 @@ var bxCampLive=[];      // 계정에서 불러온 실제 캠페인 캐시 [{id,n
 var bxLastPicked='';    // 마지막으로 상속 적용한 대상 캠페인 id(중복 적용 방지)
 var bxPendingPick=null;  // ⓐ 직후 ⓑ 진입 시 자동 선택할 캠페인 id(1회성 핸드오프)
 function bxGenLabel(){ return bxMode==='camp'?'⚡ 캠페인 생성 (PAUSED)':(bxMode==='set'?'⚡ 세트 생성 (PAUSED)':'⚡ 캠페인·세트 생성 (PAUSED)'); }
+function bxEnsureSteps(){   // ⓑ 4단계 헤더 1회 생성
+  var card=$('b_createWrap'); if(!card||window.__bxStepsMade)return;
+  var mk=function(id,txt){ var d=document.createElement('div'); d.id=id; d.className='bx-step'; d.textContent=txt; d.style.cssText='font-size:12px;font-weight:700;color:var(--accent2);margin:16px 0 9px;padding-bottom:5px;border-bottom:1px solid rgba(255,255,255,.10)'; card.appendChild(d); };
+  mk('bx_step1','① 캠페인 선택');
+  mk('bx_step2','② 세트명 정의 — 타게팅 · 타겟 컨셉');
+  mk('bx_step3','③ 세트 세부 조정 — 픽셀 · 타게팅 상세 · 노출위치');
+  mk('bx_step4','④ 예산 & 생성');
+  window.__bxStepsMade=1;
+}
 function bxLayout(m){   // 모드별 항목 순서 재배치(카드 직속 블록 재정렬)
   var card=$('b_createWrap'); if(!card)return;
+  bxEnsureSteps();
+  var steps=['bx_step1','bx_step2','bx_step3','bx_step4'];
   var order=(m==='set')
-    ? ['bx_camprow','bx_acctBlock','bx_pickCampWrap','bx_setSlot','bx_budgetBlock','bx_audCore','bx_autoset','bx_setsWrap','bx_hint','bx_check','bx_actions','bx_out']
+    ? ['bx_camprow','bx_step1','bx_acctBlock','bx_pickCampWrap','bx_step2','bx_setSlot','bx_step3','bx_audCore','bx_autoset','bx_step4','bx_budgetBlock','bx_setsWrap','bx_hint','bx_check','bx_actions','bx_out']
     : ['bx_camprow','bx_campSlot','bx_autoset','bx_acctBlock','bx_budgetBlock','bx_campnameWrap','bx_hint','bx_check','bx_actions','bx_out'];
   order.forEach(function(id){ var el=document.getElementById(id); if(el)card.appendChild(el); });
+  steps.forEach(function(id){ var el=document.getElementById(id); if(el)el.style.display=(m==='set')?'':'none'; });   // 스텝 헤더는 ⓑ에서만
 }
 function bxSetMode(m){
   if(m==='both')m='set';   // ⓒ 제거 — 호환용
