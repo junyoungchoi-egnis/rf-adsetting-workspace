@@ -312,6 +312,10 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
             <div class="field" id="bx_campnameWrap"><label>✏️ 캠페인명 <span class="opt">규칙 자동 · 직접 수정 가능</span></label><input id="bx_campnameInput" class="t-mono" oninput="bxCheckClear()" placeholder="FB_..."></div>
             <div id="bx_audCore">
               <div class="field"><label>전환 픽셀 <span class="opt">계정 기본 자동 선택 · 변경 가능</span></label><select id="bx_pixel" onchange="bxCheckClear()"></select></div>
+              <div class="grid g2">
+                <div class="field"><label>전환 목표 <span class="opt">최적화할 전환 이벤트</span></label><select id="bx_convevent" onchange="bxRenderAutoset();bxCheckClear()"><option value="PURCHASE">구매</option><option value="ADD_TO_CART">장바구니 담기</option><option value="INITIATE_CHECKOUT">결제 시작</option><option value="ADD_PAYMENT_INFO">결제 정보 추가</option><option value="COMPLETE_REGISTRATION">가입 완료</option><option value="LEAD">리드</option><option value="CONTENT_VIEW">콘텐츠 조회</option></select></div>
+                <div class="field"><label>기여 기간 <span class="opt">클릭/조회/참여 창</span></label><select id="bx_attr" onchange="bxRenderAutoset();bxCheckClear()"><option value="1d_view_7d_click_1d_ev">클릭 7일 · 조회 1일 · 참여 1일</option><option value="1d_view_7d_click">클릭 7일 · 조회 1일</option><option value="7d_click">클릭 7일</option><option value="1d_view_1d_click">클릭 1일 · 조회 1일</option><option value="1d_click">클릭 1일</option></select></div>
+              </div>
               <div class="grid g3">
                 <div class="field"><label>연령 최소</label><input id="bx_agemin" type="number" value="18" min="13" max="65" oninput="bxCheckClear()"></div>
                 <div class="field"><label>연령 최대</label><input id="bx_agemax" type="number" value="65" min="13" max="65" oninput="bxCheckClear()"></div>
@@ -1306,6 +1310,14 @@ var BX_PIXEL={
   '3342733785912061':{id:'562093002202082',name:'cloop.1 - Meta 픽셀'},   // 스프린트 (클룹몰 픽셀 사용)
   '539103343188615':{id:'562093002202082',name:'cloop.1 - Meta 픽셀'}      // 테스트(클룹 프로모션)
 };
+// 기여 기간 프리셋(전환/가치 목표에 적용). 메타 attribution_spec 조합.
+var BX_ATTR={
+  '1d_view_7d_click_1d_ev':[{event_type:'CLICK_THROUGH',window_days:7},{event_type:'VIEW_THROUGH',window_days:1},{event_type:'ENGAGED_VIDEO_VIEW',window_days:1}],
+  '1d_view_7d_click':[{event_type:'CLICK_THROUGH',window_days:7},{event_type:'VIEW_THROUGH',window_days:1}],
+  '7d_click':[{event_type:'CLICK_THROUGH',window_days:7}],
+  '1d_view_1d_click':[{event_type:'CLICK_THROUGH',window_days:1},{event_type:'VIEW_THROUGH',window_days:1}],
+  '1d_click':[{event_type:'CLICK_THROUGH',window_days:1}]
+};
 var bxMode='camp';
 var bxMadeCampaigns=[]; // 이 세션에서 ⓐ로 생성한 캠페인 {id,name,ctx}
 var bxCampLive=[];      // 계정에서 불러온 실제 캠페인 캐시 [{id,name,active}]
@@ -1424,8 +1436,11 @@ function bxRenderAutoset(){
   var as=$('bx_autoset'); if(!as)return;
   if(!lastGen||!lastGen.goal){ as.innerHTML='제품·목표·입찰 등 기본 정보를 채우면 자동 세팅이 표시됩니다'; return; }
   var _obj=META_OBJECTIVE[lastGen.goal]||'OUTCOME_SALES'; var _bidm=META_BID[lastGen.bid]||META_BID.CMX;
-  var _og=_bidm.optimization_goal; var _attr=(_og==='OFFSITE_CONVERSIONS'||_og==='VALUE')?' · 기여 <b style="color:var(--text2)">클릭 7일·조회 1일·참여 1일</b>':'';
-  as.innerHTML='이름 기반 자동 세팅 — 목표 <b style="color:var(--text2)">'+esc(goalKr(lastGen.goal))+' ('+_obj+')</b> · 최적화 <b style="color:var(--text2)">'+esc(bxOptLabel(_og))+'</b> · 입찰 <b style="color:var(--text2)">최저비용(자동)</b>'+_attr+' · 일정 세트 날짜(00:00 KST)';
+  var _og=_bidm.optimization_goal;
+  var _ev=((($('bx_convevent')||{}).selectedOptions||[])[0]||{}).textContent||'구매';
+  var _at=((($('bx_attr')||{}).selectedOptions||[])[0]||{}).textContent||'클릭 7일 · 조회 1일 · 참여 1일';
+  var _conv=(_og==='OFFSITE_CONVERSIONS'||_og==='VALUE')?(' · 전환 목표 <b style="color:var(--text2)">'+esc(_ev)+'</b> · 기여 <b style="color:var(--text2)">'+esc(_at)+'</b>'):'';
+  as.innerHTML='이름 기반 자동 세팅 — 목표 <b style="color:var(--text2)">'+esc(goalKr(lastGen.goal))+' ('+_obj+')</b> · 최적화 <b style="color:var(--text2)">'+esc(bxOptLabel(_og))+'</b> · 입찰 <b style="color:var(--text2)">최저비용(자동)</b>'+_conv+' · 일정 세트 날짜(00:00 KST)';
 }
 async function bxFillPixels(force){
   var sel=$('bx_pixel'); if(!sel)return;
@@ -1505,9 +1520,12 @@ function bxPayload(apply){
     var autopl=(($('bx_autopl')||{}).checked)!==false;
     var placements=autopl?{mode:'auto'}:{mode:'manual',publisher_platforms:['facebook','instagram']};
     var pxSel=(($('bx_pixel')||{}).value)||''; var px=pxSel||((BX_PIXEL[act]||{}).id||'');
+    var ce=(($('bx_convevent')||{}).value)||'PURCHASE';                              // 전환 목표(이벤트)
+    var attrKey=(($('bx_attr')||{}).value)||'1d_view_7d_click_1d_ev';
+    var attrSpec=BX_ATTR[attrKey]||BX_ATTR['1d_view_7d_click_1d_ev'];                 // 기여 기간
     return sets.map(function(s){
       var bidm=META_BID[s.bid]||META_BID.CMX;
-      var o={name:bxSetName(s.name),targeting:targeting,budgetMode:mode,optimizationGoal:bidm.optimization_goal,bidStrategy:bidm.bid_strategy,advantageAudience:adv,placements:placements};
+      var o={name:bxSetName(s.name),targeting:targeting,budgetMode:mode,optimizationGoal:bidm.optimization_goal,bidStrategy:bidm.bid_strategy,advantageAudience:adv,placements:placements,customEventType:ce,attributionSpec:attrSpec};
       if(px)o.pixelId=px;   // 선택 픽셀(기본=계정 매핑, 변경 가능)
       if(mode==='ABO')o.dailyBudget=budget; return o;
     });
