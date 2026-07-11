@@ -4153,7 +4153,7 @@ main.main:has(#page-build.active) .two-col > div:last-child > .panel{position:st
         j.searchedAds.forEach(function(a){ if(!a.cid)return; if(buf.some(function(x){return x.cid===a.cid;}))return; buf.push({cid:a.cid, name:a.name||a.cid, _searched:true, _status:a.status||''}); });
         try{ if(typeof msRenderSrc==='function')msRenderSrc(); }catch(e){}   // 목록만 갱신 — 자동 선택 안 함(체크한 소재만 복제됨)
         if(typeof toast==='function')toast(j.searchedAds.length?('메타에서 '+j.searchedAds.length+'개 찾음(중지 포함) · 체크해서 선택하세요'):'매칭 소재 없음');
-      } else { if(typeof toast==='function')toast('검색 실패: '+((j&&j.error)||'서버 확인')); }
+      } else { var _em=String((j&&j.error)||'서버 확인'); if(typeof toast==='function')toast(/너무 많은 요청|요청 한도|request limit|rate limit|reduce the amount|too many calls|\(#?17\)/i.test(_em)?'⏳ 메타 요청이 잠시 몰렸어요. 1~2분 뒤 다시 시도해 주세요. (오류 아님)':('검색 실패: '+_em)); }
     }catch(e){ if(typeof toast==='function')toast('검색 중 오류'); }
     if(btn){ btn.disabled=false; btn.textContent='🔎 메타에서 검색'; }
   }
