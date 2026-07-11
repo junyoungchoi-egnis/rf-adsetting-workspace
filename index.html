@@ -2356,7 +2356,10 @@ function mcGaps(s){
 /* 라이브(메타) 캠페인·광고세트 목록 — 현재 영역 기준 */
 function mcLiveCampaigns(){
   const ad=metaSnap&&metaSnap.adsets?(Array.isArray(metaSnap.adsets)?metaSnap.adsets:Object.values(metaSnap.adsets)):[];
-  const m={}; ad.forEach(a=>{ if(!a.campaignId)return; const c=parseLiveSet(a); if(c&&M().products.find(p=>p.code===c.product)&&areaOf(c.product)===areaScope){ if(!m[a.campaignId])m[a.campaignId]={id:a.campaignId,name:a.campaignName||a.campaignId,active:false}; if(String(a.campaignStatus||'').toUpperCase()==='ACTIVE')m[a.campaignId].active=true; } });
+  var sel=''; try{ sel=(typeof mcdTargetAccount==='function')?String(mcdTargetAccount()||'').replace(/^act_/,''):''; }catch(e){}
+  const m={}; ad.forEach(a=>{ if(!a.campaignId)return; const c=parseLiveSet(a); if(!c||!M().products.find(p=>p.code===c.product))return;
+    if(sel){ if(String(a.account||'').replace(/^act_/,'')!==sel)return; } else { if(areaOf(c.product)!==areaScope)return; }   // 선택 계정 기준(교차집행 지원)·미선택 시 스코프 폴백
+    if(!m[a.campaignId])m[a.campaignId]={id:a.campaignId,name:a.campaignName||a.campaignId,active:false}; if(String(a.campaignStatus||'').toUpperCase()==='ACTIVE')m[a.campaignId].active=true; });
   return Object.values(m);
 }
 function mcLiveAdsets(){
@@ -2394,7 +2397,8 @@ function renderBuildAdsetSelects(){
 /* ── Tab3 소재 세팅(③) ── */
 function mcLiveAdsetsOf(campId){
   const ad=metaSnap&&metaSnap.adsets?(Array.isArray(metaSnap.adsets)?metaSnap.adsets:Object.values(metaSnap.adsets)):[];
-  return ad.filter(a=>a.adsetId && (!campId||a.campaignId===campId)).filter(a=>{const c=parseLiveSet(a);return c&&M().products.find(p=>p.code===c.product)&&areaOf(c.product)===areaScope;}).map(a=>({id:a.adsetId,name:a.adsetName||a.adsetId,active:String(a.adsetStatus||'').toUpperCase()==='ACTIVE'}));
+  var sel=''; try{ sel=(typeof mcdTargetAccount==='function')?String(mcdTargetAccount()||'').replace(/^act_/,''):''; }catch(e){}
+  return ad.filter(a=>a.adsetId && (!campId||a.campaignId===campId)).filter(a=>{const c=parseLiveSet(a); if(!c||!M().products.find(p=>p.code===c.product))return false; return sel?(String(a.account||'').replace(/^act_/,'')===sel):(areaOf(c.product)===areaScope);}).map(a=>({id:a.adsetId,name:a.adsetName||a.adsetId,active:String(a.adsetStatus||'').toUpperCase()==='ACTIVE'}));
 }
 function mcdRenderCamps(){
   if(!document.getElementById('mcd_camp'))return;
