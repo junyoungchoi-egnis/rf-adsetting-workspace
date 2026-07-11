@@ -284,10 +284,10 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
 
           <div class="panel" id="bx_CPanel">
             <div class="panel-h"><span class="step">C</span>타겟 컨셉 (구 TAM) <span class="hint">콘텐츠마케터 영역 · 여러 개 선택 가능</span></div>
-            <div class="chips" id="b_tamChips" style="margin-bottom:9px"></div>
-            <div class="row-flex">
-              <input id="b_newTam" placeholder="신규 타겟 컨셉 추가 (예: BENEFIT)" style="max-width:220px" onkeydown="if(event.key==='Enter')addTam()">
-              <button class="btn btn-ghost btn-sm" onclick="addTam()">+ 추가</button>
+            <div class="chips" id="b_tamSel" style="margin-bottom:8px"></div>
+            <div class="n5cb" style="position:relative">
+              <input class="n5cb-inp" id="b_tamQ" autocomplete="off" placeholder="🔎 목록에서 선택하거나 검색 · 직접 추가" onfocus="tamOpen()" oninput="tamOpen()" onkeydown="tamKey(event)">
+              <div class="n5cb-list" id="b_tamList" style="display:none"></div>
             </div>
           </div>
       </div>
@@ -1185,8 +1185,46 @@ function composeTargeting(){
   return code;
 }
 function renderBuilderChips(){ renderTokenComposer(); renderAddedTargets();
-  $('b_tamChips').innerHTML=M().tams.map(t=>`<span class="chip ${bTams.has(t.code)?'on':''}" title="${esc(t.code)}" onclick="bSetTam('${esc(t.code)}')">${esc(t.kr||t.code)}${t.kr?` <span style="color:var(--text3);font-size:10px">${esc(t.code)}</span>`:''}</span>`).join('');
+  if($('b_tamSel'))tamRenderSel();   // 타겟 컨셉: 선택칩 + 검색 콤보박스(tamOpen)
+  else if($('b_tamChips'))$('b_tamChips').innerHTML=M().tams.map(t=>`<span class="chip ${bTams.has(t.code)?'on':''}" title="${esc(t.code)}" onclick="bSetTam('${esc(t.code)}')">${esc(t.kr||t.code)}${t.kr?` <span style="color:var(--text3);font-size:10px">${esc(t.code)}</span>`:''}</span>`).join('');
 }
+/* 타겟 컨셉 다중선택 콤보박스 (소재 세팅 메시지창 n5cb 패턴 응용: 열람+검색+직접추가) */
+function tamRenderSel(){
+  var wrap=$('b_tamSel'); if(!wrap)return; var arr=[...bTams];
+  wrap.innerHTML=arr.length?arr.map(function(c){ return '<span class="chip on" style="cursor:default">'+esc(tamKr(c)||c)+' <span style="color:var(--text3);font-size:9.5px">'+esc(c)+'</span> <span onclick="tamRemove(\''+esc(c)+'\')" style="cursor:pointer;color:var(--accent2);margin-left:2px">✕</span></span>'; }).join(''):'<span style="color:var(--text3);font-size:11.5px">아래에서 타겟 컨셉을 골라 추가하세요</span>';
+}
+function tamRemove(c){ bTams.delete(c); tamRenderSel(); buildPreview(); }
+function tamOpen(){
+  var qEl=$('b_tamQ'), list=$('b_tamList'); if(!qEl||!list)return;
+  var _all=document.querySelectorAll('.n5cb-list'); [].forEach.call(_all,function(l){ if(l!==list)l.style.display='none'; });
+  var q=(qEl.value||'').trim(), ql=q.toLowerCase();
+  var data=M().tams.slice();
+  var matches=ql?data.filter(function(o){ return (String(o.code||'')+' '+String(o.kr||'')).toLowerCase().indexOf(ql)>=0; }):data;
+  var html='<div class="row none" style="cursor:default;color:var(--text3);font-size:10px;padding:5px 9px 4px">전체 타겟 컨셉 — 클릭해서 추가 (✓ 선택됨)</div>';
+  html+=matches.map(function(o){ var on=bTams.has(o.code); return '<div class="row" data-code="'+esc(o.code)+'" onmousedown="tamPick(event,\''+esc(o.code)+'\',0)"><span style="width:13px;flex:none;color:var(--accent2)">'+(on?'✓':'')+'</span><span class="c">'+esc(o.code)+'</span>'+(o.kr?'<span class="k">'+esc(o.kr)+'</span>':'')+'</div>'; }).join('');
+  var exact=data.some(function(o){ return String(o.code||'').toLowerCase()===ql; });
+  if(q && !exact && /^[A-Za-z0-9_.-]+$/.test(q)) html+='<div class="row add" data-code="'+esc(q.toUpperCase())+'" data-add="1" onmousedown="tamPick(event,\''+esc(q.toUpperCase())+'\',1)">＋ \''+esc(q)+'\' 새 타겟 컨셉으로 추가</div>';
+  if(!matches.length && !(q && /^[A-Za-z0-9_.-]+$/.test(q))) html+='<div class="row none" style="cursor:default;color:var(--text3);padding:7px 10px">검색 결과 없음</div>';
+  list.innerHTML=html; list.__hi=-1;
+  var r=qEl.getBoundingClientRect(); list.style.left=r.left+'px'; list.style.top=(r.bottom+2)+'px'; list.style.width=r.width+'px'; list.style.display='';
+}
+function tamPick(ev,code,isAdd){ if(ev&&ev.preventDefault)ev.preventDefault(); if(!code)return;
+  if(isAdd){ if(!M().tams.some(function(t){return String(t.code).toLowerCase()===String(code).toLowerCase();})){ M().tams.push({code:code,kr:''}); if(typeof save==='function')save(); } }
+  if(bTams.has(code))bTams.delete(code); else bTams.add(code);   // 토글(재클릭 시 해제)
+  var q=$('b_tamQ'); if(q)q.value='';
+  tamRenderSel(); buildPreview(); tamOpen();   // 열린 채 갱신(다중 추가)
+}
+function tamKey(ev){ var list=$('b_tamList'); if(!list)return;
+  if(list.style.display==='none'){ if(ev.key==='ArrowDown')tamOpen(); return; }
+  var rows=[].slice.call(list.querySelectorAll('.row[data-code]')); if(!rows.length)return;
+  if(ev.key==='ArrowDown'){ ev.preventDefault(); list.__hi=Math.min((list.__hi==null?-1:list.__hi)+1,rows.length-1); }
+  else if(ev.key==='ArrowUp'){ ev.preventDefault(); list.__hi=Math.max((list.__hi==null?0:list.__hi)-1,0); }
+  else if(ev.key==='Enter'){ ev.preventDefault(); var idx=list.__hi; if(idx==null||idx<0)idx=0; var rr=rows[idx]; if(rr)tamPick(ev,rr.getAttribute('data-code'),rr.getAttribute('data-add')==='1'?1:0); return; }
+  else if(ev.key==='Escape'){ list.style.display='none'; return; }
+  else return;
+  rows.forEach(function(r,i){ r.classList.toggle('hi',i===list.__hi); }); var hr=rows[list.__hi]; if(hr&&hr.scrollIntoView)hr.scrollIntoView({block:'nearest'});
+}
+window.tamOpen=tamOpen; window.tamPick=tamPick; window.tamKey=tamKey; window.tamRemove=tamRemove;
 function renderTokenComposer(){
   const groups={};
   TARGET_TOKENS.forEach(t=>{(groups[t.cat]=groups[t.cat]||[]).push(t);});
