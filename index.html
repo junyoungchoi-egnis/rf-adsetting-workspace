@@ -2870,7 +2870,7 @@ async function ucCreate(btn){
   function $(id){ return document.getElementById(id); }
   function curSet(){
     var ad=$('mcd_adset'); if(!ad) return null;
-    var nm=(((ad.options[ad.selectedIndex]||{}).textContent)||'').trim();
+    var nm=(((ad.options[ad.selectedIndex]||{}).textContent)||'').replace(/\s*·\s*비활성\s*$/,'').trim();   // 표시용 '· 비활성'은 이름에서 제외
     if(!nm) return null;
     var id=ad.value||''; var camp=(($('mcd_camp')||{}).value)||'';
     try{ return (typeof parseLiveSet==='function')?parseLiveSet({adsetName:nm,adsetId:id,campaignId:camp}):null; }catch(e){ return null; }
