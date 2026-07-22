@@ -314,7 +314,9 @@ module.exports = async function (req, res) {
       if (spec && (spec.link_data || spec.video_data)) {
         // 인라인 소재 → object_story_spec 재구성 + 링크 UTM 교정
         clean = cleanFromSource(spec, utmCampaign, utmContent);
-        newTags = fixUtm(cr.url_tags || '', utmCampaign, utmContent);
+        // 원본 url_tags가 비었거나 utm_campaign/content가 없으면 fixUtm이 그대로 반환 → UTM 미주입 버그.
+        // SHARE 경로(아래)와 동일하게 폴백으로 utm_campaign·utm_content를 보장.
+        newTags = fixUtm(cr.url_tags || '', utmCampaign, utmContent) || ('utm_campaign=' + enc(utmCampaign) + '&utm_content=' + enc(utmContent));
       } else {
         // 인라인 소재 아님(object_type=SHARE 등, 예: 기존 게시물을 그대로 홍보한 광고) →
         // 기존 게시물(object_story_id)을 그대로 참조해 복제(같은 게시물, 새 광고). UTM은 url_tags로 주입.
