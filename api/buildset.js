@@ -128,10 +128,10 @@ module.exports = async function (req, res) {
     if (b.listCampaigns === true) {
       if (!act) return res.status(400).json({ ok: false, error: '광고 계정(act)이 필요합니다' });
       try {
-        const cj = await fetch(GRAPH + '/act_' + act + '/campaigns?fields=id,name,effective_status&limit=300&access_token=' + enc(token)).then(function (r) { return r.json(); });
+        const cj = await fetch(GRAPH + '/act_' + act + '/campaigns?fields=id,name,effective_status,objective&limit=300&access_token=' + enc(token)).then(function (r) { return r.json(); });
         const out = ((cj && cj.data) || []).map(function (c) {
           const st = String(c.effective_status || '').toUpperCase();
-          return { id: String(c.id), name: c.name || String(c.id), status: st, active: st === 'ACTIVE' };
+          return { id: String(c.id), name: c.name || String(c.id), status: st, active: st === 'ACTIVE', objective: String(c.objective || '') };
         });
         return res.status(200).json({ ok: true, campaigns: out });
       } catch (e) { return res.status(200).json({ ok: false, error: String((e && e.message) || e) }); }
@@ -222,7 +222,12 @@ module.exports = async function (req, res) {
       if (NEEDS_PIXEL[optGoal]) {
         const _pix = a.pixelId || autoPixel;
         if (!_pix) { gaps.push('[' + (nm || ('세트' + (i + 1))) + '] 이 계정에 전환 픽셀이 없습니다 — 픽셀을 먼저 설치하세요'); }
-        else { p.promoted_object = { pixel_id: String(_pix), custom_event_type: a.customEventType || 'PURCHASE' }; if (a.pageId) p.promoted_object.page_id = String(a.pageId); }
+        else {
+          p.promoted_object = { pixel_id: String(_pix) };
+          // custom_event_type 은 전환 최적화(구매/가치)에서만. LANDING_PAGE_VIEWS(트래픽)엔 붙이지 않음.
+          if (optGoal === 'OFFSITE_CONVERSIONS' || optGoal === 'VALUE') p.promoted_object.custom_event_type = a.customEventType || 'PURCHASE';
+          if (a.pageId) p.promoted_object.page_id = String(a.pageId);
+        }
       } else if (a.pageId) {
         p.promoted_object = { page_id: String(a.pageId) };
       }
