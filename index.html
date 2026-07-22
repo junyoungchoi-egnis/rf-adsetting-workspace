@@ -1956,8 +1956,13 @@ function cloneCreativeParts(src){
   var t=nm.split('_');
   var date=(/^\d{6}$/.test(t[0]))?t[0]:yymmddToday();
   var fmt=(/^[A-Z]{1,3}$/.test(t[3]||''))?t[3]:'I';
-  var core=nm.replace(/[^0-9A-Za-z-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||'CLONE';   // 소스명 요약(추적용, _→-)
   var mgr=(/^[a-z]{2,4}$/.test(t[t.length-1]||''))?t[t.length-1]:'';
+  // concept(msg): 소스명에서 앞쪽 접두(날짜_매체_제품_포맷)와 끝 담당자를 떼고 '컨셉'만 남긴다.
+  // buildCreativeName이 접두(날짜_매체_제품_포맷)를 다시 붙이므로, 안 떼면 260618_FB_CLCL_V 가 두 번 들어감.
+  var rest=t.slice();
+  if(/^\d{6}$/.test(t[0]) && /^[A-Za-z]{2,3}$/.test(t[1]||'') && /^[A-Z]{1,3}$/.test(t[3]||'')) rest=rest.slice(4);   // 표준 접두면 4토큰 제거
+  if(mgr && rest.length && rest[rest.length-1]===mgr) rest=rest.slice(0,-1);                                          // 끝 담당자 제거
+  var core=rest.join('_').replace(/[^0-9A-Za-z-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40).replace(/-+$/,'')||'CLONE';  // 컨셉 요약(추적용, _→-)
   return {fmt:fmt, msg:core, soje:'NA', date:date, manager:mgr, _nonstd:true};
 }
 let cloneSrcMode='archive';
