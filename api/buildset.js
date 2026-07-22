@@ -128,10 +128,10 @@ module.exports = async function (req, res) {
     if (b.listCampaigns === true) {
       if (!act) return res.status(400).json({ ok: false, error: '광고 계정(act)이 필요합니다' });
       try {
-        const cj = await fetch(GRAPH + '/act_' + act + '/campaigns?fields=id,name,effective_status&limit=300&access_token=' + enc(token)).then(function (r) { return r.json(); });
+        const cj = await fetch(GRAPH + '/act_' + act + '/campaigns?fields=id,name,effective_status,objective&limit=300&access_token=' + enc(token)).then(function (r) { return r.json(); });
         const out = ((cj && cj.data) || []).map(function (c) {
           const st = String(c.effective_status || '').toUpperCase();
-          return { id: String(c.id), name: c.name || String(c.id), status: st, active: st === 'ACTIVE' };
+          return { id: String(c.id), name: c.name || String(c.id), status: st, active: st === 'ACTIVE', objective: String(c.objective || '') };
         });
         return res.status(200).json({ ok: true, campaigns: out });
       } catch (e) { return res.status(200).json({ ok: false, error: String((e && e.message) || e) }); }

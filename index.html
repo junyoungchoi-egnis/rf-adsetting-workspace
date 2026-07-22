@@ -1380,7 +1380,21 @@ var BX_ATTR={
 };
 var bxMode='camp';
 var bxMadeCampaigns=[]; // 이 세션에서 ⓐ로 생성한 캠페인 {id,name,ctx}
-var bxCampLive=[];      // 계정에서 불러온 실제 캠페인 캐시 [{id,name,active}]
+var bxCampLive=[];      // 계정에서 불러온 실제 캠페인 캐시 [{id,name,active,objective}]
+var bxObjOverride='';   // 선택한 라이브 캠페인의 메타 실제 목표(이름 추측보다 우선)
+const BX_OBJ_KR={OUTCOME_SALES:'판매',OUTCOME_TRAFFIC:'트래픽',OUTCOME_ENGAGEMENT:'참여',OUTCOME_LEADS:'잠재 고객',OUTCOME_AWARENESS:'인지도',OUTCOME_APP_PROMOTION:'앱 홍보'};
+// 레거시(ODAX 이전) 목표 → 현행 버킷으로 정규화. 이미 OUTCOME_* 면 그대로.
+function bxNormObjective(obj){
+  obj=String(obj||'').toUpperCase();
+  if(obj.indexOf('OUTCOME_')===0) return obj;
+  var L={ BRAND_AWARENESS:'OUTCOME_AWARENESS', REACH:'OUTCOME_AWARENESS', STORE_VISITS:'OUTCOME_AWARENESS',
+    LINK_CLICKS:'OUTCOME_TRAFFIC',
+    POST_ENGAGEMENT:'OUTCOME_ENGAGEMENT', PAGE_LIKES:'OUTCOME_ENGAGEMENT', EVENT_RESPONSES:'OUTCOME_ENGAGEMENT', VIDEO_VIEWS:'OUTCOME_ENGAGEMENT', MESSAGES:'OUTCOME_ENGAGEMENT',
+    LEAD_GENERATION:'OUTCOME_LEADS',
+    CONVERSIONS:'OUTCOME_SALES', PRODUCT_CATALOG_SALES:'OUTCOME_SALES',
+    APP_INSTALLS:'OUTCOME_APP_PROMOTION' };
+  return L[obj]||'OUTCOME_SALES';
+}
 var bxLastPicked='';    // 마지막으로 상속 적용한 대상 캠페인 id(중복 적용 방지)
 var bxPendingPick=null;  // ⓐ 직후 ⓑ 진입 시 자동 선택할 캠페인 id(1회성 핸드오프)
 function bxGenLabel(){ return bxMode==='camp'?'⚡ 캠페인 생성 (PAUSED)':(bxMode==='set'?'⚡ 세트 생성 (PAUSED)':'⚡ 캠페인·세트 생성 (PAUSED)'); }
@@ -1463,8 +1477,14 @@ function bxOnPickCamp(){
   var sel=$('bx_pickCamp'); if(!sel){bxCheckClear();return;} var cid=sel.value; bxLastPicked=cid;
   var bo=$('b_bidopt'); if(bo)bo.value='';   // ⓑ는 대상 캠페인 기반 — ⓐ 패널 잔여값(bidopt=TCPA 등) 세트명 누출 방지
   var made=null; for(var i=0;i<bxMadeCampaigns.length;i++){ if(String(bxMadeCampaigns[i].id)===String(cid)){made=bxMadeCampaigns[i];break;} }
-  if(made&&made.ctx) bxApplyA(made.ctx);            // 방금 만든 캠페인 → 기본정보 상속
-  else bxTryParseCtx((sel.selectedOptions&&sel.selectedOptions[0])?sel.selectedOptions[0].textContent:'');  // 라이브 → 이름에서 추정
+  bxObjOverride='';                                  // 재선택마다 초기화
+  if(made&&made.ctx) bxApplyA(made.ctx);            // 방금 만든 캠페인 → 기본정보 상속(목표는 ctx.goal 사용)
+  else {
+    bxTryParseCtx((sel.selectedOptions&&sel.selectedOptions[0])?sel.selectedOptions[0].textContent:'');  // 라이브 → 이름에서 제품/입찰 등 추정
+    var lc=null; for(var k=0;k<bxCampLive.length;k++){ if(String(bxCampLive[k].id)===String(cid)){lc=bxCampLive[k];break;} }
+    if(lc&&lc.objective) bxObjOverride=bxNormObjective(lc.objective);   // 목표는 메타 실제 objective를 그대로(레거시 정규화)
+  }
+  bxRefreshLive();                                   // override 반영해 성과목표/자동세팅 갱신
   bxCheckClear();
 }
 function bxInit(){
@@ -1494,14 +1514,17 @@ function bxRefreshLive(){   // 빌더 변경 시마다 캠페인명·세트목�
 }
 function bxRenderAutoset(){
   var as=$('bx_autoset'); if(!as)return;
-  if(!lastGen||!lastGen.goal){ as.innerHTML='제품·목표·입찰 등 기본 정보를 채우면 자동 세팅이 표시됩니다'; return; }
   var _obj=bxObjOf();
+  if(!lastGen||!lastGen.goal){
+    as.innerHTML=bxObjOverride ? ('대상 캠페인 목표 <b style="color:var(--text2)">'+esc(BX_OBJ_KR[_obj]||_obj)+'</b> 기준으로 성과목표가 설정됩니다') : '제품·목표·입찰 등 기본 정보를 채우면 자동 세팅이 표시됩니다';
+    return;
+  }
   var _og=bxCurOptGoal();
   var _isConvGoal=(_og==='OFFSITE_CONVERSIONS'||_og==='VALUE');
   var _ev=((($('bx_convevent')||{}).selectedOptions||[])[0]||{}).textContent||'구매';
   var _at=((($('bx_attr')||{}).selectedOptions||[])[0]||{}).textContent||'클릭 7일 · 조회 1일 · 참여 1일';
   var _conv=_isConvGoal?(' · 전환 목표 <b style="color:var(--text2)">'+esc(_ev)+'</b> · 기여 <b style="color:var(--text2)">'+esc(_at)+'</b>'):'';
-  as.innerHTML='이름 기반 자동 세팅 — 목표 <b style="color:var(--text2)">'+esc(goalKr(lastGen.goal))+' ('+_obj+')</b> · 최적화 <b style="color:var(--text2)">'+esc(bxOptLabel(_og))+'</b> · 입찰 <b style="color:var(--text2)">최저비용(자동)</b>'+_conv+' · 일정 세트 날짜(00:00 KST)';
+  as.innerHTML='대상 캠페인 기반 자동 세팅 — 목표 <b style="color:var(--text2)">'+esc(BX_OBJ_KR[_obj]||goalKr(lastGen.goal))+' ('+_obj+')</b> · 최적화 <b style="color:var(--text2)">'+esc(bxOptLabel(_og))+'</b> · 입찰 <b style="color:var(--text2)">최저비용(자동)</b>'+_conv+' · 일정 세트 날짜(00:00 KST)';
 }
 async function bxFillPixels(force){
   var sel=$('bx_pixel'); if(!sel)return;
@@ -1562,7 +1585,7 @@ async function bxFillCampaigns(){
   try{
     var r=await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({listCampaigns:true,act:act})});
     var j=await r.json();
-    if(j&&j.ok&&Array.isArray(j.campaigns)){ bxCampLive=j.campaigns; bxRenderCampOptions(); if(lbl)lbl.textContent='· 계정 캠페인 '+j.campaigns.length+'개'; }
+    if(j&&j.ok&&Array.isArray(j.campaigns)){ bxCampLive=j.campaigns; bxLastPicked=''; bxRenderCampOptions(); if(lbl)lbl.textContent='· 계정 캠페인 '+j.campaigns.length+'개'; }  // bxLastPicked 리셋 → 현재 선택도 실제 objective로 재감지
     else if(lbl)lbl.textContent='';
   }catch(e){ if(lbl)lbl.textContent=''; }
 }
@@ -2313,7 +2336,7 @@ const BX_OPTGOALS={
   OUTCOME_LEADS:[['OFFSITE_CONVERSIONS','전환(리드) 수 극대화'],['LANDING_PAGE_VIEWS','랜딩 페이지 조회수 극대화'],['LINK_CLICKS','링크 클릭수 극대화']],
   OUTCOME_AWARENESS:[['REACH','도달 극대화'],['IMPRESSIONS','노출수 극대화'],['THRUPLAY','동영상 조회(ThruPlay) 극대화'],['AD_RECALL_LIFT','광고 상기도 증대 극대화']]
 };
-function bxObjOf(){ return (lastGen&&META_OBJECTIVE[lastGen.goal])||'OUTCOME_SALES'; }
+function bxObjOf(){ return bxObjOverride||(lastGen&&META_OBJECTIVE[lastGen.goal])||'OUTCOME_SALES'; }
 function bxAutoEvent(obj){ return obj==='OUTCOME_LEADS'?'LEAD':'PURCHASE'; }
 // 현재 성과목표: 판매=입찰유형 기반, 그 외=선택한 성과목표
 function bxCurOptGoal(){
