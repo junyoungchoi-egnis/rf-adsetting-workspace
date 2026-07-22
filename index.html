@@ -70,6 +70,10 @@ label{display:block;font-size:11.5px;font-weight:600;color:var(--text2);margin-b
 input,select,textarea{background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 11px;font-size:13px;width:100%;outline:none;transition:border-color .15s;font-family:inherit}
 input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 input::placeholder{color:var(--text3)}
+/* 날짜/시간 선택기: 다크 테마 인식(흰 달력 아이콘 + 다크 팝업) */
+input[type="datetime-local"],input[type="date"],input[type="time"]{color-scheme:dark}
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,input[type="date"]::-webkit-calendar-picker-indicator,input[type="time"]::-webkit-calendar-picker-indicator{opacity:.75;cursor:pointer;transition:opacity .15s}
+input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator,input[type="datetime-local"]:focus::-webkit-calendar-picker-indicator{opacity:1}
 select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239aa2c8' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
 .field{margin-bottom:13px}
 .grid{display:grid;gap:12px}
@@ -317,8 +321,8 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
               <div class="field"><label>예산 방식</label><select id="bx_budgetmode" onchange="bxToggle();bxCheckClear()"><option value="ABO">ABO · 세트별 예산</option><option value="CBO">CBO · 캠페인 예산</option></select></div>
               <div class="field" id="bx_budgetField"><label id="bx_budgetlbl">세트 일 예산 (원)</label><input id="bx_budget" type="number" placeholder="예: 30000" oninput="bxCheckClear()"></div>
             </div>
-            <div id="bx_schedBlock" style="display:none;margin-top:12px">
-              <div style="font-size:11px;color:var(--text2);font-weight:600;margin:0 0 7px">⏰ 일정 <span class="opt">선택 · 비우면 시작=즉시 / 종료=무기한 · 계정 시간대 KST</span></div>
+            <div id="bx_schedBlock" style="display:none;margin-top:12px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.02);padding:12px 13px">
+              <div style="font-size:11.5px;color:var(--text2);font-weight:700;margin:0 0 9px">⏰ 일정 <span class="opt" style="font-weight:400">선택 · 비우면 시작=즉시 / 종료=무기한 · 계정 시간대 KST</span></div>
               <div class="grid g2">
                 <div class="field"><label>시작 일시 <span class="opt">미설정=즉시</span></label><input id="bx_startdt" type="datetime-local" oninput="bxSchedCheck();bxRenderAutoset();bxCheckClear()"></div>
                 <div class="field"><label>종료 일시 <span class="opt">미설정=무기한</span></label><input id="bx_enddt" type="datetime-local" oninput="bxSchedCheck();bxRenderAutoset();bxCheckClear()"></div>
