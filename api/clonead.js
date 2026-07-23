@@ -427,6 +427,9 @@ module.exports = async function (req, res) {
         ? b.creativeFeatures
         : { product_extensions: { enroll_status: 'OPT_OUT' } };
       cpayload.degrees_of_freedom_spec = { creative_features_spec: _cfs };
+      // "여러 광고주의 광고"(multi-advertiser ads): 2024-08-19 이후 미지정 시 자동 OPT_IN → 기본 OPT_OUT(해제).
+      // 최상위 크리에이티브 필드. b.multiAdvertiserOptIn===true 면 켤 수 있게(향후 토글 대비).
+      cpayload.contextual_multi_ads = { enroll_status: (b.multiAdvertiserOptIn === true ? 'OPT_IN' : 'OPT_OUT') };
     }
     let created;
     {
