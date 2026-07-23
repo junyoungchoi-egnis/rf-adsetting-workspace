@@ -218,6 +218,7 @@ module.exports = async function (req, res) {
         status: 'PAUSED'
       };
       if (a.startTime) p.start_time = a.startTime;
+      if (a.endTime) p.end_time = a.endTime;
       // 전환/픽셀 필요 목표
       if (NEEDS_PIXEL[optGoal]) {
         const _pix = a.pixelId || autoPixel;
