@@ -137,6 +137,26 @@ module.exports = async function (req, res) {
       } catch (e) { return res.status(200).json({ ok: false, error: String((e && e.message) || e) }); }
     }
 
+    // 광고세트 목록 라이브 직조회: { listAdsets:true, act, campaignId? } → 동기화 스냅샷 대기 없이 메타 직조회
+    // (새로 만든 세트가 복제 대상 목록에 안 뜰 때 즉시 당겨오기)
+    if (b.listAdsets === true) {
+      if (!act) return res.status(400).json({ ok: false, error: '광고 계정(act)이 필요합니다' });
+      try {
+        const cid = String(b.campaignId || '').trim();
+        const fields = 'id,name,effective_status,campaign{id,name}';
+        let url = (cid ? (GRAPH + '/' + enc(cid) + '/adsets') : (GRAPH + '/act_' + act + '/adsets')) + '?fields=' + enc(fields) + '&limit=200&access_token=' + enc(token);
+        const out = []; let guard = 0;
+        while (url && guard < 4) {
+          guard++;
+          const j = await fetch(url).then(function (r) { return r.json(); });
+          if (j.error) { if (guard === 1) return res.status(200).json({ ok: false, error: String(j.error.message || 'graph error') }); break; }
+          (j.data || []).forEach(function (a) { const st = String(a.effective_status || '').toUpperCase(); out.push({ id: String(a.id), name: a.name || String(a.id), active: st === 'ACTIVE', campaignId: (a.campaign && a.campaign.id) || '', campaignName: (a.campaign && a.campaign.name) || '' }); });
+          url = (j.paging && j.paging.next) ? j.paging.next : null;
+        }
+        return res.status(200).json({ ok: true, adsets: out });
+      } catch (e) { return res.status(200).json({ ok: false, error: String((e && e.message) || e) }); }
+    }
+
     // 캠페인명 변경: { updateCampaignName:true, campaignId, name } → 세트 추가 후 타겟 컨셉 반영
     if (b.updateCampaignName === true) {
       const _cid = String(b.campaignId || '').trim();

@@ -248,6 +248,24 @@ module.exports = async function (req, res) {
       } catch (e) { return res.status(200).json({ ok: false, error: String((e && e.message) || e) }); }
     }
 
+    // 미디어 애셋 라이브 직조회: { listAssets:true, act } → 동기화 스냅샷 대기 없이 계정 최신 이미지·영상 반환.
+    // (스냅샷/캡 때문에 새 애셋이 안 뜰 때 즉시 메타에서 당겨오기 — sync.js 애셋 형태와 동일)
+    if (b.listAssets === true) {
+      if (!act) return res.status(400).json({ ok: false, error: '애셋 조회: 광고 계정(act)이 필요합니다' });
+      try {
+        const imgUrl = GRAPH + '/act_' + act + '/adimages?fields=hash,name,url,url_128,permalink_url,width,height,created_time&limit=100&access_token=' + enc(token);
+        const vidUrl = GRAPH + '/act_' + act + '/advideos?fields=id,title,source,picture,thumbnails{uri,is_preferred},created_time&limit=100&access_token=' + enc(token);
+        const results = await Promise.all([
+          fetch(imgUrl).then(function (r) { return r.json(); }).catch(function () { return {}; }),
+          fetch(vidUrl).then(function (r) { return r.json(); }).catch(function () { return {}; })
+        ]);
+        const newest = function (arr) { return (arr || []).sort(function (a, c) { return String(c.created_time || '').localeCompare(String(a.created_time || '')); }); };
+        const images = newest(results[0].data).map(function (i) { return { hash: i.hash, name: i.name || '', thumb: i.url_128 || '', full: i.url || i.permalink_url || i.url_128 || '', w: i.width || 0, h: i.height || 0, ts: i.created_time || '' }; });
+        const videos = newest(results[1].data).map(function (v) { var thumb = v.picture || ''; if (!thumb && v.thumbnails && v.thumbnails.data && v.thumbnails.data.length) { var p = v.thumbnails.data.find(function (t) { return t.is_preferred; }) || v.thumbnails.data[0]; thumb = p ? p.uri : ''; } return { id: v.id, title: v.title || '(제목없음)', thumb: thumb, source: v.source || '', ts: v.created_time || '' }; });
+        return res.status(200).json({ ok: true, images: images, videos: videos });
+      } catch (e) { return res.status(200).json({ ok: false, error: String((e && e.message) || e) }); }
+    }
+
     // 실시간 메타 미리보기: { preview:true, act, previewSpec:{object_story_spec 내용}, previewFormats:[게재위치...] }
     // 생성하지 않고 generatepreviews 로 실제 렌더링 iframe(HTML)을 게재위치별로 반환.
     // 생성 검증(targetAdsetId/newName 등)과 무관하므로 초기 분기에서 바로 처리.
