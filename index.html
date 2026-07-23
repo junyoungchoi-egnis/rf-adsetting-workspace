@@ -261,7 +261,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
             </div>
             <div class="grid g3">
               <div class="field"><label>1차 구분 <span class="req">*</span></label><select id="b_firstcat" onchange="buildPreview()"></select></div>
-              <div class="field" id="b_optWrap"><label>입찰 최적화 토큰 <span class="opt">(VMX→TROAS, CMX→TCPA)</span></label><input id="b_bidopt" placeholder="TROAS" oninput="buildPreview()"></div>
+              <div class="field" id="b_optWrap"><label>입찰 최적화 토큰 <span class="opt">(기본 제안: VMX→TROAS · CMX→TCPA · 자유 입력, 이름에 반영)</span></label><input id="b_bidopt" placeholder="TROAS" oninput="buildPreview()"></div>
               <div class="field"><label>캠페인 넘버링 <span class="opt">(캠페인명 끝 _01)</span></label><input id="b_cnum" value="01" placeholder="01" oninput="buildPreview()"></div>
             </div>
           </div>
@@ -304,7 +304,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
           </div>
       </div>
 
-      <div class="two-col">
+      <div class="two-col" id="b_buildCols" style="display:block">
         <div>
           <div class="panel" id="b_createWrap">
             <div class="panel-h">Meta에 실제 생성 — 캠페인 · 광고세트 <span class="hint">PAUSED(꺼짐) · 광고(소재)는 소재 세팅 탭에서</span></div>
@@ -359,7 +359,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
           </div>
         </div>
 
-        <div>
+        <div id="b_previewCol" style="display:none">
           <div class="panel">
             <div class="panel-h">미리보기</div>
             <div style="font-size:11px;color:var(--text2);margin-bottom:5px">한글 캠페인명 (참조용)</div>
@@ -1283,7 +1283,7 @@ function onBidChange(){
   const bid=$('b_bid').value; $('b_optWrap').style.opacity='1';
   const cur=$('b_bidopt').value.trim().toUpperCase();
   const def= bid==='VMX'?'TROAS':(bid==='CMX'?'TCPA':'');
-  if(!cur||cur==='TROAS'||cur==='TCPA') $('b_bidopt').value=def;  // 빈 값/기본값이면 입찰유형에 맞게 자동, 커스텀 값은 유지
+  if(!cur) $('b_bidopt').value=def;  // 빈 값일 때만 제안 · 이미 입력한 값(TROAS/TCPA/커스텀)은 유지 → CMX+TROAS 등 자유 조합 허용
   buildPreview();
 }
 
@@ -1294,7 +1294,8 @@ function buildSetName(o){
   return parts.join('_');
 }
 function buildKrName(o){
-  const base=`${o.media}_${brandOf(o.product)}_${schemeKr(o.scheme)}_${goalKr(o.goal)}_${bidKr(o.bid)}`;
+  const _bo=String(o.bidopt||'').trim();
+  const base=`${o.media}_${brandOf(o.product)}_${schemeKr(o.scheme)}_${goalKr(o.goal)}_${bidKr(o.bid)}`+(_bo?`_${_bo}`:'');   // 입찰최적화토큰(TROAS/TCPA 등) 반영
   const _tms=(o.tams&&o.tams.length)?o.tams:(o.tam?[o.tam]:[]); return (o.cnum?`${base}_${o.cnum}`:base)+(_tms.length?` (${_tms.map(tamKr).join('/')})`:'');
 }
 function currentBuilder(){
