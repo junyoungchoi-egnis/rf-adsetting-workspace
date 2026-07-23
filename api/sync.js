@@ -61,6 +61,20 @@ async function fetchOne(url, actId) {
   if (j.error) throw new Error('[act_' + actId + '] ' + (j.error.message || 'graph error'));
   return j.data || [];
 }
+// 상한 페이지만 수집(첫 페이지 에러만 throw). 활성광고 수집과 병렬이라 타임아웃 영향 거의 없음.
+async function fetchCap(url, actId, maxPages) {
+  const out = []; let g = 0;
+  while (url && g < maxPages) {
+    g++;
+    const r = await fetch(url); const j = await r.json();
+    if (j.error) { if (g === 1) throw new Error('[act_' + actId + '] ' + (j.error.message || 'graph error')); break; }
+    (j.data || []).forEach(x => out.push(x));
+    url = (j.paging && j.paging.next) ? j.paging.next : null;
+  }
+  return out;
+}
+// 최신(created_time) 내림차순 정렬 — 새로 올린 애셋이 목록 앞쪽에 오도록.
+function byNewest(arr) { return arr.sort(function (a, b) { return String(b.created_time || '').localeCompare(String(a.created_time || '')); }); }
 
 async function fetchAllAds(actId, token) {
   const fields = 'id,effective_status,adset{id,name,effective_status},campaign{id,name,effective_status}';
@@ -76,8 +90,8 @@ async function fetchAllAdsets(actId, token) {
 // ── 애셋 라이브러리 ──
 async function fetchCreatives(actId, token) {
   const fields = 'id,name,thumbnail_url,image_url,object_type,body,title,image_hash,video_id,object_story_id,effective_object_story_id,call_to_action_type,status';
-  const url = GRAPH + '/act_' + actId + '/adcreatives?fields=' + enc(fields) + '&limit=50&access_token=' + enc(token);
-  const raw = await fetchOne(url, actId);
+  const url = GRAPH + '/act_' + actId + '/adcreatives?fields=' + enc(fields) + '&limit=100&access_token=' + enc(token);
+  const raw = await fetchCap(url, actId, 2);   // 커버리지 확대(최대 2p≈200)
   return raw.map(c => ({
     id: c.id, name: c.name || '(이름없음)',
     type: c.video_id ? 'VIDEO' : 'IMAGE',
@@ -90,14 +104,14 @@ async function fetchCreatives(actId, token) {
 }
 async function fetchImages(actId, token) {
   const fields = 'hash,name,url,url_128,permalink_url,width,height,created_time';
-  const url = GRAPH + '/act_' + actId + '/adimages?fields=' + enc(fields) + '&limit=50&access_token=' + enc(token);
-  const raw = await fetchOne(url, actId);
+  const url = GRAPH + '/act_' + actId + '/adimages?fields=' + enc(fields) + '&limit=100&access_token=' + enc(token);
+  const raw = byNewest(await fetchCap(url, actId, 3)).slice(0, 180);   // 최신순 · 최대 3p(≈300)에서 상위 180
   return raw.map(i => ({ hash: i.hash, name: i.name || '', thumb: i.url_128 || '', full: i.url || i.permalink_url || i.url_128 || '', w: i.width || 0, h: i.height || 0, ts: i.created_time || '' }));
 }
 async function fetchVideos(actId, token) {
   const fields = 'id,title,source,picture,thumbnails{uri,is_preferred},created_time';
-  const url = GRAPH + '/act_' + actId + '/advideos?fields=' + enc(fields) + '&limit=40&access_token=' + enc(token);
-  const raw = await fetchOne(url, actId);
+  const url = GRAPH + '/act_' + actId + '/advideos?fields=' + enc(fields) + '&limit=100&access_token=' + enc(token);
+  const raw = byNewest(await fetchCap(url, actId, 3)).slice(0, 180);   // 최신순 · 최대 3p
   return raw.map(v => {
     let thumb = v.picture || '';
     if (!thumb && v.thumbnails && v.thumbnails.data && v.thumbnails.data.length) {
