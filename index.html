@@ -1466,7 +1466,7 @@ function bxAbsorbBuilder(){   // A~C 패널을 하단 바의 모드별 슬롯으
   window.__bxAbsorbed=1;
 }
 function bxSnapshotA(){ var g=function(id){var el=$(id);return el?el.value:'';}; return {product:g('b_product'),media:g('b_media'),date:g('b_date'),goal:g('b_goal'),bid:g('b_bid'),scheme:g('b_scheme'),firstcat:g('b_firstcat'),bidopt:g('b_bidopt'),cnum:g('b_cnum')}; }
-function bxApplyA(s){ if(!s)return; var st=function(id,v){var el=$(id); if(el&&v!=null&&v!=='')el.value=v;}; st('b_product',s.product);st('b_media',s.media);st('b_date',s.date);st('b_goal',s.goal);st('b_bid',s.bid);st('b_scheme',s.scheme); /* bidopt/cnum/firstcat은 ⓑ에서 대상 캠페인 기반이라 반영 안 함(잔여값 누출 방지) */ try{buildPreview();}catch(e){} }
+function bxApplyA(s){ if(!s)return; var st=function(id,v){var el=$(id); if(el&&v!=null&&v!=='')el.value=v;}; st('b_product',s.product);st('b_media',s.media);st('b_date',s.date);st('b_goal',s.goal);st('b_bid',s.bid);st('b_scheme',s.scheme); var _bo=$('b_bidopt'); if(_bo)_bo.value=(s.bidopt||''); /* bidopt는 대상(생성한) 캠페인 기준으로 반영 · cnum/firstcat은 미반영 */ try{buildPreview();}catch(e){} }
 function bxTryParseCtx(name){
   // 라이브 캠페인명(코드형 or 한글형 FB_화이바_100원딜_구매_conv_01 등)에서 제품·목표·입찰·스킴·매체를
   // 토큰 전수 스캔으로 역매핑(코드 또는 한글 라벨 매칭). 위치 의존 X → 형식이 달라도 최대한 인식.
@@ -1484,6 +1484,8 @@ function bxTryParseCtx(name){
       var md=M_.media.find(function(x){return x.code===tk;}); if(md){ setIf('b_media',md.code); return; }
     });
     try{ var cr=$('bx_camprow'); if(cr&&!gotProd&&bxMode==='set') cr.innerHTML+=' <span style="color:var(--yellow)">· ⚠ 캠페인명에서 제품을 자동 인식 못함 — 세트명 제품코드 확인하세요</span>'; }catch(e){}
+    var _bo=''; toks.forEach(function(tk){ if(/^(TROAS|TCPA)\d*$/i.test(tk)) _bo=tk.toUpperCase(); });   // 대상 캠페인명의 입찰토큰(TROAS/TCPA) → 세트명에 반영
+    var _boEl=$('b_bidopt'); if(_boEl)_boEl.value=_bo;   // 있으면 반영, 없으면 비움(잔여 누출 방지)
     buildPreview();
   }catch(e){}
 }
