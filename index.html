@@ -590,7 +590,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
               <div class="panel-h">소재 · 세트 선택 <span class="bdg bdg-ok">규칙 자동생성</span></div>
               <div class="grid g2">
                 <div class="field"><label>① 대상 캠페인 (Meta 라이브) <label style="display:inline;font-weight:400;color:var(--text3)"><input type="checkbox" id="mcd_campActive" checked onchange="mcdRenderCamps()" style="width:auto;vertical-align:middle"> 활성만</label></label><input id="mcd_campSearch" placeholder="🔎 캠페인 검색" oninput="mcdRenderCamps()" style="margin-bottom:6px"><select id="mcd_camp" onchange="mcdRenderAdsets();mcdSync()"></select></div>
-                <div class="field"><label>② 대상 광고세트 <label style="display:inline;font-weight:400;color:var(--text3)"><input type="checkbox" id="mcd_adsetActive" checked onchange="mcdRenderAdsets()" style="width:auto;vertical-align:middle"> 활성만</label></label><input id="mcd_adsetSearch" placeholder="🔎 광고세트 검색" oninput="mcdRenderAdsets()" style="margin-bottom:6px"><select id="mcd_adset" onchange="mcdSync()"></select></div>
+                <div class="field"><label>② 대상 광고세트 <label style="display:inline;font-weight:400;color:var(--text3)"><input type="checkbox" id="mcd_adsetActive" checked onchange="mcdRenderAdsets()" style="width:auto;vertical-align:middle"> 활성만</label></label><input id="mcd_adsetSearch" placeholder="🔎 광고세트 검색" oninput="mcdRenderAdsets()" style="margin-bottom:6px"><select id="mcd_adset" onchange="mcdSync()"></select><div class="hint" style="margin-top:5px">방금 만든 세트가 안 보이면 → <b>🔄 메타 조회</b>(꺼진 캠페인 세트까지 표시) 또는 위 <b>‘활성만’ 해제</b></div></div>
               </div>
               <div class="field"><label>① 소재 선택 (생성 아카이브)</label><input id="mcd_creativeSearch" placeholder="🔍 소재명 검색" oninput="mcdFillCreative()" style="margin-bottom:5px"><div style="display:flex;gap:6px;margin-bottom:5px"><select id="mcd_crProduct" onchange="mcdFillCreative()" style="flex:1"><option value="">상품 전체</option></select><select id="mcd_crManager" onchange="mcdFillCreative()" style="flex:1"><option value="">담당자 전체</option></select></div><select id="mcd_creative" onchange="mcdSync()"></select></div>
               <div class="field"><label>자동 소재명</label><div id="mcd_autoname" class="mono mcd-auto"></div></div>
@@ -4399,9 +4399,13 @@ main.main:has(#page-build.active) .two-col > div:last-child > .panel{position:st
           else { metaSnap.adsets.unshift({adsetId:id,adsetName:a.name||id,adsetStatus:a.active?'ACTIVE':'PAUSED',campaignId:a.campaignId||'',campaignName:a.campaignName||'',campaignStatus:a.active?'ACTIVE':'',account:actN,total:0,active:a.active?1:0,setBudget:0,campBudget:0,_live:true}); have[id]=1; added++; }
         });
         try{ if(typeof _cands!=='undefined')_cands=[]; }catch(e){}   // 후보 캐시 무효화
+        // A: '활성만' 필터 자동 해제 — 방금 조회한(꺼진 캠페인 포함) 세트가 목록에 확실히 뜨도록
+        try{ if(typeof activeOnlyCamp!=='undefined' && activeOnlyCamp && typeof toggleActiveCamp==='function') toggleActiveCamp(); }catch(e){}
+        ['mcd_campActive','mcd_adsetActive','ms_setActive','uc_setActive'].forEach(function(id){ var c=document.getElementById(id); if(c&&c.checked)c.checked=false; });
         try{ if(typeof msRenderSets==='function')msRenderSets(); }catch(e){}
         try{ if(typeof mcdRenderCamps==='function')mcdRenderCamps(); }catch(e){}
-        if(typeof toast==='function')toast('메타에서 광고세트 '+j.adsets.length+'개 조회(신규 '+added+') — 목록 갱신');
+        try{ if(typeof mcdRenderAdsets==='function')mcdRenderAdsets(); }catch(e){}
+        if(typeof toast==='function')toast('메타에서 광고세트 '+j.adsets.length+'개 조회(신규 '+added+') · ‘활성만’ 해제 — 꺼진 캠페인 세트도 표시');
       } else fail(j&&j.error);
     }catch(e){ if(typeof toast==='function')toast('세트 조회 중 오류'); }
     busy(btn,false,'🔄 메타 조회');
