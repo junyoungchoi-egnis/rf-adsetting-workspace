@@ -393,7 +393,7 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
                 <div id="bxt_locChips"></div>
               </div>
               <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:8px;padding:9px 11px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.02)">
-                <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="bx_advaud" style="width:auto"> 어드밴티지+ 오디언스 <span class="hint">기본 끔 · 정의한 연령/타게팅 그대로</span></label>
+                <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="bx_advaud" checked style="width:auto"> 어드밴티지+ 오디언스 <span class="hint">기본 켬 · 정의한 타게팅을 시드로 자동 확장</span></label>
                 <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="bx_autopl" checked style="width:auto"> 자동 노출위치(어드밴티지+) <span class="hint">끄면 FB·IG만(오디언스 네트워크 제외)</span></label>
               </div>
             </div>
@@ -1470,15 +1470,43 @@ function bxEnsureSteps(){   // ⓑ 4단계 헤더 1회 생성
   mk('bx_step4','④ 예산 & 생성');
   window.__bxStepsMade=1;
 }
-function bxLayout(m){   // 모드별 항목 순서 재배치(카드 직속 블록 재정렬)
+function bxEnsureCols(){   // 좌/우 2단 + 하단 고정바 컨테이너 1회 생성(소재 세팅과 유사한 공간감)
+  var card=$('b_createWrap'); if(!card||window.__bxColsMade)return;
+  var cols=document.createElement('div'); cols.id='bx_cols'; cols.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start';
+  var L=document.createElement('div'); L.id='bx_colL'; L.style.cssText='display:flex;flex-direction:column;min-width:0';
+  var R=document.createElement('div'); R.id='bx_colR'; R.style.cssText='display:flex;flex-direction:column;min-width:0';
+  cols.appendChild(L); cols.appendChild(R);
+  var bar=document.createElement('div'); bar.id='bx_bar'; bar.style.cssText='position:sticky;bottom:0;z-index:6;margin:14px -16px -16px;padding:11px 16px;background:var(--card,#0f131b);border-top:1px solid var(--border2,#2b3547);box-shadow:0 -8px 20px rgba(0,0,0,.28);display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-radius:0 0 13px 13px';
+  card.appendChild(cols); card.appendChild(bar);
+  window.__bxColsMade=1;
+}
+function bxLayout(m){   // 모드별 항목 좌/우/하단바 재배치
   var card=$('b_createWrap'); if(!card)return;
-  bxEnsureSteps();
-  var steps=['bx_step1','bx_step2','bx_step3','bx_step4'];
-  var order=(m==='set')
-    ? ['bx_camprow','bx_step1','bx_acctBlock','bx_pickCampWrap','bx_step2','bx_setSlot','bx_step3','bx_audCore','bx_autoset','bx_step4','bx_budgetBlock','bx_schedBlock','bx_setsWrap','bx_hint','bx_check','bx_actions','bx_out']
-    : ['bx_camprow','bx_campSlot','bx_autoset','bx_acctBlock','bx_budgetBlock','bx_campnameWrap','bx_hint','bx_check','bx_actions','bx_out'];
-  order.forEach(function(id){ var el=document.getElementById(id); if(el)card.appendChild(el); });
-  steps.forEach(function(id){ var el=document.getElementById(id); if(el)el.style.display=(m==='set')?'':'none'; });   // 스텝 헤더는 ⓑ에서만
+  bxEnsureSteps(); bxEnsureCols();
+  var cols=$('bx_cols'), L=$('bx_colL'), R=$('bx_colR'), bar=$('bx_bar');
+  var map=(m==='set')?{
+    top:['bx_camprow'],
+    L:['bx_step1','bx_acctBlock','bx_pickCampWrap','bx_step2','bx_setSlot','bx_setsWrap'],
+    R:['bx_step3','bx_audCore','bx_autoset','bx_step4','bx_budgetBlock','bx_schedBlock'],
+    bar:['bx_check','bx_actions']
+  }:{
+    top:['bx_camprow'],
+    L:['bx_campSlot','bx_acctBlock','bx_budgetBlock','bx_campnameWrap','bx_autoset'],
+    R:[],
+    bar:['bx_check','bx_actions']
+  };
+  map.top.forEach(function(id){ var el=$(id); if(el&&cols)card.insertBefore(el,cols); });   // 전체폭(컬럼 위)
+  map.L.forEach(function(id){ var el=$(id); if(el&&L)L.appendChild(el); });
+  map.R.forEach(function(id){ var el=$(id); if(el&&R)R.appendChild(el); });
+  map.bar.forEach(function(id){ var el=$(id); if(el&&bar)bar.appendChild(el); });
+  var hintEl=$('bx_hint'); if(hintEl&&L)L.appendChild(hintEl);   // 안내문구는 좌측 하단
+  var outEl=$('bx_out'); if(outEl)card.appendChild(outEl);       // 생성 결과는 바 아래
+  if(R)R.style.display=(m==='set')?'':'none';                    // ⓐ는 단일 컬럼
+  if(cols)cols.style.gridTemplateColumns=(m==='set')?'repeat(auto-fit,minmax(300px,1fr))':'1fr';
+  // 바 안에서 액션 버튼은 우측 정렬
+  var act=$('bx_actions'); if(act){ act.style.marginLeft='auto'; }
+  var chk=$('bx_check'); if(chk){ chk.style.flex='1'; chk.style.minWidth='180px'; }
+  ['bx_step1','bx_step2','bx_step3','bx_step4'].forEach(function(id){ var el=$(id); if(el)el.style.display=(m==='set')?'':'none'; });
 }
 function bxSetMode(m){
   if(m==='both')m='set';   // ⓒ 제거 — 호환용
