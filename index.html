@@ -2455,7 +2455,8 @@ let mcdFmt='IMAGE',mcdSrc='reuse',mcdSel=null,mcdUploadedHash=null;
 let mcdPlc='feed';
 const META_ACCOUNTS=[{id:'1462607070849777',name:'[음료] 클룹 메인',area:'클룹'},{id:'793134085895227',name:'[음료] 클룹 서브',area:'클룹'},{id:'3342733785912061',name:'[음료] 스프린트',area:'스프린트'},{id:'539103343188615',name:'[사용X] 클룹 프로모션(테스트)',area:'클룹'}];
 // 목표·입찰 → Meta API 값 매핑 (초안 · 추후 설정/매핑으로 이관 가능)
-const META_OBJECTIVE={PUR:'OUTCOME_SALES',TRF:'OUTCOME_TRAFFIC',AWR:'OUTCOME_AWARENESS',ENG:'OUTCOME_ENGAGEMENT',LEAD:'OUTCOME_LEADS'};
+// 목표 코드(설정 goals) → 메타 objective. ⚠ 설정 참여코드는 ING(ENG 아님) — 불일치 시 SALES로 오폴백되던 버그 수정.
+const META_OBJECTIVE={PUR:'OUTCOME_SALES',PAY:'OUTCOME_SALES',ATC:'OUTCOME_SALES',CVW:'OUTCOME_SALES',CRG:'OUTCOME_LEADS',AWR:'OUTCOME_AWARENESS',TRF:'OUTCOME_TRAFFIC',ING:'OUTCOME_ENGAGEMENT',ENG:'OUTCOME_ENGAGEMENT',LEAD:'OUTCOME_LEADS'};
 const META_BID={CMX:{optimization_goal:'OFFSITE_CONVERSIONS',bid_strategy:'LOWEST_COST_WITHOUT_CAP'},VMX:{optimization_goal:'VALUE',bid_strategy:'LOWEST_COST_WITHOUT_CAP'}};
 // 캠페인 목표별 성과목표(optimization_goal) — 대상 캠페인 목표에 반응. 첫 항목이 기본값.
 // 판매(SALES)는 기존 입찰유형(CMX/VMX) 기반이라 여기서 제외(별도 처리).
