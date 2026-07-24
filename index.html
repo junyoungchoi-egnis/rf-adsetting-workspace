@@ -1739,6 +1739,16 @@ function bxPayload(apply){
   if(!hasSets) return null;
   return {act:act,apply:apply===true,campaign:campObj(),adsets:adsetArr()};
 }
+// 생성이 막힌 정확한 사유(빈 문자열=문제 없음). 캠페인 선택/세트 0개를 구분해 오인 방지.
+function bxSetBlockReason(){
+  if(bxMode==='set'){
+    var cid=String((($('bx_pickCamp')||{}).value)||'');
+    if(!cid) return '대상 캠페인을 선택하세요 (없으면 ⓐ로 먼저 생성)';
+    if(!(lastGen&&lastGen.sets&&lastGen.sets.length)) return '② 세트명 정의에서 타게팅·타겟 컨셉을 각각 1개 이상 추가하세요 (현재 세트 0개)';
+    return '';
+  }
+  return (lastGen&&lastGen.campaignName)?'':'먼저 위에서 캠페인 기본정보(제품·목표·입찰 등)를 채우세요';
+}
 function bxRenderCheck(j){
   var c=$('bx_check'); if(!c)return;
   var ok=function(t){return '<div style="color:#5fd08a">✅ '+t+'</div>';};
@@ -1749,13 +1759,13 @@ function bxRenderCheck(j){
   c.innerHTML='<div style="background:rgba(40,90,107,.18);border:1px solid #2f5a6b;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.7"><div style="font-size:11px;color:#7fb3c8;margin-bottom:6px">사전 점검</div>'+rows.join('')+'</div>';
 }
 async function bxDryRun(){
-  var body=bxPayload(false); if(!body){toast(bxMode==='set'?'대상 캠페인을 선택하세요':'먼저 위에서 준비하세요');return;}
+  var body=bxPayload(false); if(!body){toast(bxSetBlockReason()||'먼저 위에서 준비하세요');return;}
   var c=$('bx_check'); if(c)c.innerHTML='<div class="hint">점검 중…</div>';
   try{ var r=await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); var j=await r.json(); bxRenderCheck(j); }
   catch(e){ if(c)c.innerHTML='<div class="warnbox show">점검 실패: '+esc(String(e&&e.message||e))+'</div>'; }
 }
 async function bxCreate(btn){
-  var pre=bxPayload(false); if(!pre){toast(bxMode==='set'?'대상 캠페인을 선택하세요 (없으면 ⓐ로 먼저 생성)':'먼저 위에서 준비하세요');return;}
+  var pre=bxPayload(false); if(!pre){toast(bxSetBlockReason()||'먼저 위에서 준비하세요');return;}
   var c=$('bx_check'); if(c)c.innerHTML='<div class="hint">점검 중…</div>';
   try{ var dr=await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pre)}); var dj=await dr.json(); bxRenderCheck(dj); if(!dj.ok){toast('보완 후 다시 시도하세요');return;} }
   catch(e){ if(c)c.innerHTML='<div class="warnbox show">점검 실패: '+esc(String(e&&e.message||e))+'</div>'; return; }
