@@ -4401,11 +4401,12 @@ main.main:has(#page-build.active) .two-col > div:last-child > .panel{position:st
         try{ if(typeof _cands!=='undefined')_cands=[]; }catch(e){}   // 후보 캐시 무효화
         // A: '활성만' 필터 자동 해제 — 방금 조회한(꺼진 캠페인 포함) 세트가 목록에 확실히 뜨도록
         try{ if(typeof activeOnlyCamp!=='undefined' && activeOnlyCamp && typeof toggleActiveCamp==='function') toggleActiveCamp(); }catch(e){}
-        ['mcd_campActive','mcd_adsetActive','ms_setActive','uc_setActive'].forEach(function(id){ var c=document.getElementById(id); if(c&&c.checked)c.checked=false; });
-        try{ if(typeof msRenderSets==='function')msRenderSets(); }catch(e){}
+        ['mcd_campActive','mcd_adsetActive','ms_setActive','uc_setActive','n5b_active'].forEach(function(id){ var c=document.getElementById(id); if(c&&c.checked)c.checked=false; });
+        try{ if(typeof msRenderSets==='function')msRenderSets(); }catch(e){}                       // 복제 목록
         try{ if(typeof mcdRenderCamps==='function')mcdRenderCamps(); }catch(e){}
         try{ if(typeof mcdRenderAdsets==='function')mcdRenderAdsets(); }catch(e){}
-        if(typeof toast==='function')toast('메타에서 광고세트 '+j.adsets.length+'개 조회(신규 '+added+') · ‘활성만’ 해제 — 꺼진 캠페인 세트도 표시');
+        try{ if(typeof window.n5bRender==='function'){ window.n5bRender(); if(typeof window.n5bPreview==='function')window.n5bPreview(); if(typeof window.n5bPre==='function')window.n5bPre(); } }catch(e){}   // 신규 세팅 목록도 동기화(양방향 — 어느 쪽에서 조회하든 둘 다 갱신)
+        if(typeof toast==='function')toast('메타에서 광고세트 '+j.adsets.length+'개 조회(신규 '+added+') · ‘활성만’ 해제 — 신규 세팅·복제 양쪽 갱신');
       } else fail(j&&j.error);
     }catch(e){ if(typeof toast==='function')toast('세트 조회 중 오류'); }
     busy(btn,false,'🔄 메타 조회');
@@ -4419,9 +4420,16 @@ main.main:has(#page-build.active) .two-col > div:last-child > .panel{position:st
     if(s&&s.parentNode&&!document.getElementById('rbLiveSetsBtn')) s.parentNode.insertBefore(mkBtn('rbLiveSetsBtn','🔄 메타 조회','스냅샷 대기 없이 대상 광고세트를 메타에서 직접 조회(새 세트 즉시)',liveAdsets), s.nextSibling);
     var d=document.getElementById('mcd_adsetSearch');
     if(d&&d.parentNode&&!document.getElementById('rbLiveSetsBtn2')) d.parentNode.insertBefore(mkBtn('rbLiveSetsBtn2','🔄 메타 조회','스냅샷 대기 없이 대상 광고세트를 메타에서 직접 조회',liveAdsets), d.nextSibling);
+    var nb=document.getElementById('n5b_search');   // 신규 세팅(arch) — 지연 생성됨
+    if(nb&&nb.parentNode&&!document.getElementById('rbLiveSetsBtn3')) nb.parentNode.insertBefore(mkBtn('rbLiveSetsBtn3','🔄 메타 조회','스냅샷 대기 없이 대상 광고세트를 메타에서 직접 조회(신규 세팅)',liveAdsets), nb.nextSibling);
     return !!(document.getElementById('rbLiveAssetsBtn')&&document.getElementById('rbLiveSetsBtn'));
   }
-  var n2=0, iv2=setInterval(function(){ if(build()||++n2>120)clearInterval(iv2); },1000);
+  var n2=0, iv2=setInterval(function(){
+    build();
+    // 신규 세팅 박스는 모드 진입 시 지연 생성 → n5Mode 전환 후 버튼 재주입되도록 1회 래핑
+    if(!window.__rbN5ModeHooked && typeof window.n5Mode==='function'){ window.__rbN5ModeHooked=1; var _o=window.n5Mode; window.n5Mode=function(){ var r=_o.apply(this,arguments); try{ setTimeout(build,60); }catch(e){} return r; }; }
+    if((document.getElementById('rbLiveAssetsBtn')&&document.getElementById('rbLiveSetsBtn')&&window.__rbN5ModeHooked)||++n2>150) clearInterval(iv2);
+  },1000);
 })();
 
 /* RB_TARGET — 광고세트 실제 타게팅(위치·성별·상세·맞춤/유사·언어). 메타 /search 프록시 + 계정 맞춤타겟 목록.
