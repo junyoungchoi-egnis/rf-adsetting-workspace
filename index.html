@@ -1719,13 +1719,12 @@ function bxPayload(apply){
     var ce=(($('bx_convevent')||{}).value)||'PURCHASE';                              // 전환 목표(이벤트)
     var attrKey=(($('bx_attr')||{}).value)||'1d_view_7d_click_1d_ev';
     var attrSpec=BX_ATTR[attrKey]||BX_ATTR['1d_view_7d_click_1d_ev'];                 // 기여 기간
-    var isSales=(objective==='OUTCOME_SALES');                                        // 판매=입찰유형 기반, 그 외=성과목표 반응형
-    var trfOg=isSales?null:(((($('bx_optgoal')||{}).value))||'LANDING_PAGE_VIEWS');   // 트래픽/참여/리드/인지 성과목표
+    var selOg=(((($('bx_optgoal')||{}).value))||'');                                  // 성과목표 드롭다운(판매 포함 모든 목표에서 선택)
     var startT=bxSchedISO((($('bx_startdt')||{}).value)||'');                          // 일정(공통 적용) — 비우면 null
     var endT=bxSchedISO((($('bx_enddt')||{}).value)||'');
     return sets.map(function(s){
       var bidm=META_BID[s.bid]||META_BID.CMX;
-      var og=isSales?bidm.optimization_goal:trfOg;
+      var og=selOg||(objective==='OUTCOME_SALES'?bidm.optimization_goal:'LANDING_PAGE_VIEWS');   // 선택 성과목표 우선(안전 폴백)
       var isConvGoal=(og==='OFFSITE_CONVERSIONS'||og==='VALUE');                       // 전환/가치 목표만 이벤트·기여 필요
       var o={name:bxSetName(s.name),targeting:targeting,budgetMode:mode,optimizationGoal:og,bidStrategy:bidm.bid_strategy,advantageAudience:adv,placements:placements};
       if(isConvGoal){ o.customEventType=ce; o.attributionSpec=attrSpec; }              // 전환/가치일 때만 전달(리드 전환 포함)
@@ -2451,6 +2450,7 @@ const META_BID={CMX:{optimization_goal:'OFFSITE_CONVERSIONS',bid_strategy:'LOWES
 // 캠페인 목표별 성과목표(optimization_goal) — 대상 캠페인 목표에 반응. 첫 항목이 기본값.
 // 판매(SALES)는 기존 입찰유형(CMX/VMX) 기반이라 여기서 제외(별도 처리).
 const BX_OPTGOALS={
+  OUTCOME_SALES:[['OFFSITE_CONVERSIONS','전환수 극대화'],['VALUE','전환값 극대화'],['LANDING_PAGE_VIEWS','랜딩 페이지 조회수 극대화'],['LINK_CLICKS','링크 클릭수 극대화']],
   OUTCOME_TRAFFIC:[['LANDING_PAGE_VIEWS','랜딩 페이지 조회수 극대화'],['LINK_CLICKS','링크 클릭수 극대화'],['REACH','도달 극대화'],['IMPRESSIONS','노출수 극대화']],
   OUTCOME_ENGAGEMENT:[['POST_ENGAGEMENT','게시물 참여 극대화'],['THRUPLAY','동영상 조회(ThruPlay) 극대화'],['LANDING_PAGE_VIEWS','랜딩 페이지 조회수 극대화'],['LINK_CLICKS','링크 클릭수 극대화'],['REACH','도달 극대화'],['IMPRESSIONS','노출수 극대화']],
   OUTCOME_LEADS:[['OFFSITE_CONVERSIONS','전환(리드) 수 극대화'],['LANDING_PAGE_VIEWS','랜딩 페이지 조회수 극대화'],['LINK_CLICKS','링크 클릭수 극대화']],
@@ -2458,21 +2458,23 @@ const BX_OPTGOALS={
 };
 function bxObjOf(){ return bxObjOverride||(lastGen&&META_OBJECTIVE[lastGen.goal])||'OUTCOME_SALES'; }
 function bxAutoEvent(obj){ return obj==='OUTCOME_LEADS'?'LEAD':'PURCHASE'; }
-// 현재 성과목표: 판매=입찰유형 기반, 그 외=선택한 성과목표
+// 현재 성과목표: 모든 목표에서 성과목표 드롭다운 선택값 사용(판매=전환수/전환값 직접 선택)
 function bxCurOptGoal(){
-  if(bxObjOf()==='OUTCOME_SALES') return (META_BID[lastGen&&lastGen.bid]||META_BID.CMX).optimization_goal;
-  return (($('bx_optgoal')||{}).value)||'LANDING_PAGE_VIEWS';
+  return (($('bx_optgoal')||{}).value)||(bxObjOf()==='OUTCOME_SALES'?'OFFSITE_CONVERSIONS':'LANDING_PAGE_VIEWS');
 }
 // 대상 캠페인 목표에 따라 성과목표 셀렉트/전환블록을 반응형으로 전환
 function bxSyncObjective(){
-  var obj=bxObjOf(); var isSales=(obj==='OUTCOME_SALES');
+  var obj=bxObjOf();
   var ow=$('bx_optgoalWrap'), sel=$('bx_optgoal');
-  if(ow)ow.style.display=isSales?'none':'';                 // 판매는 기존 방식 유지 → 성과목표 셀렉트 숨김
-  if(!isSales && sel){
+  if(ow)ow.style.display='';                                 // 모든 목표에서 성과목표 직접 선택 노출(판매=전환수/전환값 포함)
+  if(sel){
     var opts=BX_OPTGOALS[obj]||[['LINK_CLICKS','링크 클릭수 극대화']];   // 미매핑(앱홍보 등)은 링크클릭 안전 폴백
     var prev=sel.value;
+    var changed=(window.__bxLastOptObj!==obj); window.__bxLastOptObj=obj;   // 목표가 바뀌면(다른 캠페인 선택) 기본값으로 리셋
     sel.innerHTML=opts.map(function(o){return '<option value="'+o[0]+'">'+esc(o[1])+'</option>';}).join('');
-    sel.value=opts.some(function(o){return o[0]===prev;})?prev:opts[0][0];
+    var def=opts[0][0];
+    if(obj==='OUTCOME_SALES'){ def=(META_BID[lastGen&&lastGen.bid]||META_BID.CMX).optimization_goal; }   // 판매 기본값=대상 캠페인 입찰유형(CMX→전환수·VMX→전환값)
+    sel.value=(!changed && opts.some(function(o){return o[0]===prev;}))?prev:def;
   }
   bxSyncConvWrap();
 }
