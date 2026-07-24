@@ -1476,7 +1476,7 @@ function bxEnsureCols(){   // 좌/우 2단 + 하단 고정바 컨테이너 1회 
   var L=document.createElement('div'); L.id='bx_colL'; L.style.cssText='display:flex;flex-direction:column;min-width:0';
   var R=document.createElement('div'); R.id='bx_colR'; R.style.cssText='display:flex;flex-direction:column;min-width:0';
   cols.appendChild(L); cols.appendChild(R);
-  var bar=document.createElement('div'); bar.id='bx_bar'; bar.style.cssText='position:sticky;bottom:0;z-index:6;margin:14px -16px -16px;padding:11px 16px;background:var(--card,#0f131b);border-top:1px solid var(--border2,#2b3547);box-shadow:0 -8px 20px rgba(0,0,0,.28);display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-radius:0 0 13px 13px';
+  var bar=document.createElement('div'); bar.id='bx_bar'; bar.style.cssText='position:sticky;bottom:0;z-index:6;margin:14px -20px -20px;padding:12px 20px;background:var(--card,#0f131b);border-top:1px solid var(--border2,#2b3547);box-shadow:0 -8px 20px rgba(0,0,0,.28);display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-radius:0 0 13px 13px';
   card.appendChild(cols); card.appendChild(bar);
   window.__bxColsMade=1;
 }
