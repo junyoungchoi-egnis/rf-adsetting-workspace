@@ -337,12 +337,62 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
                 <div class="field"><label>전환 목표 <span class="opt">최적화할 전환 이벤트</span></label><select id="bx_convevent" data-auto="PURCHASE" onchange="bxRenderAutoset();bxCheckClear()"><option value="PURCHASE">구매</option><option value="ADD_TO_CART">장바구니 담기</option><option value="INITIATE_CHECKOUT">결제 시작</option><option value="ADD_PAYMENT_INFO">결제 정보 추가</option><option value="COMPLETE_REGISTRATION">가입 완료</option><option value="LEAD">리드</option><option value="CONTENT_VIEW">콘텐츠 조회</option></select></div>
                 <div class="field"><label>기여 기간 <span class="opt">클릭/조회/참여 창</span></label><select id="bx_attr" onchange="bxRenderAutoset();bxCheckClear()"><option value="1d_view_7d_click_1d_ev">클릭 7일 · 조회 1일 · 참여 1일</option><option value="1d_view_7d_click">클릭 7일 · 조회 1일</option><option value="7d_click">클릭 7일</option><option value="1d_view_1d_click">클릭 1일 · 조회 1일</option><option value="1d_click">클릭 1일</option></select></div>
               </div>
+              <style id="bxtCss">
+                .bxt-drop{margin-top:5px;background:var(--pop,#161b22);border:1px solid var(--border2,#2b3547);border-radius:10px;padding:4px;max-height:230px;overflow:auto;box-shadow:0 14px 34px rgba(0,0,0,.45)}
+                .bxt-drow{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:7px;font-size:12px;cursor:default}
+                .bxt-drow:hover{background:var(--accentbg,rgba(31,111,235,.14))}
+                .bxt-drow .nm{font-weight:600;color:var(--text)}
+                .bxt-drow .cat{font-size:9.5px;color:var(--text3);background:var(--inset,#0c0f16);border:1px solid var(--border);border-radius:5px;padding:1px 5px}
+                .bxt-drow .sp{margin-left:auto}
+                .bxt-pm{font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;cursor:pointer;margin-left:5px;border:0}
+                .bxt-pm.inc{background:rgba(79,191,130,.14);color:#4fbf82} .bxt-pm.exc{background:rgba(240,104,74,.13);color:#f0684a}
+                .bxt-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+                .bxt-chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;border-radius:16px;padding:5px 8px 5px 11px}
+                .bxt-chip.inc{color:#4fbf82;background:rgba(79,191,130,.13);border:1px solid rgba(79,191,130,.4)}
+                .bxt-chip.exc{color:#f0684a;background:rgba(240,104,74,.12);border:1px solid rgba(240,104,74,.4)}
+                .bxt-chip .cat{color:var(--text3);font-size:9.5px;font-weight:400}
+                .bxt-chip .x{opacity:.7;cursor:pointer;font-size:12px}
+                .bxt-grph{font-size:10px;color:var(--text3);margin:10px 0 1px;font-weight:600}
+                .bxt-sec{border:1px solid var(--border);border-radius:9px;padding:10px 11px;background:rgba(255,255,255,.015)}
+                .bxt-head{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:12.5px}
+                .bxt-head b{font-weight:700}
+                .bxt-chev{color:var(--text3);font-size:10px;width:10px}
+                .bxt-cnt{margin-left:auto;font-size:10px;color:var(--text3)}
+              </style>
+              <div class="field"><label>📍 위치 <span class="opt">국가·지역·도시 검색 · 포함/제외</span></label>
+                <input id="bxt_geoQ" placeholder="🔍 지역 검색 (예: 서울, 부산, Korea)" autocomplete="off">
+                <div id="bxt_geoList" class="bxt-drop" style="display:none"></div>
+                <div id="bxt_geoChips"></div>
+              </div>
               <div class="grid g3">
                 <div class="field"><label>연령 최소</label><input id="bx_agemin" type="number" value="18" min="13" max="65" oninput="bxCheckClear()"></div>
                 <div class="field"><label>연령 최대</label><input id="bx_agemax" type="number" value="65" min="13" max="65" oninput="bxCheckClear()"></div>
-                <div class="field"><label>국가</label><input value="대한민국 (KR)" disabled style="opacity:.65"></div>
+                <div class="field"><label>성별</label><select id="bx_gender" onchange="bxCheckClear()"><option value="0">전체</option><option value="1">남성</option><option value="2">여성</option></select></div>
               </div>
-              <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:2px;padding:9px 11px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.02)">
+              <div class="bxt-sec" id="bxt_detailSec" style="margin-top:2px">
+                <div class="bxt-head" onclick="bxtToggle('detail')"><span class="bxt-chev" id="bxt_detailChev">▸</span><b>🎯 상세 타게팅</b><span class="bxt-cnt" id="bxt_detailCnt">설정 안 함</span></div>
+                <div id="bxt_detailBody" style="display:none;margin-top:9px">
+                  <div class="opt" style="margin-bottom:6px">관심사·행동 검색 → 포함/제외</div>
+                  <input id="bxt_detQ" placeholder="🔍 관심사 검색 (예: 다이어트, 헬스)" autocomplete="off">
+                  <div id="bxt_detList" class="bxt-drop" style="display:none"></div>
+                  <div id="bxt_detInc"></div><div id="bxt_detExc"></div>
+                </div>
+              </div>
+              <div class="bxt-sec" id="bxt_audSec" style="margin-top:8px">
+                <div class="bxt-head" onclick="bxtToggle('aud')"><span class="bxt-chev" id="bxt_audChev">▸</span><b>👥 맞춤 · 유사 타겟</b><span class="bxt-cnt" id="bxt_audCnt">설정 안 함</span></div>
+                <div id="bxt_audBody" style="display:none;margin-top:9px">
+                  <div class="opt" style="margin-bottom:6px">계정 저장 타겟 검색·선택 · 포함/제외</div>
+                  <input id="bxt_audQ" placeholder="🔍 맞춤/유사 타겟 검색 (네고왕·구매자·유사 1% 등)" autocomplete="off">
+                  <div id="bxt_audList" class="bxt-drop" style="display:none"></div>
+                  <div id="bxt_audInc"></div><div id="bxt_audExc"></div>
+                </div>
+              </div>
+              <div class="field" style="margin-top:8px"><label>🗣️ 언어 <span class="opt">선택</span></label>
+                <input id="bxt_locQ" placeholder="🔍 언어 검색 (예: 한국어, English)" autocomplete="off">
+                <div id="bxt_locList" class="bxt-drop" style="display:none"></div>
+                <div id="bxt_locChips"></div>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:8px;padding:9px 11px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.02)">
                 <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="bx_advaud" style="width:auto"> 어드밴티지+ 오디언스 <span class="hint">기본 끔 · 정의한 연령/타게팅 그대로</span></label>
                 <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="bx_autopl" checked style="width:auto"> 자동 노출위치(어드밴티지+) <span class="hint">끄면 FB·IG만(오디언스 네트워크 제외)</span></label>
               </div>
@@ -1633,7 +1683,7 @@ function bxPayload(apply){
     var sets=(lastGen&&lastGen.sets)?lastGen.sets:[];
     var amin=Math.max(13,Math.min(65,Number((($('bx_agemin')||{}).value))||18));
     var amax=Math.max(amin,Math.min(65,Number((($('bx_agemax')||{}).value))||65));
-    var targeting={geo_locations:{countries:['KR']},age_min:amin,age_max:amax};
+    var targeting=(typeof bxTargetingSpec==='function')?bxTargetingSpec(amin,amax):{geo_locations:{countries:['KR']},age_min:amin,age_max:amax};   // 실제 타게팅(위치·성별·상세·맞춤·언어)
     var adv=!!(($('bx_advaud')||{}).checked);
     var autopl=(($('bx_autopl')||{}).checked)!==false;
     var placements=autopl?{mode:'auto'}:{mode:'manual',publisher_platforms:['facebook','instagram']};
@@ -4368,6 +4418,68 @@ main.main:has(#page-build.active) .two-col > div:last-child > .panel{position:st
     return !!(document.getElementById('rbLiveAssetsBtn')&&document.getElementById('rbLiveSetsBtn'));
   }
   var n2=0, iv2=setInterval(function(){ if(build()||++n2>120)clearInterval(iv2); },1000);
+})();
+
+/* RB_TARGET — 광고세트 실제 타게팅(위치·성별·상세·맞춤/유사·언어). 메타 /search 프록시 + 계정 맞춤타겟 목록.
+   상태를 모아 window.bxTargetingSpec(amin,amax)로 targeting 객체 반환(bxPayload가 사용). 토글 기본 접힘. */
+(function(){
+  var T={ geoInc:[{key:'KR',name:'대한민국',gtype:'country',cc:'KR',cat:'국가'}], geoExc:[], detInc:[], detExc:[], audInc:[], audExc:[], loc:[] };
+  var audCache={};
+  function E(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function acct(){ try{ return String((((E('bx_acct')||{}).value)|| (typeof mcdTargetAccount==='function'?mcdTargetAccount():'') )||'').replace(/^act_/,''); }catch(e){ return ''; } }
+  function keyOf(it){ return String(it.key||it.id); }
+  function catGeo(x){ return x.gtype==='country'?'국가':(x.gtype==='region'?'지역':'도시'); }
+  function catDet(x){ return x.dtype==='behaviors'?'행동':(x.dtype==='demographics'?'인구통계':'관심사'); }
+  function catAud(x){ var s=String(x.subtype||'').toUpperCase(); return s==='LOOKALIKE'?'유사':(s==='CUSTOM'?'맞춤':'웹'); }
+  function norm(kind,r){ if(kind==='geo')return {key:String(r.key),name:r.name,gtype:r.gtype,cc:r.cc,cat:catGeo(r)}; if(kind==='detail')return {id:String(r.id),name:r.name,dtype:r.dtype,cat:catDet(r)}; if(kind==='aud')return {id:String(r.id),name:r.name,subtype:r.subtype,cat:catAud(r)}; return {key:String(r.key),name:r.name,cat:'언어'}; }
+  function arrOf(kind,act){ var m={geo:{inc:T.geoInc,exc:T.geoExc},detail:{inc:T.detInc,exc:T.detExc},aud:{inc:T.audInc,exc:T.audExc},locale:{inc:T.loc,exc:T.loc}}; return m[kind][act==='exc'?'exc':'inc']; }
+
+  async function search(kind,q){ var a=acct(); if(!a)return []; try{ var j=await (await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({searchTargeting:true,kind:kind,q:q,act:a})})).json(); return (j&&j.ok&&j.results)?j.results:[]; }catch(e){ return []; } }
+  async function loadAuds(){ var a=acct(); if(!a)return []; if(audCache[a])return audCache[a]; try{ var j=await (await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({listAudiences:true,act:a})})).json(); audCache[a]=(j&&j.ok&&j.audiences)?j.audiences:[]; return audCache[a]; }catch(e){ return []; } }
+
+  function chipHtml(it,g,cls){ return '<span class="bxt-chip '+cls+'">'+esc(it.name)+(it.cat?' <span class="cat">'+esc(it.cat)+'</span>':'')+' <span class="x" data-g="'+g+'" data-k="'+esc(keyOf(it))+'">✕</span></span>'; }
+  function grpHtml(title,html){ return html?('<div class="bxt-grph">'+title+'</div><div class="bxt-chips">'+html+'</div>'):''; }
+  var GMAP={geoInc:function(){return T.geoInc;},geoExc:function(){return T.geoExc;},detInc:function(){return T.detInc;},detExc:function(){return T.detExc;},audInc:function(){return T.audInc;},audExc:function(){return T.audExc;},loc:function(){return T.loc;}};
+  function bindX(el){ if(!el)return; [].forEach.call(el.querySelectorAll('.x[data-g]'),function(x){ x.onclick=function(){ var A=GMAP[x.getAttribute('data-g')]&&GMAP[x.getAttribute('data-g')](); var k=x.getAttribute('data-k'); if(A){ for(var i=A.length-1;i>=0;i--){ if(keyOf(A[i])===k){A.splice(i,1);break;} } } renderAll(); updateCounts(); try{bxCheckClear();}catch(e){} }; }); }
+  function renderAll(){
+    var g=E('bxt_geoChips'); if(g)g.innerHTML=grpHtml('포함',T.geoInc.map(function(it){return chipHtml(it,'geoInc','inc');}).join(''))+grpHtml('제외',T.geoExc.map(function(it){return chipHtml(it,'geoExc','exc');}).join(''));
+    var di=E('bxt_detInc'); if(di)di.innerHTML=grpHtml('포함 (OR)',T.detInc.map(function(it){return chipHtml(it,'detInc','inc');}).join(''));
+    var de=E('bxt_detExc'); if(de)de.innerHTML=grpHtml('제외',T.detExc.map(function(it){return chipHtml(it,'detExc','exc');}).join(''));
+    var ai=E('bxt_audInc'); if(ai)ai.innerHTML=grpHtml('포함',T.audInc.map(function(it){return chipHtml(it,'audInc','inc');}).join(''));
+    var ae=E('bxt_audExc'); if(ae)ae.innerHTML=grpHtml('제외',T.audExc.map(function(it){return chipHtml(it,'audExc','exc');}).join(''));
+    var l=E('bxt_locChips'); if(l)l.innerHTML=T.loc.length?('<div class="bxt-chips">'+T.loc.map(function(it){return chipHtml(it,'loc','inc');}).join('')+'</div>'):'';
+    ['bxt_geoChips','bxt_detInc','bxt_detExc','bxt_audInc','bxt_audExc','bxt_locChips'].forEach(function(id){bindX(E(id));});
+  }
+  function updateCounts(){ var d=E('bxt_detailCnt'); if(d)d.textContent=(T.detInc.length||T.detExc.length)?('포함 '+T.detInc.length+' · 제외 '+T.detExc.length):'설정 안 함'; var a=E('bxt_audCnt'); if(a)a.textContent=(T.audInc.length||T.audExc.length)?('포함 '+T.audInc.length+' · 제외 '+T.audExc.length):'설정 안 함'; }
+  function pick(kind,act,raw){ var it=norm(kind,raw),k=keyOf(it); [arrOf(kind,'inc'),arrOf(kind,'exc')].forEach(function(A){ for(var i=A.length-1;i>=0;i--){ if(keyOf(A[i])===k)A.splice(i,1); } }); arrOf(kind,act).push(it); renderAll(); updateCounts(); try{bxCheckClear();}catch(e){} }
+  function showDrop(el,items,kind){ if(!el)return; if(!items||!items.length){ el.style.display='none'; el.innerHTML=''; return; } el.innerHTML=items.map(function(it,i){ var cat=kind==='geo'?catGeo(it):kind==='detail'?catDet(it):kind==='aud'?catAud(it):'언어'; var btns=kind==='locale'?'<button type="button" class="bxt-pm inc" data-i="'+i+'" data-a="inc">＋추가</button>':'<button type="button" class="bxt-pm inc" data-i="'+i+'" data-a="inc">＋포함</button><button type="button" class="bxt-pm exc" data-i="'+i+'" data-a="exc">제외</button>'; return '<div class="bxt-drow"><span class="nm">'+esc(it.name)+'</span><span class="cat">'+esc(cat)+'</span><span class="sp"></span>'+btns+'</div>'; }).join(''); el.style.display=''; [].forEach.call(el.querySelectorAll('.bxt-pm'),function(btn){ btn.onclick=function(){ pick(kind,btn.getAttribute('data-a'),items[+btn.getAttribute('data-i')]); el.style.display='none'; }; }); }
+  function deb(fn,ms){ var t; return function(){ var a=arguments,th=this; clearTimeout(t); t=setTimeout(function(){fn.apply(th,a);},ms); }; }
+
+  window.bxtToggle=function(sec){ var body=E('bxt_'+sec+'Body'),chev=E('bxt_'+sec+'Chev'); if(!body)return; var open=body.style.display!=='none'; body.style.display=open?'none':''; if(chev)chev.textContent=open?'▸':'▾'; };
+  window.bxTargetingSpec=function(amin,amax){
+    var t={age_min:amin,age_max:amax};
+    function geo(arr){ var o={countries:[],regions:[],cities:[]}; arr.forEach(function(x){ if(x.gtype==='country')o.countries.push(x.cc||x.key); else if(x.gtype==='region')o.regions.push({key:x.key}); else o.cities.push({key:x.key}); }); ['countries','regions','cities'].forEach(function(k){ if(!o[k].length)delete o[k]; }); return o; }
+    var gi=geo(T.geoInc); if(!gi.countries&&!gi.regions&&!gi.cities)gi={countries:['KR']}; t.geo_locations=gi;
+    if(T.geoExc.length){ var ge=geo(T.geoExc); if(Object.keys(ge).length)t.excluded_geo_locations=ge; }
+    var gd=Number((((E('bx_gender')||{}).value))||0); if(gd===1||gd===2)t.genders=[gd];
+    function grp(arr){ var o={}; arr.forEach(function(x){ var k=x.dtype||'interests'; (o[k]=o[k]||[]).push({id:x.id,name:x.name}); }); return o; }
+    if(T.detInc.length)t.flexible_spec=[grp(T.detInc)];
+    if(T.detExc.length)t.exclusions=grp(T.detExc);
+    if(T.audInc.length)t.custom_audiences=T.audInc.map(function(x){return {id:x.id};});
+    if(T.audExc.length)t.excluded_custom_audiences=T.audExc.map(function(x){return {id:x.id};});
+    if(T.loc.length){ var lc=T.loc.map(function(x){return Number(x.key);}).filter(function(n){return !isNaN(n);}); if(lc.length)t.locales=lc; }
+    return t;
+  };
+
+  function wire(){
+    var gq=E('bxt_geoQ'); if(gq&&!gq._w){ gq._w=1; gq.addEventListener('input',deb(async function(){ var q=gq.value.trim(); if(q.length<2){showDrop(E('bxt_geoList'),[],'geo');return;} showDrop(E('bxt_geoList'),await search('geo',q),'geo'); },320)); }
+    var dq=E('bxt_detQ'); if(dq&&!dq._w){ dq._w=1; dq.addEventListener('input',deb(async function(){ var q=dq.value.trim(); if(q.length<2){showDrop(E('bxt_detList'),[],'detail');return;} showDrop(E('bxt_detList'),await search('interest',q),'detail'); },320)); }
+    var lq=E('bxt_locQ'); if(lq&&!lq._w){ lq._w=1; lq.addEventListener('input',deb(async function(){ var q=lq.value.trim(); if(q.length<2){showDrop(E('bxt_locList'),[],'locale');return;} showDrop(E('bxt_locList'),await search('locale',q),'locale'); },320)); }
+    var aq=E('bxt_audQ'); if(aq&&!aq._w){ aq._w=1; var run=deb(async function(){ var q=aq.value.trim().toLowerCase(); var list=await loadAuds(); var f=q?list.filter(function(a){return String(a.name).toLowerCase().indexOf(q)>=0;}):list.slice(0,30); showDrop(E('bxt_audList'),f,'aud'); },260); aq.addEventListener('input',run); aq.addEventListener('focus',run); }
+    return !!(gq&&dq&&lq&&aq);
+  }
+  var n3=0, iv3=setInterval(function(){ if(wire()||++n3>150){ clearInterval(iv3); try{renderAll();updateCounts();}catch(e){} } },800);
 })();
 </script>
 </body>
