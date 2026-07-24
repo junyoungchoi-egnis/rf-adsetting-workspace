@@ -157,6 +157,44 @@ module.exports = async function (req, res) {
       } catch (e) { return res.status(200).json({ ok: false, error: String((e && e.message) || e) }); }
     }
 
+    // 타게팅 검색(라이브): { searchTargeting:true, kind:'interest'|'geo'|'locale', q } → 메타 /search 프록시
+    if (b.searchTargeting === true) {
+      const q = String(b.q || '').trim();
+      const kind = String(b.kind || 'interest');
+      if (q.length < 2) return res.status(200).json({ ok: true, results: [] });
+      let type = 'adinterest', extra = '';
+      if (kind === 'geo') { type = 'adgeolocation'; extra = '&location_types=' + enc('["country","region","city"]'); }
+      else if (kind === 'locale') { type = 'adlocale'; }
+      try {
+        const url = GRAPH + '/search?type=' + type + '&q=' + enc(q) + '&limit=25' + extra + '&access_token=' + enc(token);
+        const j = await fetch(url).then(function (r) { return r.json(); });
+        if (j.error) return res.status(200).json({ ok: false, error: String(j.error.message || 'graph error') });
+        const results = (j.data || []).map(function (d) {
+          if (kind === 'geo') return { key: String(d.key), name: d.name || '', kind: 'geo', gtype: d.type || '', cc: d.country_code || '', region: d.region || '', country: d.country_name || '' };
+          if (kind === 'locale') return { key: String(d.key), name: d.name || '', kind: 'locale' };
+          return { id: String(d.id), name: d.name || '', kind: 'detail', dtype: d.type || 'interests', path: Array.isArray(d.path) ? d.path.join(' › ') : '' };
+        });
+        return res.status(200).json({ ok: true, results: results });
+      } catch (e) { return res.status(200).json({ ok: false, error: String((e && e.message) || e) }); }
+    }
+
+    // 계정 맞춤/유사 타겟 목록: { listAudiences:true, act } → customaudiences (드롭다운·검색용)
+    if (b.listAudiences === true) {
+      if (!act) return res.status(400).json({ ok: false, error: '광고 계정(act)이 필요합니다' });
+      try {
+        let url = GRAPH + '/act_' + act + '/customaudiences?fields=id,name,subtype&limit=200&access_token=' + enc(token);
+        const out = []; let guard = 0;
+        while (url && guard < 3) {
+          guard++;
+          const j = await fetch(url).then(function (r) { return r.json(); });
+          if (j.error) { if (guard === 1) return res.status(200).json({ ok: false, error: String(j.error.message || 'graph error') }); break; }
+          (j.data || []).forEach(function (a) { out.push({ id: String(a.id), name: a.name || String(a.id), subtype: a.subtype || '' }); });
+          url = (j.paging && j.paging.next) ? j.paging.next : null;
+        }
+        return res.status(200).json({ ok: true, audiences: out });
+      } catch (e) { return res.status(200).json({ ok: false, error: String((e && e.message) || e) }); }
+    }
+
     // 캠페인명 변경: { updateCampaignName:true, campaignId, name } → 세트 추가 후 타겟 컨셉 반영
     if (b.updateCampaignName === true) {
       const _cid = String(b.campaignId || '').trim();
@@ -220,7 +258,9 @@ module.exports = async function (req, res) {
       const nm = String(a.name || '').trim();
       const optGoal = String(a.optimizationGoal || DEFAULT_OPT[objectiveEff] || 'OFFSITE_CONVERSIONS');
       const targeting = (a.targeting && typeof a.targeting === 'object') ? a.targeting : { geo_locations: { countries: ['KR'] } };
-      if (!targeting.geo_locations || !((targeting.geo_locations.countries || []).length)) targeting.geo_locations = { countries: ['KR'] };
+      // 위치 미설정 시에만 KR 기본. 지역/도시만 지정한 경우(countries 없음)엔 덮어쓰지 않음.
+      var _g = targeting.geo_locations || {};
+      if (!((_g.countries || []).length) && !((_g.regions || []).length) && !((_g.cities || []).length)) targeting.geo_locations = { countries: ['KR'] };
       // 어드밴티지+ 오디언스: 기본 OFF(0) — 정의한 연령/타게팅을 그대로 적용(제안 아님). true면 Meta 자동 확장 ON(1).
       targeting.targeting_automation = { advantage_audience: (a.advantageAudience === true ? 1 : 0) };
       // 노출위치: 기본 자동(어드밴티지+). 수동이면 플랫폼/포지션 지정(미지정 시 해당 플랫폼 전체 포지션).

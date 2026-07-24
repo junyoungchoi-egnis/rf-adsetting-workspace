@@ -51,7 +51,7 @@ code,.mono{font-family:'SF Mono',ui-monospace,Menlo,Consolas,monospace}
 .sync-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--text3);margin-right:5px;vertical-align:middle}
 .sync-dot.on{background:var(--green)}.sync-dot.off{background:var(--yellow)}
 
-.main{padding:26px 30px;max-width:1280px}
+.main{padding:26px 30px;max-width:1760px}
 .page{display:none}.page.active{display:block}
 .page-head{margin-bottom:20px}
 .page-head h2{font-size:19px;font-weight:800;letter-spacing:-.02em}
@@ -337,13 +337,63 @@ details.acc[open]>summary .ch{transform:rotate(90deg)}
                 <div class="field"><label>전환 목표 <span class="opt">최적화할 전환 이벤트</span></label><select id="bx_convevent" data-auto="PURCHASE" onchange="bxRenderAutoset();bxCheckClear()"><option value="PURCHASE">구매</option><option value="ADD_TO_CART">장바구니 담기</option><option value="INITIATE_CHECKOUT">결제 시작</option><option value="ADD_PAYMENT_INFO">결제 정보 추가</option><option value="COMPLETE_REGISTRATION">가입 완료</option><option value="LEAD">리드</option><option value="CONTENT_VIEW">콘텐츠 조회</option></select></div>
                 <div class="field"><label>기여 기간 <span class="opt">클릭/조회/참여 창</span></label><select id="bx_attr" onchange="bxRenderAutoset();bxCheckClear()"><option value="1d_view_7d_click_1d_ev">클릭 7일 · 조회 1일 · 참여 1일</option><option value="1d_view_7d_click">클릭 7일 · 조회 1일</option><option value="7d_click">클릭 7일</option><option value="1d_view_1d_click">클릭 1일 · 조회 1일</option><option value="1d_click">클릭 1일</option></select></div>
               </div>
+              <style id="bxtCss">
+                .bxt-drop{margin-top:5px;background:var(--pop,#161b22);border:1px solid var(--border2,#2b3547);border-radius:10px;padding:4px;max-height:230px;overflow:auto;box-shadow:0 14px 34px rgba(0,0,0,.45)}
+                .bxt-drow{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:7px;font-size:12px;cursor:default}
+                .bxt-drow:hover{background:var(--accentbg,rgba(31,111,235,.14))}
+                .bxt-drow .nm{font-weight:600;color:var(--text)}
+                .bxt-drow .cat{font-size:9.5px;color:var(--text3);background:var(--inset,#0c0f16);border:1px solid var(--border);border-radius:5px;padding:1px 5px}
+                .bxt-drow .sp{margin-left:auto}
+                .bxt-pm{font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;cursor:pointer;margin-left:5px;border:0}
+                .bxt-pm.inc{background:rgba(79,191,130,.14);color:#4fbf82} .bxt-pm.exc{background:rgba(240,104,74,.13);color:#f0684a}
+                .bxt-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+                .bxt-chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;border-radius:16px;padding:5px 8px 5px 11px}
+                .bxt-chip.inc{color:#4fbf82;background:rgba(79,191,130,.13);border:1px solid rgba(79,191,130,.4)}
+                .bxt-chip.exc{color:#f0684a;background:rgba(240,104,74,.12);border:1px solid rgba(240,104,74,.4)}
+                .bxt-chip .cat{color:var(--text3);font-size:9.5px;font-weight:400}
+                .bxt-chip .x{opacity:.7;cursor:pointer;font-size:12px}
+                .bxt-grph{font-size:10px;color:var(--text3);margin:10px 0 1px;font-weight:600}
+                .bxt-sec{border:1px solid var(--border);border-radius:9px;padding:10px 11px;background:rgba(255,255,255,.015)}
+                .bxt-head{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:12.5px}
+                .bxt-head b{font-weight:700}
+                .bxt-chev{color:var(--text3);font-size:10px;width:10px}
+                .bxt-cnt{margin-left:auto;font-size:10px;color:var(--text3)}
+              </style>
+              <div class="field"><label>📍 위치 <span class="opt">국가·지역·도시 검색 · 포함/제외</span></label>
+                <input id="bxt_geoQ" placeholder="🔍 지역 검색 (예: 서울, 부산, Korea)" autocomplete="off">
+                <div id="bxt_geoList" class="bxt-drop" style="display:none"></div>
+                <div id="bxt_geoChips"></div>
+              </div>
               <div class="grid g3">
                 <div class="field"><label>연령 최소</label><input id="bx_agemin" type="number" value="18" min="13" max="65" oninput="bxCheckClear()"></div>
                 <div class="field"><label>연령 최대</label><input id="bx_agemax" type="number" value="65" min="13" max="65" oninput="bxCheckClear()"></div>
-                <div class="field"><label>국가</label><input value="대한민국 (KR)" disabled style="opacity:.65"></div>
+                <div class="field"><label>성별</label><select id="bx_gender" onchange="bxCheckClear()"><option value="0">전체</option><option value="1">남성</option><option value="2">여성</option></select></div>
               </div>
-              <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:2px;padding:9px 11px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.02)">
-                <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="bx_advaud" style="width:auto"> 어드밴티지+ 오디언스 <span class="hint">기본 끔 · 정의한 연령/타게팅 그대로</span></label>
+              <div class="bxt-sec" id="bxt_detailSec" style="margin-top:2px">
+                <div class="bxt-head" onclick="bxtToggle('detail')"><span class="bxt-chev" id="bxt_detailChev">▸</span><b>🎯 상세 타게팅</b><span class="bxt-cnt" id="bxt_detailCnt">설정 안 함</span></div>
+                <div id="bxt_detailBody" style="display:none;margin-top:9px">
+                  <div class="opt" style="margin-bottom:6px">관심사·행동 검색 → 포함/제외</div>
+                  <input id="bxt_detQ" placeholder="🔍 관심사 검색 (예: 다이어트, 헬스)" autocomplete="off">
+                  <div id="bxt_detList" class="bxt-drop" style="display:none"></div>
+                  <div id="bxt_detInc"></div><div id="bxt_detExc"></div>
+                </div>
+              </div>
+              <div class="bxt-sec" id="bxt_audSec" style="margin-top:8px">
+                <div class="bxt-head" onclick="bxtToggle('aud')"><span class="bxt-chev" id="bxt_audChev">▸</span><b>👥 맞춤 · 유사 타겟</b><span class="bxt-cnt" id="bxt_audCnt">설정 안 함</span></div>
+                <div id="bxt_audBody" style="display:none;margin-top:9px">
+                  <div class="opt" style="margin-bottom:6px">계정 저장 타겟 검색·선택 · 포함/제외</div>
+                  <input id="bxt_audQ" placeholder="🔍 맞춤/유사 타겟 검색 (네고왕·구매자·유사 1% 등)" autocomplete="off">
+                  <div id="bxt_audList" class="bxt-drop" style="display:none"></div>
+                  <div id="bxt_audInc"></div><div id="bxt_audExc"></div>
+                </div>
+              </div>
+              <div class="field" style="margin-top:8px"><label>🗣️ 언어 <span class="opt">선택</span></label>
+                <input id="bxt_locQ" placeholder="🔍 언어 검색 (예: 한국어, English)" autocomplete="off">
+                <div id="bxt_locList" class="bxt-drop" style="display:none"></div>
+                <div id="bxt_locChips"></div>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:8px;padding:9px 11px;border:1px solid var(--border);border-radius:8px;background:rgba(255,255,255,.02)">
+                <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="bx_advaud" checked style="width:auto"> 어드밴티지+ 오디언스 <span class="hint">기본 켬 · 정의한 타게팅을 시드로 자동 확장</span></label>
                 <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="bx_autopl" checked style="width:auto"> 자동 노출위치(어드밴티지+) <span class="hint">끄면 FB·IG만(오디언스 네트워크 제외)</span></label>
               </div>
             </div>
@@ -1420,15 +1470,43 @@ function bxEnsureSteps(){   // ⓑ 4단계 헤더 1회 생성
   mk('bx_step4','④ 예산 & 생성');
   window.__bxStepsMade=1;
 }
-function bxLayout(m){   // 모드별 항목 순서 재배치(카드 직속 블록 재정렬)
+function bxEnsureCols(){   // 좌/우 2단 + 하단 고정바 컨테이너 1회 생성(소재 세팅과 유사한 공간감)
+  var card=$('b_createWrap'); if(!card||window.__bxColsMade)return;
+  var cols=document.createElement('div'); cols.id='bx_cols'; cols.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start';
+  var L=document.createElement('div'); L.id='bx_colL'; L.style.cssText='display:flex;flex-direction:column;min-width:0';
+  var R=document.createElement('div'); R.id='bx_colR'; R.style.cssText='display:flex;flex-direction:column;min-width:0';
+  cols.appendChild(L); cols.appendChild(R);
+  var bar=document.createElement('div'); bar.id='bx_bar'; bar.style.cssText='position:sticky;bottom:0;z-index:6;margin:14px -20px -20px;padding:12px 20px;background:var(--card,#0f131b);border-top:1px solid var(--border2,#2b3547);box-shadow:0 -8px 20px rgba(0,0,0,.28);display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-radius:0 0 13px 13px';
+  card.appendChild(cols); card.appendChild(bar);
+  window.__bxColsMade=1;
+}
+function bxLayout(m){   // 모드별 항목 좌/우/하단바 재배치
   var card=$('b_createWrap'); if(!card)return;
-  bxEnsureSteps();
-  var steps=['bx_step1','bx_step2','bx_step3','bx_step4'];
-  var order=(m==='set')
-    ? ['bx_camprow','bx_step1','bx_acctBlock','bx_pickCampWrap','bx_step2','bx_setSlot','bx_step3','bx_audCore','bx_autoset','bx_step4','bx_budgetBlock','bx_schedBlock','bx_setsWrap','bx_hint','bx_check','bx_actions','bx_out']
-    : ['bx_camprow','bx_campSlot','bx_autoset','bx_acctBlock','bx_budgetBlock','bx_campnameWrap','bx_hint','bx_check','bx_actions','bx_out'];
-  order.forEach(function(id){ var el=document.getElementById(id); if(el)card.appendChild(el); });
-  steps.forEach(function(id){ var el=document.getElementById(id); if(el)el.style.display=(m==='set')?'':'none'; });   // 스텝 헤더는 ⓑ에서만
+  bxEnsureSteps(); bxEnsureCols();
+  var cols=$('bx_cols'), L=$('bx_colL'), R=$('bx_colR'), bar=$('bx_bar');
+  var map=(m==='set')?{
+    top:['bx_camprow'],
+    L:['bx_step1','bx_acctBlock','bx_pickCampWrap','bx_step2','bx_setSlot','bx_setsWrap'],
+    R:['bx_step3','bx_audCore','bx_autoset','bx_step4','bx_budgetBlock','bx_schedBlock'],
+    bar:['bx_check','bx_actions']
+  }:{
+    top:['bx_camprow'],
+    L:['bx_campSlot','bx_acctBlock','bx_budgetBlock','bx_campnameWrap','bx_autoset'],
+    R:[],
+    bar:['bx_check','bx_actions']
+  };
+  map.top.forEach(function(id){ var el=$(id); if(el&&cols)card.insertBefore(el,cols); });   // 전체폭(컬럼 위)
+  map.L.forEach(function(id){ var el=$(id); if(el&&L)L.appendChild(el); });
+  map.R.forEach(function(id){ var el=$(id); if(el&&R)R.appendChild(el); });
+  map.bar.forEach(function(id){ var el=$(id); if(el&&bar)bar.appendChild(el); });
+  var hintEl=$('bx_hint'); if(hintEl&&L)L.appendChild(hintEl);   // 안내문구는 좌측 하단
+  var outEl=$('bx_out'); if(outEl)card.appendChild(outEl);       // 생성 결과는 바 아래
+  if(R)R.style.display=(m==='set')?'':'none';                    // ⓐ는 단일 컬럼
+  if(cols)cols.style.gridTemplateColumns=(m==='set')?'repeat(auto-fit,minmax(300px,1fr))':'1fr';
+  // 바 안에서 액션 버튼은 우측 정렬
+  var act=$('bx_actions'); if(act){ act.style.marginLeft='auto'; }
+  var chk=$('bx_check'); if(chk){ chk.style.flex='1'; chk.style.minWidth='180px'; }
+  ['bx_step1','bx_step2','bx_step3','bx_step4'].forEach(function(id){ var el=$(id); if(el)el.style.display=(m==='set')?'':'none'; });
 }
 function bxSetMode(m){
   if(m==='both')m='set';   // ⓒ 제거 — 호환용
@@ -1633,7 +1711,7 @@ function bxPayload(apply){
     var sets=(lastGen&&lastGen.sets)?lastGen.sets:[];
     var amin=Math.max(13,Math.min(65,Number((($('bx_agemin')||{}).value))||18));
     var amax=Math.max(amin,Math.min(65,Number((($('bx_agemax')||{}).value))||65));
-    var targeting={geo_locations:{countries:['KR']},age_min:amin,age_max:amax};
+    var targeting=(typeof bxTargetingSpec==='function')?bxTargetingSpec(amin,amax):{geo_locations:{countries:['KR']},age_min:amin,age_max:amax};   // 실제 타게팅(위치·성별·상세·맞춤·언어)
     var adv=!!(($('bx_advaud')||{}).checked);
     var autopl=(($('bx_autopl')||{}).checked)!==false;
     var placements=autopl?{mode:'auto'}:{mode:'manual',publisher_platforms:['facebook','instagram']};
@@ -1641,13 +1719,12 @@ function bxPayload(apply){
     var ce=(($('bx_convevent')||{}).value)||'PURCHASE';                              // 전환 목표(이벤트)
     var attrKey=(($('bx_attr')||{}).value)||'1d_view_7d_click_1d_ev';
     var attrSpec=BX_ATTR[attrKey]||BX_ATTR['1d_view_7d_click_1d_ev'];                 // 기여 기간
-    var isSales=(objective==='OUTCOME_SALES');                                        // 판매=입찰유형 기반, 그 외=성과목표 반응형
-    var trfOg=isSales?null:(((($('bx_optgoal')||{}).value))||'LANDING_PAGE_VIEWS');   // 트래픽/참여/리드/인지 성과목표
+    var selOg=(((($('bx_optgoal')||{}).value))||'');                                  // 성과목표 드롭다운(판매 포함 모든 목표에서 선택)
     var startT=bxSchedISO((($('bx_startdt')||{}).value)||'');                          // 일정(공통 적용) — 비우면 null
     var endT=bxSchedISO((($('bx_enddt')||{}).value)||'');
     return sets.map(function(s){
       var bidm=META_BID[s.bid]||META_BID.CMX;
-      var og=isSales?bidm.optimization_goal:trfOg;
+      var og=selOg||(objective==='OUTCOME_SALES'?bidm.optimization_goal:'LANDING_PAGE_VIEWS');   // 선택 성과목표 우선(안전 폴백)
       var isConvGoal=(og==='OFFSITE_CONVERSIONS'||og==='VALUE');                       // 전환/가치 목표만 이벤트·기여 필요
       var o={name:bxSetName(s.name),targeting:targeting,budgetMode:mode,optimizationGoal:og,bidStrategy:bidm.bid_strategy,advantageAudience:adv,placements:placements};
       if(isConvGoal){ o.customEventType=ce; o.attributionSpec=attrSpec; }              // 전환/가치일 때만 전달(리드 전환 포함)
@@ -2373,6 +2450,7 @@ const META_BID={CMX:{optimization_goal:'OFFSITE_CONVERSIONS',bid_strategy:'LOWES
 // 캠페인 목표별 성과목표(optimization_goal) — 대상 캠페인 목표에 반응. 첫 항목이 기본값.
 // 판매(SALES)는 기존 입찰유형(CMX/VMX) 기반이라 여기서 제외(별도 처리).
 const BX_OPTGOALS={
+  OUTCOME_SALES:[['OFFSITE_CONVERSIONS','전환수 극대화'],['VALUE','전환값 극대화'],['LANDING_PAGE_VIEWS','랜딩 페이지 조회수 극대화'],['LINK_CLICKS','링크 클릭수 극대화']],
   OUTCOME_TRAFFIC:[['LANDING_PAGE_VIEWS','랜딩 페이지 조회수 극대화'],['LINK_CLICKS','링크 클릭수 극대화'],['REACH','도달 극대화'],['IMPRESSIONS','노출수 극대화']],
   OUTCOME_ENGAGEMENT:[['POST_ENGAGEMENT','게시물 참여 극대화'],['THRUPLAY','동영상 조회(ThruPlay) 극대화'],['LANDING_PAGE_VIEWS','랜딩 페이지 조회수 극대화'],['LINK_CLICKS','링크 클릭수 극대화'],['REACH','도달 극대화'],['IMPRESSIONS','노출수 극대화']],
   OUTCOME_LEADS:[['OFFSITE_CONVERSIONS','전환(리드) 수 극대화'],['LANDING_PAGE_VIEWS','랜딩 페이지 조회수 극대화'],['LINK_CLICKS','링크 클릭수 극대화']],
@@ -2380,21 +2458,23 @@ const BX_OPTGOALS={
 };
 function bxObjOf(){ return bxObjOverride||(lastGen&&META_OBJECTIVE[lastGen.goal])||'OUTCOME_SALES'; }
 function bxAutoEvent(obj){ return obj==='OUTCOME_LEADS'?'LEAD':'PURCHASE'; }
-// 현재 성과목표: 판매=입찰유형 기반, 그 외=선택한 성과목표
+// 현재 성과목표: 모든 목표에서 성과목표 드롭다운 선택값 사용(판매=전환수/전환값 직접 선택)
 function bxCurOptGoal(){
-  if(bxObjOf()==='OUTCOME_SALES') return (META_BID[lastGen&&lastGen.bid]||META_BID.CMX).optimization_goal;
-  return (($('bx_optgoal')||{}).value)||'LANDING_PAGE_VIEWS';
+  return (($('bx_optgoal')||{}).value)||(bxObjOf()==='OUTCOME_SALES'?'OFFSITE_CONVERSIONS':'LANDING_PAGE_VIEWS');
 }
 // 대상 캠페인 목표에 따라 성과목표 셀렉트/전환블록을 반응형으로 전환
 function bxSyncObjective(){
-  var obj=bxObjOf(); var isSales=(obj==='OUTCOME_SALES');
+  var obj=bxObjOf();
   var ow=$('bx_optgoalWrap'), sel=$('bx_optgoal');
-  if(ow)ow.style.display=isSales?'none':'';                 // 판매는 기존 방식 유지 → 성과목표 셀렉트 숨김
-  if(!isSales && sel){
+  if(ow)ow.style.display='';                                 // 모든 목표에서 성과목표 직접 선택 노출(판매=전환수/전환값 포함)
+  if(sel){
     var opts=BX_OPTGOALS[obj]||[['LINK_CLICKS','링크 클릭수 극대화']];   // 미매핑(앱홍보 등)은 링크클릭 안전 폴백
     var prev=sel.value;
+    var changed=(window.__bxLastOptObj!==obj); window.__bxLastOptObj=obj;   // 목표가 바뀌면(다른 캠페인 선택) 기본값으로 리셋
     sel.innerHTML=opts.map(function(o){return '<option value="'+o[0]+'">'+esc(o[1])+'</option>';}).join('');
-    sel.value=opts.some(function(o){return o[0]===prev;})?prev:opts[0][0];
+    var def=opts[0][0];
+    if(obj==='OUTCOME_SALES'){ def=(META_BID[lastGen&&lastGen.bid]||META_BID.CMX).optimization_goal; }   // 판매 기본값=대상 캠페인 입찰유형(CMX→전환수·VMX→전환값)
+    sel.value=(!changed && opts.some(function(o){return o[0]===prev;}))?prev:def;
   }
   bxSyncConvWrap();
 }
@@ -4380,6 +4460,68 @@ main.main:has(#page-build.active) .two-col > div:last-child > .panel{position:st
     if(!window.__rbN5ModeHooked && typeof window.n5Mode==='function'){ window.__rbN5ModeHooked=1; var _o=window.n5Mode; window.n5Mode=function(){ var r=_o.apply(this,arguments); try{ setTimeout(build,60); }catch(e){} return r; }; }
     if((document.getElementById('rbLiveAssetsBtn')&&document.getElementById('rbLiveSetsBtn')&&window.__rbN5ModeHooked)||++n2>150) clearInterval(iv2);
   },1000);
+})();
+
+/* RB_TARGET — 광고세트 실제 타게팅(위치·성별·상세·맞춤/유사·언어). 메타 /search 프록시 + 계정 맞춤타겟 목록.
+   상태를 모아 window.bxTargetingSpec(amin,amax)로 targeting 객체 반환(bxPayload가 사용). 토글 기본 접힘. */
+(function(){
+  var T={ geoInc:[{key:'KR',name:'대한민국',gtype:'country',cc:'KR',cat:'국가'}], geoExc:[], detInc:[], detExc:[], audInc:[], audExc:[], loc:[] };
+  var audCache={};
+  function E(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function acct(){ try{ return String((((E('bx_acct')||{}).value)|| (typeof mcdTargetAccount==='function'?mcdTargetAccount():'') )||'').replace(/^act_/,''); }catch(e){ return ''; } }
+  function keyOf(it){ return String(it.key||it.id); }
+  function catGeo(x){ return x.gtype==='country'?'국가':(x.gtype==='region'?'지역':'도시'); }
+  function catDet(x){ return x.dtype==='behaviors'?'행동':(x.dtype==='demographics'?'인구통계':'관심사'); }
+  function catAud(x){ var s=String(x.subtype||'').toUpperCase(); return s==='LOOKALIKE'?'유사':(s==='CUSTOM'?'맞춤':'웹'); }
+  function norm(kind,r){ if(kind==='geo')return {key:String(r.key),name:r.name,gtype:r.gtype,cc:r.cc,cat:catGeo(r)}; if(kind==='detail')return {id:String(r.id),name:r.name,dtype:r.dtype,cat:catDet(r)}; if(kind==='aud')return {id:String(r.id),name:r.name,subtype:r.subtype,cat:catAud(r)}; return {key:String(r.key),name:r.name,cat:'언어'}; }
+  function arrOf(kind,act){ var m={geo:{inc:T.geoInc,exc:T.geoExc},detail:{inc:T.detInc,exc:T.detExc},aud:{inc:T.audInc,exc:T.audExc},locale:{inc:T.loc,exc:T.loc}}; return m[kind][act==='exc'?'exc':'inc']; }
+
+  async function search(kind,q){ var a=acct(); if(!a)return []; try{ var j=await (await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({searchTargeting:true,kind:kind,q:q,act:a})})).json(); return (j&&j.ok&&j.results)?j.results:[]; }catch(e){ return []; } }
+  async function loadAuds(){ var a=acct(); if(!a)return []; if(audCache[a])return audCache[a]; try{ var j=await (await fetch('/api/buildset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({listAudiences:true,act:a})})).json(); audCache[a]=(j&&j.ok&&j.audiences)?j.audiences:[]; return audCache[a]; }catch(e){ return []; } }
+
+  function chipHtml(it,g,cls){ return '<span class="bxt-chip '+cls+'">'+esc(it.name)+(it.cat?' <span class="cat">'+esc(it.cat)+'</span>':'')+' <span class="x" data-g="'+g+'" data-k="'+esc(keyOf(it))+'">✕</span></span>'; }
+  function grpHtml(title,html){ return html?('<div class="bxt-grph">'+title+'</div><div class="bxt-chips">'+html+'</div>'):''; }
+  var GMAP={geoInc:function(){return T.geoInc;},geoExc:function(){return T.geoExc;},detInc:function(){return T.detInc;},detExc:function(){return T.detExc;},audInc:function(){return T.audInc;},audExc:function(){return T.audExc;},loc:function(){return T.loc;}};
+  function bindX(el){ if(!el)return; [].forEach.call(el.querySelectorAll('.x[data-g]'),function(x){ x.onclick=function(){ var A=GMAP[x.getAttribute('data-g')]&&GMAP[x.getAttribute('data-g')](); var k=x.getAttribute('data-k'); if(A){ for(var i=A.length-1;i>=0;i--){ if(keyOf(A[i])===k){A.splice(i,1);break;} } } renderAll(); updateCounts(); try{bxCheckClear();}catch(e){} }; }); }
+  function renderAll(){
+    var g=E('bxt_geoChips'); if(g)g.innerHTML=grpHtml('포함',T.geoInc.map(function(it){return chipHtml(it,'geoInc','inc');}).join(''))+grpHtml('제외',T.geoExc.map(function(it){return chipHtml(it,'geoExc','exc');}).join(''));
+    var di=E('bxt_detInc'); if(di)di.innerHTML=grpHtml('포함 (OR)',T.detInc.map(function(it){return chipHtml(it,'detInc','inc');}).join(''));
+    var de=E('bxt_detExc'); if(de)de.innerHTML=grpHtml('제외',T.detExc.map(function(it){return chipHtml(it,'detExc','exc');}).join(''));
+    var ai=E('bxt_audInc'); if(ai)ai.innerHTML=grpHtml('포함',T.audInc.map(function(it){return chipHtml(it,'audInc','inc');}).join(''));
+    var ae=E('bxt_audExc'); if(ae)ae.innerHTML=grpHtml('제외',T.audExc.map(function(it){return chipHtml(it,'audExc','exc');}).join(''));
+    var l=E('bxt_locChips'); if(l)l.innerHTML=T.loc.length?('<div class="bxt-chips">'+T.loc.map(function(it){return chipHtml(it,'loc','inc');}).join('')+'</div>'):'';
+    ['bxt_geoChips','bxt_detInc','bxt_detExc','bxt_audInc','bxt_audExc','bxt_locChips'].forEach(function(id){bindX(E(id));});
+  }
+  function updateCounts(){ var d=E('bxt_detailCnt'); if(d)d.textContent=(T.detInc.length||T.detExc.length)?('포함 '+T.detInc.length+' · 제외 '+T.detExc.length):'설정 안 함'; var a=E('bxt_audCnt'); if(a)a.textContent=(T.audInc.length||T.audExc.length)?('포함 '+T.audInc.length+' · 제외 '+T.audExc.length):'설정 안 함'; }
+  function pick(kind,act,raw){ var it=norm(kind,raw),k=keyOf(it); [arrOf(kind,'inc'),arrOf(kind,'exc')].forEach(function(A){ for(var i=A.length-1;i>=0;i--){ if(keyOf(A[i])===k)A.splice(i,1); } }); arrOf(kind,act).push(it); renderAll(); updateCounts(); try{bxCheckClear();}catch(e){} }
+  function showDrop(el,items,kind){ if(!el)return; if(!items||!items.length){ el.style.display='none'; el.innerHTML=''; return; } el.innerHTML=items.map(function(it,i){ var cat=kind==='geo'?catGeo(it):kind==='detail'?catDet(it):kind==='aud'?catAud(it):'언어'; var btns=kind==='locale'?'<button type="button" class="bxt-pm inc" data-i="'+i+'" data-a="inc">＋추가</button>':'<button type="button" class="bxt-pm inc" data-i="'+i+'" data-a="inc">＋포함</button><button type="button" class="bxt-pm exc" data-i="'+i+'" data-a="exc">제외</button>'; return '<div class="bxt-drow"><span class="nm">'+esc(it.name)+'</span><span class="cat">'+esc(cat)+'</span><span class="sp"></span>'+btns+'</div>'; }).join(''); el.style.display=''; [].forEach.call(el.querySelectorAll('.bxt-pm'),function(btn){ btn.onclick=function(){ pick(kind,btn.getAttribute('data-a'),items[+btn.getAttribute('data-i')]); el.style.display='none'; }; }); }
+  function deb(fn,ms){ var t; return function(){ var a=arguments,th=this; clearTimeout(t); t=setTimeout(function(){fn.apply(th,a);},ms); }; }
+
+  window.bxtToggle=function(sec){ var body=E('bxt_'+sec+'Body'),chev=E('bxt_'+sec+'Chev'); if(!body)return; var open=body.style.display!=='none'; body.style.display=open?'none':''; if(chev)chev.textContent=open?'▸':'▾'; };
+  window.bxTargetingSpec=function(amin,amax){
+    var t={age_min:amin,age_max:amax};
+    function geo(arr){ var o={countries:[],regions:[],cities:[]}; arr.forEach(function(x){ if(x.gtype==='country')o.countries.push(x.cc||x.key); else if(x.gtype==='region')o.regions.push({key:x.key}); else o.cities.push({key:x.key}); }); ['countries','regions','cities'].forEach(function(k){ if(!o[k].length)delete o[k]; }); return o; }
+    var gi=geo(T.geoInc); if(!gi.countries&&!gi.regions&&!gi.cities)gi={countries:['KR']}; t.geo_locations=gi;
+    if(T.geoExc.length){ var ge=geo(T.geoExc); if(Object.keys(ge).length)t.excluded_geo_locations=ge; }
+    var gd=Number((((E('bx_gender')||{}).value))||0); if(gd===1||gd===2)t.genders=[gd];
+    function grp(arr){ var o={}; arr.forEach(function(x){ var k=x.dtype||'interests'; (o[k]=o[k]||[]).push({id:x.id,name:x.name}); }); return o; }
+    if(T.detInc.length)t.flexible_spec=[grp(T.detInc)];
+    if(T.detExc.length)t.exclusions=grp(T.detExc);
+    if(T.audInc.length)t.custom_audiences=T.audInc.map(function(x){return {id:x.id};});
+    if(T.audExc.length)t.excluded_custom_audiences=T.audExc.map(function(x){return {id:x.id};});
+    if(T.loc.length){ var lc=T.loc.map(function(x){return Number(x.key);}).filter(function(n){return !isNaN(n);}); if(lc.length)t.locales=lc; }
+    return t;
+  };
+
+  function wire(){
+    var gq=E('bxt_geoQ'); if(gq&&!gq._w){ gq._w=1; gq.addEventListener('input',deb(async function(){ var q=gq.value.trim(); if(q.length<2){showDrop(E('bxt_geoList'),[],'geo');return;} showDrop(E('bxt_geoList'),await search('geo',q),'geo'); },320)); }
+    var dq=E('bxt_detQ'); if(dq&&!dq._w){ dq._w=1; dq.addEventListener('input',deb(async function(){ var q=dq.value.trim(); if(q.length<2){showDrop(E('bxt_detList'),[],'detail');return;} showDrop(E('bxt_detList'),await search('interest',q),'detail'); },320)); }
+    var lq=E('bxt_locQ'); if(lq&&!lq._w){ lq._w=1; lq.addEventListener('input',deb(async function(){ var q=lq.value.trim(); if(q.length<2){showDrop(E('bxt_locList'),[],'locale');return;} showDrop(E('bxt_locList'),await search('locale',q),'locale'); },320)); }
+    var aq=E('bxt_audQ'); if(aq&&!aq._w){ aq._w=1; var run=deb(async function(){ var q=aq.value.trim().toLowerCase(); var list=await loadAuds(); var f=q?list.filter(function(a){return String(a.name).toLowerCase().indexOf(q)>=0;}):list.slice(0,30); showDrop(E('bxt_audList'),f,'aud'); },260); aq.addEventListener('input',run); aq.addEventListener('focus',run); }
+    return !!(gq&&dq&&lq&&aq);
+  }
+  var n3=0, iv3=setInterval(function(){ if(wire()||++n3>150){ clearInterval(iv3); try{renderAll();updateCounts();}catch(e){} } },800);
 })();
 </script>
 </body>
